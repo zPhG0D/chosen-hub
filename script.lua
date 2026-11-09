@@ -100,6 +100,35 @@ MainFrame.Parent = ScreenGui
 corner(MainFrame, 12)
 stroke(MainFrame, COLOR_BORDER, 1, 0)
 
+-- Botão flutuante "C" (borda esquerda da tela): abre/fecha o painel.
+-- Fica no ScreenGui (fora do MainFrame) para continuar visível quando o painel fecha.
+local PanelToggle = Instance.new("TextButton")
+PanelToggle.Name = "PanelToggle"
+PanelToggle.Size = UDim2.new(0, 34, 0, 34)
+PanelToggle.AnchorPoint = Vector2.new(0, 0.5)
+PanelToggle.Position = UDim2.new(0, 10, 0.5, 0)
+PanelToggle.BackgroundColor3 = COLOR_PANEL
+PanelToggle.AutoButtonColor = false
+PanelToggle.Text = "C"
+PanelToggle.TextColor3 = COLOR_TEXT
+PanelToggle.Font = Enum.Font.GothamBlack
+PanelToggle.TextSize = 16
+PanelToggle.BorderSizePixel = 0
+PanelToggle.Parent = ScreenGui
+corner(PanelToggle, 17)
+stroke(PanelToggle, COLOR_BORDER, 1, 0.35)
+
+PanelToggle.MouseButton1Click:Connect(function()
+	MainFrame.Visible = not MainFrame.Visible
+end)
+PanelToggle.MouseEnter:Connect(function()
+	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD}, 0.15)
+end)
+PanelToggle.MouseLeave:Connect(function()
+	tween(PanelToggle, {BackgroundColor3 = COLOR_PANEL}, 0.15)
+end)
+
+
 local AccentLine = Instance.new("Frame")
 AccentLine.Size = UDim2.new(1, -28, 0, 2)
 AccentLine.Position = UDim2.new(0, 14, 0, 1)
@@ -267,7 +296,7 @@ TabContainer.Parent = Sidebar
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Padding = UDim.new(0, 4)
 TabLayout.Parent = TabContainer
 
 local Version = Instance.new("TextLabel")
@@ -326,14 +355,15 @@ local TabIcons = {
 	["Amigos"] = "02",
 	["Target"] = "03",
 	["Jogo"] = "04",
-	ESP = "05",
-	["Diversos"] = "06"
+	["Jogador"] = "05",
+	ESP = "06",
+	["Diversos"] = "07"
 }
 
 local function createTab(name, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name .. "TabButton"
-	btn.Size = UDim2.new(1, 0, 0, 38)
+	btn.Size = UDim2.new(1, 0, 0, 34)
 	btn.BackgroundColor3 = COLOR_SIDE
 	btn.AutoButtonColor = false
 	btn.Text = ""
@@ -369,8 +399,9 @@ local function createTab(name, order)
 	label.Parent = btn
 
 	local activeBar = Instance.new("Frame")
-	activeBar.Size = UDim2.new(0, 3, 0, 22)
-	activeBar.Position = UDim2.new(0, 4, 0.5, -11)
+	activeBar.Size = UDim2.new(0, 44, 0, 3)
+	activeBar.AnchorPoint = Vector2.new(0.5, 0)
+	activeBar.Position = UDim2.new(0.5, 0, 1, -5)
 	activeBar.BackgroundColor3 = COLOR_ACCENT
 	activeBar.BorderSizePixel = 0
 	activeBar.Visible = false
@@ -421,9 +452,9 @@ local function createTab(name, order)
 	btn.MouseButton1Click:Connect(function()
 		for tabName, data in pairs(Tabs) do
 			local active = tabName == name
-			data.button.BackgroundColor3 = active and COLOR_CARD or COLOR_SIDE
-			data.icon.TextColor3 = active and COLOR_ACCENT or COLOR_DIM
-			data.label.TextColor3 = active and COLOR_TEXT or COLOR_DIM
+			tween(data.button, {BackgroundColor3 = active and COLOR_CARD or COLOR_SIDE}, 0.18)
+			tween(data.icon, {TextColor3 = active and COLOR_ACCENT or COLOR_DIM}, 0.18)
+			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.18)
 			data.activeBar.Visible = active
 			ContentFrames[tabName].Visible = active
 		end
@@ -595,11 +626,14 @@ local function createActionButton(parent, text, order, compact)
 	btn.TextColor3 = COLOR_TEXT
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 11
+	btn.TextXAlignment = Enum.TextXAlignment.Left
 	btn.TextTruncate = Enum.TextTruncate.AtEnd
 	btn.LayoutOrder = order or 1
 	btn.Parent = parent
-	corner(btn, 12)
+	corner(btn, 14)
 	stroke(btn, COLOR_BORDER, 1, 0.15)
+
+	padding(btn, 14, 10, 0, 0)
 
 	btn.MouseEnter:Connect(function()
 		tween(btn, {BackgroundColor3 = Color3.fromRGB(40, 76, 118)}, 0.12)
@@ -791,6 +825,208 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	}
 end
 
+-- Controle combinado (meio a meio): botão ON/OFF à esquerda + slider à direita.
+-- Usado na aba Jogador (Fly, Walk Speed, Jump Power) para ocupar menos espaço.
+local function createComboControl(parent, labelText, minValue, maxValue, defaultValue, order, onToggled, onChanged)
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -4, 0, 44)
+	card.BackgroundColor3 = COLOR_CARD
+	card.BorderSizePixel = 0
+	card.LayoutOrder = order or 1
+	card.Parent = parent
+	corner(card, 12)
+	stroke(card, COLOR_BORDER, 1, 0.15)
+
+	local hit = Instance.new("TextButton")
+	hit.Size = UDim2.new(0.5, -4, 1, 0)
+	hit.BackgroundTransparency = 1
+	hit.BorderSizePixel = 0
+	hit.AutoButtonColor = false
+	hit.Text = ""
+	hit.Parent = card
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(0.5, -60, 1, 0)
+	title.Position = UDim2.new(0, 12, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = labelText
+	title.TextColor3 = COLOR_TEXT
+	title.Font = Enum.Font.GothamMedium
+	title.TextSize = 12
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextTruncate = Enum.TextTruncate.AtEnd
+	title.Parent = card
+
+	local switchTrack = Instance.new("Frame")
+	switchTrack.Size = UDim2.new(0, 36, 0, 18)
+	switchTrack.Position = UDim2.new(0.5, -44, 0.5, -9)
+	switchTrack.BackgroundColor3 = COLOR_SIDE
+	switchTrack.BorderSizePixel = 0
+	switchTrack.Parent = card
+	corner(switchTrack, 9)
+	stroke(switchTrack, COLOR_BORDER, 1, 0.15)
+
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.new(0, 14, 0, 14)
+	dot.Position = UDim2.new(0, 2, 0.5, -7)
+	dot.BackgroundColor3 = COLOR_MUTED
+	dot.BorderSizePixel = 0
+	dot.Parent = switchTrack
+	corner(dot, 7)
+
+	local state = false
+	local function setState(newState)
+		state = newState
+		tween(dot, {
+			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
+		}, 0.14)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.12)
+		local st = card:FindFirstChildOfClass("UIStroke")
+		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
+		if onToggled then onToggled(state) end
+	end
+
+	hit.MouseButton1Click:Connect(function() setState(not state) end)
+
+	local track = Instance.new("Frame")
+	track.Size = UDim2.new(0.5, -54, 0, 7)
+	track.Position = UDim2.new(0.5, 4, 0.5, -3)
+	track.BackgroundColor3 = COLOR_BORDER
+	track.BorderSizePixel = 0
+	track.Parent = card
+	corner(track, 3)
+
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(0, 0, 1, 0)
+	fill.BackgroundColor3 = COLOR_ACCENT
+	fill.BorderSizePixel = 0
+	fill.Parent = track
+	corner(fill, 4)
+
+	local FillGradient = Instance.new("UIGradient")
+	FillGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, COLOR_ACCENT2),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 190, 255))
+	})
+	FillGradient.Parent = fill
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 14, 0, 14)
+	knob.AnchorPoint = Vector2.new(0.5, 0.5)
+	knob.Position = UDim2.new(0, 0, 0.5, 0)
+	knob.BackgroundColor3 = COLOR_TEXT
+	knob.BorderSizePixel = 0
+	knob.Active = true
+	knob.Parent = track
+	corner(knob, 7)
+	stroke(knob, COLOR_ACCENT, 1, 0)
+
+	local valueBox = Instance.new("TextBox")
+	valueBox.Size = UDim2.new(0, 44, 0, 25)
+	valueBox.Position = UDim2.new(1, -50, 0.5, -12)
+	valueBox.BackgroundColor3 = COLOR_PANEL
+	valueBox.BorderSizePixel = 0
+	valueBox.TextColor3 = COLOR_TEXT
+	valueBox.PlaceholderColor3 = COLOR_MUTED
+	valueBox.Text = tostring(math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue))
+	valueBox.Font = Enum.Font.Code
+	valueBox.TextSize = 11
+	valueBox.ClearTextOnFocus = false
+	valueBox.TextXAlignment = Enum.TextXAlignment.Center
+	valueBox.Parent = card
+	corner(valueBox, 8)
+	stroke(valueBox, COLOR_BORDER, 1, 0.15)
+
+	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
+	local dragging = false
+
+	local function setValue(value, updateBox)
+		value = tonumber(value) or currentValue
+		value = math.clamp(math.floor(value + 0.5), minValue, maxValue)
+		currentValue = value
+		local alpha = (value - minValue) / (maxValue - minValue)
+		fill.Size = UDim2.new(alpha, 0, 1, 0)
+		knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+		if updateBox ~= false then
+			valueBox.Text = tostring(value)
+		end
+		if onChanged then
+			onChanged(value)
+		end
+	end
+
+	local function setFromX(x)
+		local left = track.AbsolutePosition.X
+		local width = track.AbsoluteSize.X
+		if width <= 0 then return end
+		local alpha = math.clamp((x - left) / width, 0, 1)
+		setValue(minValue + (maxValue - minValue) * alpha)
+	end
+
+	track.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			setFromX(input.Position.X)
+		end
+	end)
+	knob.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		) then
+			setFromX(input.Position.X)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	valueBox.FocusLost:Connect(function()
+		local typed = tonumber(valueBox.Text)
+		if typed == nil then
+			valueBox.Text = tostring(currentValue)
+		else
+			setValue(typed)
+		end
+	end)
+	hit.MouseEnter:Connect(function()
+		if not state then
+			tween(card, {BackgroundColor3 = COLOR_CARD2}, 0.10)
+			local st = card:FindFirstChildOfClass("UIStroke")
+			if st then tween(st, {Color = COLOR_BORDER2}, 0.10) end
+		end
+	end)
+	hit.MouseLeave:Connect(function()
+		if not state then
+			tween(card, {BackgroundColor3 = COLOR_CARD}, 0.10)
+			local st = card:FindFirstChildOfClass("UIStroke")
+			if st then tween(st, {Color = COLOR_BORDER}, 0.10) end
+		end
+	end)
+	setValue(currentValue)
+	return {
+		card = card,
+		setState = setState,
+		setValue = setValue,
+		getState = function()
+			return state
+		end,
+		getValue = function()
+			return currentValue
+		end
+	}
+end
+
 local function getPlayer(nameStr)
 	if not nameStr or nameStr == "" then return nil end
 	nameStr = string.lower(nameStr)
@@ -811,8 +1047,9 @@ local HomeTab = createTab("Início", 1)
 local AmigosTab = createTab("Amigos", 2)
 local TargetTab = createTab("Target", 3)
 local GameTab = createTab("Jogo", 4)
-local ESPTab = createTab("ESP", 5)
-local MiscTab = createTab("Diversos", 6)
+local PlayerTab = createTab("Jogador", 5)
+local ESPTab = createTab("ESP", 6)
+local MiscTab = createTab("Diversos", 7)
 
 Tabs["Início"].button.BackgroundColor3 = COLOR_CARD
 Tabs["Início"].icon.TextColor3 = COLOR_ACCENT
@@ -1699,16 +1936,31 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+-- Flashback em meia-linha, com Impulse ao lado
 local GameRow2 = createControlRow(GameTab, 3)
 createToggleButton(GameRow2, "Flashback  •  Segure V", function(state)
 	flashback = state
 	if not state then history = {} isRewinding = false end
 end, 1)
+createToggleButton(GameRow2, "Impulse  •  Tecla M", function(state)
+	impulseHotkeyEnabled = state
+	if not state then
+		if impulseIsImpulsing then
+			restoreImpulse()
+		else
+			stopImpulseLoop()
+		end
+	end
+end, 2)
 
-createToggleButton(GameRow2, "Fly  •  Tecla F", function(state)
+-- Fly movido para a aba Jogador (mesma lógica/callback), com ajuste na mesma linha
+createSection(PlayerTab, "Fly", "Ligue o voo e ajuste a velocidade na mesma linha.", 1)
+createComboControl(PlayerTab, "Fly  •  Tecla F", 1, 1000, flySpeed, 2, function(state)
 	flyHotkeyEnabled = state
 	if not state and flying then stopFly() end
-end, 2)
+end, function(value)
+	flySpeed = value
+end)
 
 stopFly = function()
 	flying = false
@@ -1757,26 +2009,59 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
-createSection(GameTab, "Velocidade do Fly", "Ajuste de 1 até 300.", 6)
-createSliderControl(GameTab, "Velocidade do voo", 1, 300, flySpeed, 7, function(value)
-	flySpeed = value
+-- Movimento do jogador (Walk Speed / Jump Power): cada recurso com botão
+-- liga/desliga + slider na mesma linha; desligado volta ao padrão do jogo.
+local okPlayerMove, errPlayerMove = pcall(function()
+	local MOVE_walkSpeed = 16
+	local MOVE_jumpPower = 50
+	local MOVE_walkOn = false
+	local MOVE_jumpOn = false
+	local MOVE_DEFAULT_WALK = 16
+	local MOVE_DEFAULT_JUMP = 50
+
+	local function MOVE_apply()
+		local char = LocalPlayer.Character
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		if not humanoid then return end
+		pcall(function()
+			humanoid.UseJumpPower = true
+			humanoid.WalkSpeed = MOVE_walkOn and MOVE_walkSpeed or MOVE_DEFAULT_WALK
+			humanoid.JumpPower = MOVE_jumpOn and MOVE_jumpPower or MOVE_DEFAULT_JUMP
+		end)
+	end
+
+	createSection(PlayerTab, "Movimento", "Ligue e ajuste na mesma linha; desligado volta ao normal.", 3)
+	createComboControl(PlayerTab, "Walk Speed", 0, 500, MOVE_walkSpeed, 4, function(state)
+		MOVE_walkOn = state
+		MOVE_apply()
+	end, function(value)
+		MOVE_walkSpeed = value
+		MOVE_apply()
+	end)
+	createComboControl(PlayerTab, "Jump Power", 0, 500, MOVE_jumpPower, 5, function(state)
+		MOVE_jumpOn = state
+		MOVE_apply()
+	end, function(value)
+		MOVE_jumpPower = value
+		MOVE_apply()
+	end)
+
+	LocalPlayer.CharacterAdded:Connect(function()
+		task.wait(0.4)
+		MOVE_apply()
+	end)
+	MOVE_apply()
 end)
+
+if not okPlayerMove then
+	warn("[Jogador] erro ao iniciar movimento: " .. tostring(errPlayerMove))
+end
 
 local GameRow3 = createControlRow(GameTab, 4)
 createToggleButton(GameRow3, "Anim Speed  •  Q|E", function(state)
 	animationSpeedEnabled = state
 	animationSpeed = 1
 end, 1)
-createToggleButton(GameRow3, "Impulse  •  Tecla M", function(state)
-	impulseHotkeyEnabled = state
-	if not state then
-		if impulseIsImpulsing then
-			restoreImpulse()
-		else
-			stopImpulseLoop()
-		end
-	end
-end, 2)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed or UserInputService:GetFocusedTextBox() or not animationSpeedEnabled then return end
@@ -2299,6 +2584,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	local WF_walkfling = false
 	local WF_power = 10000
 	local WF_skipFriends = true
+	local WF_antiFling = false
 	local WF_active = false
 	local WF_prepared = false
 	local WF_saved = {}
@@ -2397,23 +2683,48 @@ local okWalkFling, errWalkFling = pcall(function()
 	end
 
 	-- Controles na aba Jogo (mesmos helpers visuais dos outros widgets)
-	local WFRow = createControlRow(GameTab, 8)
-	createToggleButton(WFRow, "WalkFling  •  ON/OFF", function(state)
+	createSection(GameTab, "Fling", "Arremesse encostando; antifling te protege.", 5)
+	createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 6, function(state)
 		WF_walkfling = state
 		if state then
 			WF_start()
 		else
 			WF_releaseSelf()
 		end
-	end, 1)
-
-	createToggleButton(WFRow, "Skip Friends", function(state)
-		WF_skipFriends = state
-	end, 2)
-
-	createSliderControl(GameTab, "Fling Power", 1000, 100000, WF_power, 9, function(value)
+	end, function(value)
 		WF_power = value
 	end)
+
+	-- Antifling: zera velocidades absurdas aplicadas por outros flings.
+	-- Pausa automaticamente enquanto o próprio WalkFling está ativo para
+	-- não brigar com o efeito que ele cria.
+	RunService.Heartbeat:Connect(function()
+		if not WF_antiFling then return end
+		if WF_walkfling then return end
+		local char = LocalPlayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		if not hrp then return end
+		local vel = hrp.AssemblyLinearVelocity
+		if vel.Magnitude > 300 then
+			hrp.AssemblyLinearVelocity = Vector3.zero
+			hrp.AssemblyAngularVelocity = Vector3.zero
+		else
+			local av = hrp.AssemblyAngularVelocity
+			if av.Magnitude > 150 then
+				hrp.AssemblyAngularVelocity = Vector3.zero
+			end
+		end
+	end)
+
+	local WFRow2 = createControlRow(GameTab, 7)
+	createToggleButton(WFRow2, "Antifling", function(state)
+		WF_antiFling = state
+	end, 1)
+
+	createToggleButton(WFRow2, "Skip Friends", function(state)
+		WF_skipFriends = state
+	end, 2)
 
 	LocalPlayer.CharacterAdded:Connect(function()
 		WF_prepared = false
