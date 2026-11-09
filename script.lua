@@ -1877,7 +1877,7 @@ local function GetRoleColor(role)
 	return Color3.fromRGB(50, 255, 50)
 end
 
-createToggleButton(ESPTab, "Role ESP  •  Box + Nome + Distância", function(state)
+createToggleButton(ESPTab, "ESP  •  wallhack", function(state)
 	roleEspEnabled = state
 end, 2)
 
