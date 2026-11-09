@@ -2287,3 +2287,144 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
 		end)
 	end
 end)
+
+--------------------------------------------------------------------------------
+-- WALKFLING (ABA JOGO)
+-- Bloco essencial e auto-contido, no fim do script: se falhar, o painel
+-- já está montado e o erro aparece no console (F9) via warn.
+-- Lógica do "Noir/NextFling": densidade pesada no próprio personagem +
+-- multiplicação da velocidade do HRP; amigos com Skip Friends atravessam.
+--------------------------------------------------------------------------------
+local okWalkFling, errWalkFling = pcall(function()
+	local WF_walkfling = false
+	local WF_power = 10000
+	local WF_skipFriends = true
+	local WF_active = false
+	local WF_prepared = false
+	local WF_saved = {}
+	local WF_friendCache = {}
+
+	local function WF_isFriend(p)
+		if p == LocalPlayer then return false end
+		if WF_friendCache[p.UserId] == nil then
+			local ok, result = pcall(function() return LocalPlayer:IsFriendsWith(p.UserId) end)
+			WF_friendCache[p.UserId] = ok and result or false
+		end
+		return WF_friendCache[p.UserId]
+	end
+
+	local function WF_prepareSelf()
+		if WF_prepared then return end
+		local char = LocalPlayer.Character
+		if not char then return end
+		WF_prepared = true
+		WF_saved = {}
+		for _, d in ipairs(char:GetDescendants()) do
+			if d:IsA("BasePart") then
+				WF_saved[d] = { cpp = d.CustomPhysicalProperties, cc = d.CanCollide, ml = d.Massless }
+				pcall(function() d.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5) end)
+			end
+		end
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local okHr = pcall(function() hrp.CustomPhysicalProperties = PhysicalProperties.new(math.huge, 0.3, 0.5) end)
+			if not okHr then
+				pcall(function() hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5) end)
+			end
+			hrp.Massless = false
+			hrp.CanCollide = true
+		end
+	end
+
+	local function WF_releaseSelf()
+		if not WF_prepared then return end
+		WF_prepared = false
+		for part, s in pairs(WF_saved) do
+			if part.Parent then
+				pcall(function()
+					part.CustomPhysicalProperties = s.cpp
+					part.CanCollide = s.cc
+					part.Massless = s.ml
+				end)
+			end
+		end
+		WF_saved = {}
+	end
+
+	RunService.Stepped:Connect(function()
+		if not (WF_prepared and WF_walkfling) then return end
+		for part in pairs(WF_saved) do
+			if part.Parent and part.Name ~= "HumanoidRootPart" then
+				part.CanCollide = false
+			end
+		end
+		if WF_skipFriends then
+			for _, p in ipairs(Players:GetPlayers()) do
+				if p ~= LocalPlayer and p.Character and WF_isFriend(p) then
+					for _, d in ipairs(p.Character:GetDescendants()) do
+						if d:IsA("BasePart") then d.CanCollide = false end
+					end
+				end
+			end
+		end
+	end)
+
+	local function WF_start()
+		if WF_active then return end
+		WF_active = true
+		task.spawn(function()
+			while WF_walkfling do
+				local char = LocalPlayer.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					if not WF_prepared then WF_prepareSelf() end
+					RunService.Heartbeat:Wait()
+					if hrp.Parent then
+						local vel = hrp.AssemblyLinearVelocity
+						hrp.AssemblyLinearVelocity = vel * 10000 + Vector3.new(0, WF_power, 0)
+						RunService.RenderStepped:Wait()
+						if hrp.Parent then hrp.AssemblyLinearVelocity = vel end
+						RunService.Stepped:Wait()
+						if hrp.Parent then hrp.AssemblyLinearVelocity = vel + Vector3.new(0, 0.1, 0) end
+					end
+				else
+					task.wait(0.1)
+				end
+			end
+			WF_active = false
+			WF_releaseSelf()
+		end)
+	end
+
+	-- Controles na aba Jogo (mesmos helpers visuais dos outros widgets)
+	local WFRow = createControlRow(GameTab, 8)
+	createToggleButton(WFRow, "WalkFling  •  ON/OFF", function(state)
+		WF_walkfling = state
+		if state then
+			WF_start()
+		else
+			WF_releaseSelf()
+		end
+	end, 1)
+
+	createToggleButton(WFRow, "Skip Friends", function(state)
+		WF_skipFriends = state
+	end, 2)
+
+	createSliderControl(GameTab, "Fling Power", 1000, 100000, WF_power, 9, function(value)
+		WF_power = value
+	end)
+
+	LocalPlayer.CharacterAdded:Connect(function()
+		WF_prepared = false
+		WF_saved = {}
+		task.wait(0.5)
+		if WF_walkfling then
+			WF_prepareSelf()
+		end
+	end)
+end)
+
+if not okWalkFling then
+	warn("[WalkFling] erro ao iniciar: " .. tostring(errWalkFling))
+end
