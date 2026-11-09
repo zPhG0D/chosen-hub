@@ -1848,7 +1848,7 @@ local Roles = {}
 local function UpdateRoles()
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= LocalPlayer then
-			local role = 
+			local role = ""
 
 			if p.Character then
 				if p.Character:FindFirstChild("Knife") or p.Character:FindFirstChild("Combat") then
@@ -1858,7 +1858,7 @@ local function UpdateRoles()
 				end
 			end
 
-			if role ==  and p:FindFirstChild("Backpack") then
+			if role == "" and p:FindFirstChild("Backpack") then
 				if p.Backpack:FindFirstChild("Knife") or p.Backpack:FindFirstChild("Combat") then
 					role = "Murderer"
 				elseif p.Backpack:FindFirstChild("Gun") or p.Backpack:FindFirstChild("Revolver") then
