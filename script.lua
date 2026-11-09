@@ -2024,7 +2024,7 @@ RunService.RenderStepped:Connect(function()
 	end
 
 	for player, esp in pairs(espObjects) do
-		local role = Roles[player] or "Innocent"
+		local role = Roles[player]
 		local char = player.Character
 
 		local function hideAll()
