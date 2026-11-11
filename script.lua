@@ -14,19 +14,19 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local COLOR_BG       = Color3.fromRGB(12, 22, 40)
-local COLOR_PANEL    = Color3.fromRGB(20, 39, 66)
-local COLOR_SIDE     = Color3.fromRGB(15, 31, 53)
-local COLOR_CARD     = Color3.fromRGB(24, 48, 79)
-local COLOR_CARD2    = Color3.fromRGB(31, 61, 98)
-local COLOR_BORDER   = Color3.fromRGB(45, 91, 135)
-local COLOR_BORDER2  = Color3.fromRGB(66, 120, 168)
-local COLOR_ACCENT   = Color3.fromRGB(52, 142, 255)
-local COLOR_ACCENT2  = Color3.fromRGB(31, 103, 214)
-local COLOR_TEXT     = Color3.fromRGB(242, 248, 255)
-local COLOR_DIM      = Color3.fromRGB(175, 201, 229)
-local COLOR_MUTED    = Color3.fromRGB(120, 155, 192)
-local COLOR_SUCCESS  = Color3.fromRGB(74, 214, 131)
+local COLOR_BG       = Color3.fromRGB(9, 17, 33)
+local COLOR_PANEL    = Color3.fromRGB(15, 28, 52)
+local COLOR_SIDE     = Color3.fromRGB(11, 22, 42)
+local COLOR_CARD     = Color3.fromRGB(21, 42, 74)
+local COLOR_CARD2    = Color3.fromRGB(28, 55, 92)
+local COLOR_BORDER   = Color3.fromRGB(52, 96, 148)
+local COLOR_BORDER2  = Color3.fromRGB(96, 152, 212)
+local COLOR_ACCENT   = Color3.fromRGB(66, 152, 255)
+local COLOR_ACCENT2  = Color3.fromRGB(34, 108, 218)
+local COLOR_TEXT     = Color3.fromRGB(244, 249, 255)
+local COLOR_DIM      = Color3.fromRGB(178, 204, 232)
+local COLOR_MUTED    = Color3.fromRGB(126, 160, 198)
+local COLOR_SUCCESS  = Color3.fromRGB(84, 220, 140)
 
 local function corner(obj, radius)
 	local c = Instance.new("UICorner")
@@ -97,8 +97,16 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = false
 MainFrame.Parent = ScreenGui
-corner(MainFrame, 12)
-stroke(MainFrame, COLOR_BORDER, 1, 0)
+corner(MainFrame, 14)
+stroke(MainFrame, COLOR_BORDER, 1, 0.25)
+
+local MainFrameGradient = Instance.new("UIGradient")
+MainFrameGradient.Rotation = 90
+MainFrameGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 178, 200))
+})
+MainFrameGradient.Parent = MainFrame
 
 -- Botão flutuante "C" (borda esquerda da tela): abre/fecha o painel.
 -- Fica no ScreenGui (fora do MainFrame) para continuar visível quando o painel fecha.
@@ -148,9 +156,11 @@ AccentLineGradient.Parent = AccentLine
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 58)
 TopBar.BackgroundColor3 = COLOR_PANEL
+TopBar.BackgroundTransparency = 0.2
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-corner(TopBar, 12)
+corner(TopBar, 14)
+stroke(TopBar, COLOR_BORDER, 1, 0.35)
 TopBar.Active = true
 
 do
@@ -247,7 +257,7 @@ StatusText.Position = UDim2.new(1, -110, 0, 20)
 StatusText.BackgroundTransparency = 1
 StatusText.Text = "SISTEMA ONLINE"
 StatusText.TextColor3 = COLOR_DIM
-StatusText.Font = Enum.Font.Code
+StatusText.Font = Enum.Font.GothamMedium
 StatusText.TextSize = 9
 StatusText.TextXAlignment = Enum.TextXAlignment.Left
 StatusText.Parent = TopBar
@@ -264,7 +274,15 @@ Sidebar.BackgroundColor3 = COLOR_SIDE
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Body
 corner(Sidebar, 12)
-stroke(Sidebar, COLOR_BORDER, 1, 0.15)
+stroke(Sidebar, COLOR_BORDER, 1, 0.3)
+
+local SidebarGradient = Instance.new("UIGradient")
+SidebarGradient.Rotation = 90
+SidebarGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 165, 190))
+})
+SidebarGradient.Parent = Sidebar
 
 local SideTitle = Instance.new("TextLabel")
 SideTitle.Size = UDim2.new(1, -28, 0, 18)
@@ -272,7 +290,7 @@ SideTitle.Position = UDim2.new(0, 14, 0, 16)
 SideTitle.BackgroundTransparency = 1
 SideTitle.Text = "◆  CHOSEN HUB"
 SideTitle.TextColor3 = COLOR_MUTED
-SideTitle.Font = Enum.Font.Code
+SideTitle.Font = Enum.Font.GothamMedium
 SideTitle.TextSize = 9
 SideTitle.TextXAlignment = Enum.TextXAlignment.Left
 SideTitle.Parent = Sidebar
@@ -289,14 +307,14 @@ SideSub.TextXAlignment = Enum.TextXAlignment.Left
 SideSub.Parent = Sidebar
 
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, -18, 1, -88)
-TabContainer.Position = UDim2.new(0, 9, 0, 64)
+TabContainer.Size = UDim2.new(1, -20, 1, -88)
+TabContainer.Position = UDim2.new(0, 10, 0, 64)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = Sidebar
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 4)
+TabLayout.Padding = UDim.new(0, 6)
 TabLayout.Parent = TabContainer
 
 local Version = Instance.new("TextLabel")
@@ -305,7 +323,7 @@ Version.Position = UDim2.new(0, 14, 1, -27)
 Version.BackgroundTransparency = 1
 Version.Text = "v2.2  •  B ABRE/FECHA"
 Version.TextColor3 = COLOR_MUTED
-Version.Font = Enum.Font.Code
+Version.Font = Enum.Font.GothamMedium
 Version.TextSize = 9
 Version.TextXAlignment = Enum.TextXAlignment.Left
 Version.Parent = Sidebar
@@ -330,17 +348,6 @@ ContentTitle.TextSize = 17
 ContentTitle.TextXAlignment = Enum.TextXAlignment.Left
 ContentTitle.Parent = ContentArea
 
-local ContentHint = Instance.new("TextLabel")
-ContentHint.Size = UDim2.new(1, -30, 0, 18)
-ContentHint.Position = UDim2.new(0, 16, 0, 38)
-ContentHint.BackgroundTransparency = 1
-ContentHint.Text = "Um painel simples, organizado e pronto para usar"
-ContentHint.TextColor3 = COLOR_MUTED
-ContentHint.Font = Enum.Font.Gotham
-ContentHint.TextSize = 11
-ContentHint.TextXAlignment = Enum.TextXAlignment.Left
-ContentHint.Parent = ContentArea
-
 local ContentHolder = Instance.new("Frame")
 ContentHolder.Size = UDim2.new(0, 490, 1, -76)
 ContentHolder.Position = UDim2.new(0, 16, 0, 70)
@@ -351,19 +358,19 @@ ContentHolder.Parent = ContentArea
 local Tabs = {}
 local ContentFrames = {}
 local TabIcons = {
-	["Início"] = "01",
-	["Amigos"] = "02",
-	["Target"] = "03",
-	["Jogo"] = "04",
-	["Jogador"] = "05",
-	ESP = "06",
-	["Diversos"] = "07"
+	["Início"] = "🏠",
+	["Amigos"] = "👥",
+	["Target"] = "🎯",
+	["Jogo"] = "🎮",
+	["Jogador"] = "🏃",
+	ESP = "👁",
+	["Diversos"] = "🧰"
 }
 
 local function createTab(name, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name .. "TabButton"
-	btn.Size = UDim2.new(1, 0, 0, 34)
+	btn.Size = UDim2.new(1, 0, 0, 36)
 	btn.BackgroundColor3 = COLOR_SIDE
 	btn.AutoButtonColor = false
 	btn.Text = ""
@@ -374,34 +381,31 @@ local function createTab(name, order)
 
 	local icon = Instance.new("TextLabel")
 	icon.Size = UDim2.new(0, 26, 0, 26)
-	icon.Position = UDim2.new(0, 6, 0.5, -13)
-	icon.BackgroundColor3 = COLOR_SIDE
-	icon.BackgroundTransparency = 0
-	icon.Text = TabIcons[name] or "00"
-	icon.TextColor3 = COLOR_DIM
-	icon.Font = Enum.Font.Code
-	icon.TextSize = 10
+	icon.Position = UDim2.new(0, 8, 0.5, -13)
+	icon.BackgroundTransparency = 1
+	icon.Text = TabIcons[name] or "◆"
+	icon.TextColor3 = COLOR_MUTED
+	icon.Font = Enum.Font.GothamBold
+	icon.TextSize = 15
 	icon.TextXAlignment = Enum.TextXAlignment.Center
 	icon.TextYAlignment = Enum.TextYAlignment.Center
 	icon.Parent = btn
-	corner(icon, 7)
-	stroke(icon, COLOR_BORDER, 1, 0.35)
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -46, 1, 0)
-	label.Position = UDim2.new(0, 40, 0, 0)
+	label.Size = UDim2.new(1, -50, 1, 0)
+	label.Position = UDim2.new(0, 42, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextColor3 = COLOR_DIM
 	label.Font = Enum.Font.GothamBold
-	label.TextSize = 12
+	label.TextSize = 13
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = btn
 
 	local activeBar = Instance.new("Frame")
-	activeBar.Size = UDim2.new(0, 44, 0, 3)
-	activeBar.AnchorPoint = Vector2.new(0.5, 0)
-	activeBar.Position = UDim2.new(0.5, 0, 1, -5)
+	activeBar.Size = UDim2.new(0, 3, 0, 18)
+	activeBar.AnchorPoint = Vector2.new(0, 0.5)
+	activeBar.Position = UDim2.new(0, 0, 0.5, 0)
 	activeBar.BackgroundColor3 = COLOR_ACCENT
 	activeBar.BorderSizePixel = 0
 	activeBar.Visible = false
@@ -452,28 +456,20 @@ local function createTab(name, order)
 	btn.MouseButton1Click:Connect(function()
 		for tabName, data in pairs(Tabs) do
 			local active = tabName == name
-			tween(data.button, {BackgroundColor3 = active and COLOR_CARD or COLOR_SIDE}, 0.18)
-			tween(data.icon, {TextColor3 = active and COLOR_ACCENT or COLOR_DIM}, 0.18)
-			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.18)
+			tween(data.button, {BackgroundColor3 = active and COLOR_ACCENT2 or COLOR_SIDE, BackgroundTransparency = active and 0.25 or 0}, 0.22)
+			tween(data.icon, {TextColor3 = active and COLOR_TEXT or COLOR_MUTED}, 0.22)
+			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.22)
 			data.activeBar.Visible = active
 			ContentFrames[tabName].Visible = active
 		end
 		ContentTitle.Text = name
-		ContentHint.Text = ({
-			["Início"] = "Visão geral rápida",
-			["Amigos"] = "Amizades que estão neste servidor",
-			["Target"] = "Escolha um jogador e use os controles",
-			["Jogo"] = "Movimento e utilidades do jogo",
-			["ESP"] = "Informações visuais e aimbot integrado",
-			["Diversos"] = "Ferramentas extras e efeitos visuais"
-		})[name] or ""
 	end)
 	return content
 end
 
 local function createSection(parent, title, subtitle, order)
 	local section = Instance.new("Frame")
-	section.Size = UDim2.new(1, -4, 0, 40)
+	section.Size = UDim2.new(1, -4, 0, 26)
 	section.BackgroundTransparency = 1
 	section.LayoutOrder = order or 1
 	section.Parent = parent
@@ -492,20 +488,9 @@ local function createSection(parent, title, subtitle, order)
 	t.Text = title
 	t.TextColor3 = COLOR_TEXT
 	t.Font = Enum.Font.GothamBlack
-	t.TextSize = 12
+	t.TextSize = 13
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.Parent = section
-
-	local s = Instance.new("TextLabel")
-	s.Size = UDim2.new(1, 0, 0, 16)
-	s.Position = UDim2.new(0, 0, 0, 21)
-	s.BackgroundTransparency = 1
-	s.Text = subtitle or ""
-	s.TextColor3 = COLOR_MUTED
-	s.Font = Enum.Font.Gotham
-	s.TextSize = 10
-	s.TextXAlignment = Enum.TextXAlignment.Left
-	s.Parent = section
 
 	local divider = Instance.new("Frame")
 	divider.Size = UDim2.new(1, 0, 0, 1)
@@ -547,11 +532,12 @@ local function createToggleButton(parent, labelText, callback, order)
 	local card = Instance.new("Frame")
 	card.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, 50)
 	card.BackgroundColor3 = COLOR_CARD
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.15)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(1, 0, 1, 0)
@@ -567,7 +553,7 @@ local function createToggleButton(parent, labelText, callback, order)
 	title.BackgroundTransparency = 1
 	title.Text = labelText
 	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamMedium
+	title.Font = Enum.Font.GothamBold
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextTruncate = Enum.TextTruncate.AtEnd
@@ -580,23 +566,23 @@ local function createToggleButton(parent, labelText, callback, order)
 	switchTrack.BorderSizePixel = 0
 	switchTrack.Parent = card
 	corner(switchTrack, 9)
-	stroke(switchTrack, COLOR_BORDER, 1, 0.15)
+	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
 
 	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 14, 0, 14)
-	dot.Position = UDim2.new(0, 2, 0.5, -7)
+	dot.Size = UDim2.new(0, 12, 0, 12)
+	dot.Position = UDim2.new(0, 3, 0.5, -6)
 	dot.BackgroundColor3 = COLOR_MUTED
 	dot.BorderSizePixel = 0
 	dot.Parent = switchTrack
-	corner(dot, 7)
+	corner(dot, 6)
 
 	local function setState(newState)
 		state = newState
 		tween(dot, {
-			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
 			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
 		}, 0.14)
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.12)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
 		local st = card:FindFirstChildOfClass("UIStroke")
 		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
 		if callback then callback(state) end
@@ -604,7 +590,7 @@ local function createToggleButton(parent, labelText, callback, order)
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 	hit.MouseEnter:Connect(function()
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(34, 88, 62) or COLOR_CARD2}, 0.10)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(32, 96, 68) or COLOR_CARD2}, 0.10)
 		local st = card:FindFirstChildOfClass("UIStroke")
 		if st and not state then tween(st, {Color = COLOR_BORDER2}, 0.10) end
 	end)
@@ -621,6 +607,7 @@ local function createActionButton(parent, text, order, compact)
 	local btn = Instance.new("TextButton")
 	btn.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, compact and 40 or 46)
 	btn.BackgroundColor3 = COLOR_CARD2
+	btn.BackgroundTransparency = 0.15
 	btn.AutoButtonColor = false
 	btn.Text = text
 	btn.TextColor3 = COLOR_TEXT
@@ -630,18 +617,18 @@ local function createActionButton(parent, text, order, compact)
 	btn.TextTruncate = Enum.TextTruncate.AtEnd
 	btn.LayoutOrder = order or 1
 	btn.Parent = parent
-	corner(btn, 14)
-	stroke(btn, COLOR_BORDER, 1, 0.15)
+	corner(btn, 12)
+	stroke(btn, COLOR_BORDER, 1, 0.35)
 
 	padding(btn, 14, 10, 0, 0)
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, {BackgroundColor3 = Color3.fromRGB(40, 76, 118)}, 0.12)
+		tween(btn, {BackgroundColor3 = Color3.fromRGB(56, 102, 158), BackgroundTransparency = 0.05}, 0.12)
 		local st = btn:FindFirstChildOfClass("UIStroke")
 		if st then tween(st, {Color = COLOR_ACCENT}, 0.12) end
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, {BackgroundColor3 = COLOR_CARD2}, 0.12)
+		tween(btn, {BackgroundColor3 = COLOR_CARD2, BackgroundTransparency = 0.15}, 0.12)
 		local st = btn:FindFirstChildOfClass("UIStroke")
 		if st then tween(st, {Color = COLOR_BORDER}, 0.12) end
 	end)
@@ -652,11 +639,12 @@ local function createInputWithAvatar(parent, placeholder, order)
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -4, 0, 64)
 	card.BackgroundColor3 = COLOR_CARD
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.15)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local avatar = Instance.new("ImageLabel")
 	avatar.Size = UDim2.new(0, 46, 0, 46)
@@ -675,7 +663,7 @@ local function createInputWithAvatar(parent, placeholder, order)
 	box.PlaceholderColor3 = COLOR_MUTED
 	box.Text = ""
 	box.TextColor3 = COLOR_TEXT
-	box.Font = Enum.Font.Code
+	box.Font = Enum.Font.GothamMedium
 	box.TextSize = 12
 	box.TextXAlignment = Enum.TextXAlignment.Left
 	box.ClearTextOnFocus = false
@@ -688,11 +676,12 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	card.Name = "SliderControl"
 	card.Size = UDim2.new(1, -4, 0, 78)
 	card.BackgroundColor3 = COLOR_CARD
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.15)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -90, 0, 22)
@@ -700,7 +689,7 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	title.BackgroundTransparency = 1
 	title.Text = titleText
 	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamMedium
+	title.Font = Enum.Font.GothamBold
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = card
@@ -713,13 +702,13 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
 	valueBox.Text = tostring(defaultValue)
-	valueBox.Font = Enum.Font.Code
+	valueBox.Font = Enum.Font.GothamMedium
 	valueBox.TextSize = 12
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
 	corner(valueBox, 8)
-	stroke(valueBox, COLOR_BORDER, 1, 0.15)
+	stroke(valueBox, COLOR_BORDER, 1, 0.3)
 
 	local track = Instance.new("Frame")
 	track.Size = UDim2.new(1, -24, 0, 7)
@@ -831,11 +820,12 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -4, 0, 44)
 	card.BackgroundColor3 = COLOR_CARD
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.15)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(0.5, -4, 1, 0)
@@ -851,7 +841,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	title.BackgroundTransparency = 1
 	title.Text = labelText
 	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamMedium
+	title.Font = Enum.Font.GothamBold
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextTruncate = Enum.TextTruncate.AtEnd
@@ -864,24 +854,24 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	switchTrack.BorderSizePixel = 0
 	switchTrack.Parent = card
 	corner(switchTrack, 9)
-	stroke(switchTrack, COLOR_BORDER, 1, 0.15)
+	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
 
 	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 14, 0, 14)
-	dot.Position = UDim2.new(0, 2, 0.5, -7)
+	dot.Size = UDim2.new(0, 12, 0, 12)
+	dot.Position = UDim2.new(0, 3, 0.5, -6)
 	dot.BackgroundColor3 = COLOR_MUTED
 	dot.BorderSizePixel = 0
 	dot.Parent = switchTrack
-	corner(dot, 7)
+	corner(dot, 6)
 
 	local state = false
 	local function setState(newState)
 		state = newState
 		tween(dot, {
-			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
 			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
 		}, 0.14)
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.12)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
 		local st = card:FindFirstChildOfClass("UIStroke")
 		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
 		if onToggled then onToggled(state) end
@@ -930,13 +920,13 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
 	valueBox.Text = tostring(math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue))
-	valueBox.Font = Enum.Font.Code
+	valueBox.Font = Enum.Font.GothamMedium
 	valueBox.TextSize = 11
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
 	corner(valueBox, 8)
-	stroke(valueBox, COLOR_BORDER, 1, 0.15)
+	stroke(valueBox, COLOR_BORDER, 1, 0.3)
 
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
@@ -1051,8 +1041,9 @@ local PlayerTab = createTab("Jogador", 5)
 local ESPTab = createTab("ESP", 6)
 local MiscTab = createTab("Diversos", 7)
 
-Tabs["Início"].button.BackgroundColor3 = COLOR_CARD
-Tabs["Início"].icon.TextColor3 = COLOR_ACCENT
+Tabs["Início"].button.BackgroundColor3 = COLOR_ACCENT2
+Tabs["Início"].button.BackgroundTransparency = 0.25
+Tabs["Início"].icon.TextColor3 = COLOR_TEXT
 Tabs["Início"].label.TextColor3 = COLOR_TEXT
 Tabs["Início"].activeBar.Visible = true
 ContentFrames["Início"].Visible = true
@@ -1060,17 +1051,26 @@ ContentFrames["Início"].Visible = true
 createSection(HomeTab, "CHOSEN PANEL", "Visão geral da sua sessão e acesso rápido.", 1)
 
 local WelcomeCard = Instance.new("Frame")
-WelcomeCard.Size = UDim2.new(1, -4, 0, 124)
+WelcomeCard.Size = UDim2.new(1, -4, 0, 140)
 WelcomeCard.BackgroundColor3 = COLOR_CARD
+WelcomeCard.BackgroundTransparency = 0.08
 WelcomeCard.BorderSizePixel = 0
 WelcomeCard.LayoutOrder = 2
 WelcomeCard.Parent = HomeTab
-corner(WelcomeCard, 12)
-stroke(WelcomeCard, COLOR_BORDER, 1, 0.1)
+corner(WelcomeCard, 14)
+stroke(WelcomeCard, COLOR_BORDER, 1, 0.2)
+
+local WelcomeGradient = Instance.new("UIGradient")
+WelcomeGradient.Rotation = 90
+WelcomeGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 200, 220))
+})
+WelcomeGradient.Parent = WelcomeCard
 
 local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Size = UDim2.new(0, 78, 0, 78)
-AvatarImage.Position = UDim2.new(0, 20, 0.5, -39)
+AvatarImage.Size = UDim2.new(0, 84, 0, 84)
+AvatarImage.Position = UDim2.new(0, 20, 0.5, -42)
 AvatarImage.BackgroundColor3 = COLOR_SIDE
 pcall(function()
 	AvatarImage.Image = Players:GetUserThumbnailAsync(
@@ -1080,100 +1080,103 @@ pcall(function()
 	)
 end)
 AvatarImage.Parent = WelcomeCard
-corner(AvatarImage, 39)
+corner(AvatarImage, 42)
 stroke(AvatarImage, COLOR_ACCENT, 2, 0.1)
 
 local AvatarBadge = Instance.new("Frame")
-AvatarBadge.Size = UDim2.new(0, 14, 0, 14)
-AvatarBadge.Position = UDim2.new(1, -6, 1, -6)
+AvatarBadge.Size = UDim2.new(0, 16, 0, 16)
+AvatarBadge.Position = UDim2.new(1, -7, 1, -7)
 AvatarBadge.BackgroundColor3 = COLOR_SUCCESS
 AvatarBadge.BorderSizePixel = 0
 AvatarBadge.Parent = AvatarImage
-corner(AvatarBadge, 7)
+corner(AvatarBadge, 8)
 stroke(AvatarBadge, COLOR_CARD, 2, 0.2)
 
 local HeroAccent = Instance.new("Frame")
-HeroAccent.Size = UDim2.new(0, 3, 1, -24)
-HeroAccent.Position = UDim2.new(0, 8, 0, 12)
+HeroAccent.Size = UDim2.new(0, 3, 1, -32)
+HeroAccent.Position = UDim2.new(0, 8, 0, 16)
 HeroAccent.BackgroundColor3 = COLOR_ACCENT
 HeroAccent.BorderSizePixel = 0
 HeroAccent.Parent = WelcomeCard
 corner(HeroAccent, 2)
 
 local WelcomeTitle = Instance.new("TextLabel")
-WelcomeTitle.Size = UDim2.new(1, -128, 0, 26)
-WelcomeTitle.Position = UDim2.new(0, 116, 0, 26)
+WelcomeTitle.Size = UDim2.new(1, -140, 0, 30)
+WelcomeTitle.Position = UDim2.new(0, 118, 0, 30)
 WelcomeTitle.BackgroundTransparency = 1
 WelcomeTitle.Text = "OLÁ, " .. string.upper(LocalPlayer.DisplayName)
 WelcomeTitle.TextColor3 = COLOR_TEXT
 WelcomeTitle.Font = Enum.Font.GothamBlack
-WelcomeTitle.TextSize = 19
+WelcomeTitle.TextSize = 23
 WelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
 WelcomeTitle.TextTruncate = Enum.TextTruncate.AtEnd
 WelcomeTitle.Parent = WelcomeCard
 
 local UserSub = Instance.new("TextLabel")
-UserSub.Size = UDim2.new(1, -128, 0, 22)
-UserSub.Position = UDim2.new(0, 116, 0, 55)
+UserSub.Size = UDim2.new(1, -140, 0, 20)
+UserSub.Position = UDim2.new(0, 118, 0, 63)
 UserSub.BackgroundTransparency = 1
 UserSub.Text = "@" .. LocalPlayer.Name
 UserSub.TextColor3 = COLOR_ACCENT
-UserSub.Font = Enum.Font.Code
-UserSub.TextSize = 12
+UserSub.Font = Enum.Font.GothamMedium
+UserSub.TextSize = 13
 UserSub.TextXAlignment = Enum.TextXAlignment.Left
 UserSub.TextTruncate = Enum.TextTruncate.AtEnd
 UserSub.Parent = WelcomeCard
 
 local UserStatus = Instance.new("TextLabel")
-UserStatus.Size = UDim2.new(0, 200, 0, 18)
-UserStatus.Position = UDim2.new(0, 116, 0, 84)
+UserStatus.Size = UDim2.new(0, 210, 0, 20)
+UserStatus.Position = UDim2.new(0, 118, 0, 103)
 UserStatus.BackgroundColor3 = COLOR_SUCCESS
-UserStatus.BackgroundTransparency = 0.88
-UserStatus.Text = "USUÁRIO LOCAL  •  SESSÃO ATIVA"
+UserStatus.BackgroundTransparency = 0.85
+UserStatus.Text = "USUÁRIO LOCAL  -  SESSÃO ATIVA"
 UserStatus.TextColor3 = COLOR_DIM
-UserStatus.Font = Enum.Font.Code
-UserStatus.TextSize = 9
+UserStatus.Font = Enum.Font.GothamMedium
+UserStatus.TextSize = 10
 UserStatus.TextXAlignment = Enum.TextXAlignment.Left
 UserStatus.Parent = WelcomeCard
-corner(UserStatus, 9)
+corner(UserStatus, 10)
 padding(UserStatus, 9, 6, 0, 0)
 
 local StatsCard = Instance.new("Frame")
-StatsCard.Size = UDim2.new(1, -4, 0, 92)
+StatsCard.Size = UDim2.new(1, -4, 0, 100)
 StatsCard.BackgroundColor3 = COLOR_CARD
+StatsCard.BackgroundTransparency = 0.08
 StatsCard.BorderSizePixel = 0
 StatsCard.LayoutOrder = 3
 StatsCard.Parent = HomeTab
-corner(StatsCard, 12)
-stroke(StatsCard, COLOR_BORDER, 1, 0.1)
+corner(StatsCard, 14)
+stroke(StatsCard, COLOR_BORDER, 1, 0.2)
 
 local PingBox = Instance.new("Frame")
 PingBox.Size = UDim2.new(0.5, -14, 1, -20)
 PingBox.Position = UDim2.new(0, 10, 0, 10)
 PingBox.BackgroundColor3 = COLOR_PANEL
+PingBox.BackgroundTransparency = 0.25
 PingBox.BorderSizePixel = 0
 PingBox.Parent = StatsCard
-corner(PingBox, 9)
+corner(PingBox, 12)
+stroke(PingBox, COLOR_BORDER, 1, 0.35)
 
 local PingCaption = Instance.new("TextLabel")
 PingCaption.Size = UDim2.new(1, -20, 0, 16)
-PingCaption.Position = UDim2.new(0, 10, 0, 9)
+PingCaption.Position = UDim2.new(0, 10, 0, 10)
 PingCaption.BackgroundTransparency = 1
-PingCaption.Text = "CONEXÃO"
+PingCaption.Text = "📶 CONEXÃO"
 PingCaption.TextColor3 = COLOR_MUTED
-PingCaption.Font = Enum.Font.GothamMedium
-PingCaption.TextSize = 9
+PingCaption.Font = Enum.Font.GothamBold
+PingCaption.TextSize = 10
 PingCaption.TextXAlignment = Enum.TextXAlignment.Left
 PingCaption.Parent = PingBox
 
 local PingLabel = Instance.new("TextLabel")
-PingLabel.Size = UDim2.new(1, -20, 0, 24)
-PingLabel.Position = UDim2.new(0, 10, 0, 32)
+PingLabel.Size = UDim2.new(1, -20, 0, 28)
+PingLabel.Position = UDim2.new(0, 10, 0, 36)
 PingLabel.BackgroundTransparency = 1
-PingLabel.Text = "PING  •  ..."
+PingLabel.Text = "📶 PING  •  ..."
 PingLabel.TextColor3 = COLOR_SUCCESS
-PingLabel.Font = Enum.Font.Code
-PingLabel.TextSize = 16
+PingLabel.Font = Enum.Font.GothamBold
+PingLabel.TextSize = 17
 PingLabel.TextXAlignment = Enum.TextXAlignment.Left
 PingLabel.Parent = PingBox
 
@@ -1181,29 +1184,31 @@ local FpsBox = Instance.new("Frame")
 FpsBox.Size = UDim2.new(0.5, -14, 1, -20)
 FpsBox.Position = UDim2.new(0.5, 4, 0, 10)
 FpsBox.BackgroundColor3 = COLOR_PANEL
+FpsBox.BackgroundTransparency = 0.25
 FpsBox.BorderSizePixel = 0
 FpsBox.Parent = StatsCard
-corner(FpsBox, 9)
+corner(FpsBox, 12)
+stroke(FpsBox, COLOR_BORDER, 1, 0.35)
 
 local FpsCaption = Instance.new("TextLabel")
 FpsCaption.Size = UDim2.new(1, -20, 0, 16)
-FpsCaption.Position = UDim2.new(0, 10, 0, 9)
+FpsCaption.Position = UDim2.new(0, 10, 0, 10)
 FpsCaption.BackgroundTransparency = 1
-FpsCaption.Text = "DESEMPENHO"
+FpsCaption.Text = "⚡ DESEMPENHO"
 FpsCaption.TextColor3 = COLOR_MUTED
-FpsCaption.Font = Enum.Font.GothamMedium
-FpsCaption.TextSize = 9
+FpsCaption.Font = Enum.Font.GothamBold
+FpsCaption.TextSize = 10
 FpsCaption.TextXAlignment = Enum.TextXAlignment.Left
 FpsCaption.Parent = FpsBox
 
 local FpsLabel = Instance.new("TextLabel")
-FpsLabel.Size = UDim2.new(1, -20, 0, 24)
-FpsLabel.Position = UDim2.new(0, 10, 0, 32)
+FpsLabel.Size = UDim2.new(1, -20, 0, 28)
+FpsLabel.Position = UDim2.new(0, 10, 0, 36)
 FpsLabel.BackgroundTransparency = 1
-FpsLabel.Text = "FPS  •  ..."
+FpsLabel.Text = "⚡ FPS  •  ..."
 FpsLabel.TextColor3 = COLOR_ACCENT
-FpsLabel.Font = Enum.Font.Code
-FpsLabel.TextSize = 16
+FpsLabel.Font = Enum.Font.GothamBold
+FpsLabel.TextSize = 17
 FpsLabel.TextXAlignment = Enum.TextXAlignment.Left
 FpsLabel.Parent = FpsBox
 
@@ -1216,7 +1221,7 @@ RunService.RenderStepped:Connect(function()
 	frameCount += 1
 	local now = safeClock()
 	if now - lastTime >= 1 then
-		FpsLabel.Text = "FPS  •  " .. frameCount
+		FpsLabel.Text = "⚡ FPS  •  " .. frameCount
 		frameCount = 0
 		lastTime = now
 	end
@@ -1226,32 +1231,32 @@ task.spawn(function()
 	while task.wait(1) do
 		pcall(function()
 			local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-			PingLabel.Text = "PING  •  " .. math.floor(ping) .. " ms"
+			PingLabel.Text = "📶 PING  •  " .. math.floor(ping) .. " ms"
 		end)
 	end
 end)
 
 createSection(HomeTab, "Acesso rápido", "Comandos principais da interface.", 4)
 local HomeActions = createControlRow(HomeTab, 5)
-local HomeRejoinButton = createActionButton(HomeActions, "REJOIN", 1)
-HomeRejoinButton.TextSize = 13
+local HomeRejoinButton = createActionButton(HomeActions, "🔁 REJOIN", 1)
+HomeRejoinButton.TextSize = 14
 HomeRejoinButton.Font = Enum.Font.GothamBlack
 HomeRejoinButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 	end)
 end)
-local HomeToggleButton = createActionButton(HomeActions, "B  •  ABRIR / FECHAR", 2)
+local HomeToggleButton = createActionButton(HomeActions, "⌨️ B  •  ABRIR / FECHAR", 2)
 HomeToggleButton.TextSize = 11
-HomeToggleButton.Font = Enum.Font.GothamMedium
+HomeToggleButton.Font = Enum.Font.GothamBold
 
 createSection(HomeTab, "Servidores", "Veja os servidores públicos disponíveis e escolha onde entrar.", 6)
 local ServerToolbar = createControlRow(HomeTab, 7)
-local RefreshServersButton = createActionButton(ServerToolbar, "Atualizar", 1)
-RefreshServersButton.Size = UDim2.new(0, 78, 0, 26)
+local RefreshServersButton = createActionButton(ServerToolbar, "🔄 Atualizar", 1)
+RefreshServersButton.Size = UDim2.new(0, 96, 0, 26)
 RefreshServersButton.Position = UDim2.new(0, 0, 0.5, -13)
 RefreshServersButton.TextSize = 10
-RefreshServersButton.Font = Enum.Font.GothamMedium
+RefreshServersButton.Font = Enum.Font.GothamBold
 
 local ServerStatusLabel = Instance.new("TextLabel")
 ServerStatusLabel.Size = UDim2.new(0.5, -10, 1, 0)
@@ -1259,7 +1264,7 @@ ServerStatusLabel.Position = UDim2.new(0.5, 5, 0, 0)
 ServerStatusLabel.BackgroundTransparency = 1
 ServerStatusLabel.Text = "Nenhuma lista carregada"
 ServerStatusLabel.TextColor3 = COLOR_DIM
-ServerStatusLabel.Font = Enum.Font.Code
+ServerStatusLabel.Font = Enum.Font.GothamMedium
 ServerStatusLabel.TextSize = 10
 ServerStatusLabel.TextXAlignment = Enum.TextXAlignment.Right
 ServerStatusLabel.Parent = ServerToolbar
@@ -1268,14 +1273,15 @@ local ServerList = Instance.new("ScrollingFrame")
 ServerList.Name = "ServerList"
 ServerList.Size = UDim2.new(1, -4, 0, 190)
 ServerList.BackgroundColor3 = COLOR_CARD
+ServerList.BackgroundTransparency = 0.08
 ServerList.BorderSizePixel = 0
 ServerList.ScrollBarThickness = 3
 ServerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 ServerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ServerList.LayoutOrder = 8
 ServerList.Parent = HomeTab
-corner(ServerList, 10)
-stroke(ServerList, COLOR_BORDER, 1, 0.1)
+corner(ServerList, 12)
+stroke(ServerList, COLOR_BORDER, 1, 0.3)
 
 local ServerListLayout = Instance.new("UIListLayout")
 ServerListLayout.Padding = UDim.new(0, 6)
@@ -1307,10 +1313,12 @@ local function addServerEntry(server, index)
 	local row = Instance.new("Frame")
 	row.Size = UDim2.new(1, -4, 0, 46)
 	row.BackgroundColor3 = COLOR_CARD2
+	row.BackgroundTransparency = 0.12
 	row.BorderSizePixel = 0
 	row.LayoutOrder = index
 	row.Parent = ServerList
-	corner(row, 8)
+	corner(row, 12)
+	stroke(row, COLOR_BORDER, 1, 0.3)
 
 	local gameThumb = Instance.new("ImageLabel")
 	gameThumb.Size = UDim2.new(0, 38, 0, 38)
@@ -1325,9 +1333,9 @@ local function addServerEntry(server, index)
 	playersLabel.Size = UDim2.new(0, 105, 0, 16)
 	playersLabel.Position = UDim2.new(0, 52, 0, 25)
 	playersLabel.BackgroundTransparency = 1
-	playersLabel.Text = string.format("%d / %d jogadores", playing, maxPlayers)
+	playersLabel.Text = string.format("👥 %d / %d jogadores", playing, maxPlayers)
 	playersLabel.TextColor3 = COLOR_DIM
-	playersLabel.Font = Enum.Font.Code
+	playersLabel.Font = Enum.Font.GothamMedium
 	playersLabel.TextSize = 10
 	playersLabel.TextXAlignment = Enum.TextXAlignment.Left
 	playersLabel.Parent = row
@@ -1336,14 +1344,14 @@ local function addServerEntry(server, index)
 	pingLabel.Size = UDim2.new(0, 70, 0, 16)
 	pingLabel.Position = UDim2.new(0, 158, 0, 25)
 	pingLabel.BackgroundTransparency = 1
-	pingLabel.Text = string.format("%s ms", ping and math.floor(ping) or "?")
+	pingLabel.Text = string.format("📶 %s ms", ping and math.floor(ping) or "?")
 	pingLabel.TextColor3 = COLOR_SUCCESS
-	pingLabel.Font = Enum.Font.Code
+	pingLabel.Font = Enum.Font.GothamMedium
 	pingLabel.TextSize = 10
 	pingLabel.TextXAlignment = Enum.TextXAlignment.Left
 	pingLabel.Parent = row
 
-	local join = createActionButton(row, "ENTRAR", 1)
+	local join = createActionButton(row, "🚪 ENTRAR", 1)
 	join.Size = UDim2.new(0, 92, 0, 32)
 	join.Position = UDim2.new(1, -100, 0.5, -16)
 	join.TextSize = 10
@@ -1392,7 +1400,7 @@ TargetStatus.Size = UDim2.new(1, -4, 0, 24)
 TargetStatus.BackgroundTransparency = 1
 TargetStatus.Text = "●  NENHUM ALVO SELECIONADO"
 TargetStatus.TextColor3 = COLOR_MUTED
-TargetStatus.Font = Enum.Font.Code
+TargetStatus.Font = Enum.Font.GothamMedium
 TargetStatus.TextSize = 9
 TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
 TargetStatus.LayoutOrder = 3
@@ -1425,7 +1433,7 @@ local headsizeConnection = nil
 
 createSection(TargetTab, "Ações do alvo", "movimento e câmera", 4)
 local TargetRow1 = createControlRow(TargetTab, 5)
-createToggleButton(TargetRow1, "Observar alvo", function(state)
+createToggleButton(TargetRow1, "👁 Observar alvo", function(state)
 	local t = getPlayer(TInput.Text)
 	isSpectating = state
 	if isSpectating and t and t.Character and t.Character:FindFirstChild("Humanoid") then
@@ -1439,7 +1447,7 @@ createToggleButton(TargetRow1, "Observar alvo", function(state)
 	end
 end, 1)
 
-local tpButton = createActionButton(TargetRow1, "Teleportar até o alvo", 2)
+local tpButton = createActionButton(TargetRow1, "🌀 Teleportar até o alvo", 2)
 tpButton.MouseButton1Click:Connect(function()
 	local t = getPlayer(TInput.Text)
 	if t and t.Character
@@ -1454,7 +1462,7 @@ tpButton.MouseButton1Click:Connect(function()
 end)
 
 local TargetRow2 = createControlRow(TargetTab, 6)
-createToggleButton(TargetRow2, "Seguir alvo", function(state)
+createToggleButton(TargetRow2, "👣 Seguir alvo", function(state)
 	local t = getPlayer(TInput.Text)
 	isFollowing = state
 	if followConnection then
@@ -1478,7 +1486,7 @@ createToggleButton(TargetRow2, "Seguir alvo", function(state)
 	end
 end, 1)
 
-createToggleButton(TargetRow2, "Headsit", function(state)
+createToggleButton(TargetRow2, "🪑 Headsit", function(state)
 	local t = getPlayer(TInput.Text)
 	headsizeEnabled = state
 	if headsizeConnection then
@@ -1512,7 +1520,7 @@ createToggleButton(TargetRow2, "Headsit", function(state)
 end, 2)
 
 local TargetRow3 = createControlRow(TargetTab, 7)
-local copyButton = createActionButton(TargetRow3, "Copiar ferramentas", 1, true)
+local copyButton = createActionButton(TargetRow3, "🛠 Copiar ferramentas", 1, true)
 copyButton.MouseButton1Click:Connect(function()
 	local t = getPlayer(TInput.Text)
 	if t and t:FindFirstChild("Backpack") and LocalPlayer:FindFirstChild("Backpack") then
@@ -1527,7 +1535,7 @@ copyButton.MouseButton1Click:Connect(function()
 	end
 end)
 
-local clearTargetButton = createActionButton(TargetRow3, "Limpar alvo", 2, true)
+local clearTargetButton = createActionButton(TargetRow3, "🧹 Limpar alvo", 2, true)
 clearTargetButton.MouseButton1Click:Connect(function()
 	TInput.Text = ""
 	TAvatarPreview.Image = "rbxassetid://0"
@@ -1543,28 +1551,29 @@ pcall(function()
 	SearchFriendsBox.Name = "SearchFriendsBox"
 	SearchFriendsBox.Size = UDim2.new(0.5, -12, 1, 0)
 	SearchFriendsBox.BackgroundColor3 = COLOR_CARD
+	SearchFriendsBox.BackgroundTransparency = 0.1
 	SearchFriendsBox.BorderSizePixel = 0
 	SearchFriendsBox.PlaceholderText = "Buscar por nome ou @user"
 	SearchFriendsBox.PlaceholderColor3 = COLOR_MUTED
 	SearchFriendsBox.Text = ""
 	SearchFriendsBox.TextColor3 = COLOR_TEXT
-	SearchFriendsBox.Font = Enum.Font.Gotham
+	SearchFriendsBox.Font = Enum.Font.GothamMedium
 	SearchFriendsBox.TextSize = 12
 	SearchFriendsBox.TextXAlignment = Enum.TextXAlignment.Left
 	SearchFriendsBox.ClearTextOnFocus = false
 	SearchFriendsBox.Parent = AmigosToolbar
-	corner(SearchFriendsBox, 8)
-	stroke(SearchFriendsBox, COLOR_BORDER, 1, 0.2)
+	corner(SearchFriendsBox, 10)
+	stroke(SearchFriendsBox, COLOR_BORDER, 1, 0.3)
 	padding(SearchFriendsBox, 10, 8, 0, 0)
 
-	local RefreshFriendsButton = createActionButton(AmigosToolbar, "ATUALIZAR", 2)
+	local RefreshFriendsButton = createActionButton(AmigosToolbar, "🔄 ATUALIZAR", 2)
 	local FriendsStatusLabel = Instance.new("TextLabel")
 	FriendsStatusLabel.Name = "FriendsStatusLabel"
 	FriendsStatusLabel.Size = UDim2.new(1, -4, 0, 16)
 	FriendsStatusLabel.BackgroundTransparency = 1
 	FriendsStatusLabel.Text = "Nenhuma busca feita ainda"
 	FriendsStatusLabel.TextColor3 = COLOR_MUTED
-	FriendsStatusLabel.Font = Enum.Font.Code
+	FriendsStatusLabel.Font = Enum.Font.GothamMedium
 	FriendsStatusLabel.TextSize = 9
 	FriendsStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 	FriendsStatusLabel.LayoutOrder = 3
@@ -1574,14 +1583,15 @@ pcall(function()
 	FriendsList.Name = "FriendsList"
 	FriendsList.Size = UDim2.new(1, -4, 0, 300)
 	FriendsList.BackgroundColor3 = COLOR_CARD
+	FriendsList.BackgroundTransparency = 0.08
 	FriendsList.BorderSizePixel = 0
 	FriendsList.ScrollBarThickness = 3
 	FriendsList.CanvasSize = UDim2.new(0, 0, 0, 0)
 	FriendsList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	FriendsList.LayoutOrder = 4
 	FriendsList.Parent = AmigosTab
-	corner(FriendsList, 10)
-	stroke(FriendsList, COLOR_BORDER, 1, 0.15)
+	corner(FriendsList, 12)
+	stroke(FriendsList, COLOR_BORDER, 1, 0.3)
 
 	local FriendsListLayout = Instance.new("UIListLayout")
 	FriendsListLayout.Padding = UDim.new(0, 6)
@@ -1597,6 +1607,21 @@ pcall(function()
 
 	local friendEntries = {}
 	local selectedFriendStroke = nil
+	local obsButtons = {}
+
+	-- Destaque do botão OBS: fica verde enquanto observa aquele amigo e
+	-- volta ao normal ao desativar. Atualiza somente ao clicar (sem loops).
+	local function updateObsColors()
+		for _, item in pairs(obsButtons) do
+			pcall(function()
+				local hum = item.player.Character and item.player.Character:FindFirstChildOfClass("Humanoid")
+				local active = isSpectating and hum ~= nil and Camera.CameraSubject == hum
+				tween(item.btn, {BackgroundColor3 = active and Color3.fromRGB(26, 86, 60) or COLOR_CARD2}, 0.12)
+				local st = item.btn:FindFirstChildOfClass("UIStroke")
+				if st then tween(st, {Color = active and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
+			end)
+		end
+	end
 
 	local function applyFriendFilter()
 		local query = string.lower(SearchFriendsBox.Text or "")
@@ -1616,6 +1641,7 @@ pcall(function()
 		end
 		friendEntries = {}
 		selectedFriendStroke = nil
+		obsButtons = {}
 	end
 
 	local function markFriendAsTarget(player, row)
@@ -1635,11 +1661,12 @@ pcall(function()
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, -4, 0, 64)
 		row.BackgroundColor3 = COLOR_CARD2
+		row.BackgroundTransparency = 0.12
 		row.BorderSizePixel = 0
 		row.LayoutOrder = index
 		row.Parent = FriendsList
-		corner(row, 10)
-		stroke(row, COLOR_BORDER, 1, 0.15)
+		corner(row, 12)
+		stroke(row, COLOR_BORDER, 1, 0.3)
 
 		local avatar = Instance.new("ImageLabel")
 		avatar.Size = UDim2.new(0, 44, 0, 44)
@@ -1674,7 +1701,7 @@ pcall(function()
 		userLabel.BackgroundTransparency = 1
 		userLabel.Text = "@" .. player.Name
 		userLabel.TextColor3 = COLOR_MUTED
-		userLabel.Font = Enum.Font.Code
+		userLabel.Font = Enum.Font.GothamMedium
 		userLabel.TextSize = 10
 		userLabel.TextXAlignment = Enum.TextXAlignment.Left
 		userLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1686,12 +1713,12 @@ pcall(function()
 		onlineLabel.BackgroundTransparency = 1
 		onlineLabel.Text = "Neste servidor"
 		onlineLabel.TextColor3 = COLOR_SUCCESS
-		onlineLabel.Font = Enum.Font.Code
+		onlineLabel.Font = Enum.Font.GothamMedium
 		onlineLabel.TextSize = 9
 		onlineLabel.TextXAlignment = Enum.TextXAlignment.Left
 		onlineLabel.Parent = row
 
-		local alvoBtn = createActionButton(row, "ALVO", 1)
+		local alvoBtn = createActionButton(row, "🎯 ALVO", 1)
 		alvoBtn.Size = UDim2.new(0, 64, 0, 28)
 		alvoBtn.Position = UDim2.new(1, -214, 0.5, -14)
 		alvoBtn.TextSize = 10
@@ -1699,7 +1726,7 @@ pcall(function()
 			markFriendAsTarget(player, row)
 		end)
 
-		local obsBtn = createActionButton(row, "OBS", 2)
+		local obsBtn = createActionButton(row, "👁 OBS", 2)
 		obsBtn.Size = UDim2.new(0, 64, 0, 28)
 		obsBtn.Position = UDim2.new(1, -142, 0.5, -14)
 		obsBtn.TextSize = 10
@@ -1716,9 +1743,30 @@ pcall(function()
 				Camera.CameraSubject = humanoid
 				FriendsStatusLabel.Text = "● OBSERVANDO • " .. player.DisplayName
 			end
+			updateObsColors()
 		end)
+		-- Garante que o destaque verde sobrevive ao hover do botão
+		obsBtn.MouseEnter:Connect(function()
+			pcall(function()
+				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if isSpectating and hum and Camera.CameraSubject == hum then
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(32, 96, 68)}, 0.12)
+				end
+			end)
+		end)
+		obsBtn.MouseLeave:Connect(function()
+			pcall(function()
+				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if isSpectating and hum and Camera.CameraSubject == hum then
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(26, 86, 60)}, 0.12)
+					local st = obsBtn:FindFirstChildOfClass("UIStroke")
+					if st then tween(st, {Color = COLOR_SUCCESS}, 0.12) end
+				end
+			end)
+		end)
+		table.insert(obsButtons, {btn = obsBtn, player = player})
 
-		local tpBtn = createActionButton(row, "TP", 3)
+		local tpBtn = createActionButton(row, "🌀 TP", 3)
 		tpBtn.Size = UDim2.new(0, 64, 0, 28)
 		tpBtn.Position = UDim2.new(1, -70, 0.5, -14)
 		tpBtn.TextSize = 10
@@ -1955,7 +2003,7 @@ end, 2)
 
 -- Fly movido para a aba Jogador (mesma lógica/callback), com ajuste na mesma linha
 createSection(PlayerTab, "Fly", "Ligue o voo e ajuste a velocidade na mesma linha.", 1)
-createComboControl(PlayerTab, "Fly  •  Tecla F", 1, 1000, flySpeed, 2, function(state)
+createComboControl(PlayerTab, "✈️ Fly  •  Tecla F", 1, 1000, flySpeed, 2, function(state)
 	flyHotkeyEnabled = state
 	if not state and flying then stopFly() end
 end, function(value)
@@ -2031,14 +2079,14 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	end
 
 	createSection(PlayerTab, "Movimento", "Ligue e ajuste na mesma linha; desligado volta ao normal.", 3)
-	createComboControl(PlayerTab, "Walk Speed", 0, 500, MOVE_walkSpeed, 4, function(state)
+	createComboControl(PlayerTab, "🚶 Walk Speed", 0, 500, MOVE_walkSpeed, 4, function(state)
 		MOVE_walkOn = state
 		MOVE_apply()
 	end, function(value)
 		MOVE_walkSpeed = value
 		MOVE_apply()
 	end)
-	createComboControl(PlayerTab, "Jump Power", 0, 500, MOVE_jumpPower, 5, function(state)
+	createComboControl(PlayerTab, "🦘 Jump Power", 0, 500, MOVE_jumpPower, 5, function(state)
 		MOVE_jumpOn = state
 		MOVE_apply()
 	end, function(value)
@@ -2062,6 +2110,129 @@ createToggleButton(GameRow3, "Anim Speed  •  Q|E", function(state)
 	animationSpeedEnabled = state
 	animationSpeed = 1
 end, 1)
+
+-- Jerkoff (animação FE clássica — funciona em R6 e R15)
+local okJerkoff, errJerkoff = pcall(function()
+	local JO_ANIM_R6 = "rbxassetid://72042024"
+	local JO_ANIM_R15 = "rbxassetid://698251653"
+
+	local jerkoffFeatureOn = false
+	local jerkoffEnabled = false
+	local jerkoffSession = 0
+	local jerkoffTrack = nil
+
+	local function JO_stop()
+		jerkoffEnabled = false
+		jerkoffSession += 1
+		if jerkoffTrack then
+			pcall(function() jerkoffTrack:Stop(0.1) end)
+			jerkoffTrack = nil
+		end
+	end
+
+	local function JO_start()
+		if jerkoffEnabled then return end
+		jerkoffEnabled = true
+		jerkoffSession += 1
+		local mySession = jerkoffSession
+		task.spawn(function()
+			local myTrack = nil
+			local myTrackHumanoid = nil
+			while mySession == jerkoffSession do
+				local char = LocalPlayer.Character
+				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+				if not humanoid or humanoid.Health <= 0 then
+					if myTrack then
+						pcall(function() myTrack:Stop(0.1) end)
+						myTrack = nil
+						myTrackHumanoid = nil
+					end
+					task.wait(0.4)
+				else
+					local isR15 = humanoid.RigType == Enum.HumanoidRigType.R15
+					if myTrackHumanoid ~= humanoid then
+						if myTrack then
+							pcall(function() myTrack:Stop(0.1) end)
+						end
+						myTrack = nil
+						myTrackHumanoid = nil
+						local okT, loaded = pcall(function()
+							local anim = Instance.new("Animation")
+							anim.AnimationId = isR15 and JO_ANIM_R15 or JO_ANIM_R6
+							local animator = humanoid:FindFirstChildOfClass("Animator")
+							if animator then
+								return animator:LoadAnimation(anim)
+							end
+							return humanoid:LoadAnimation(anim)
+						end)
+						if okT and loaded then
+							loaded.Priority = Enum.AnimationPriority.Action4
+							myTrack = loaded
+							myTrackHumanoid = humanoid
+							jerkoffTrack = loaded
+						end
+					end
+					local track = myTrack
+					if not track then
+						task.wait(0.4)
+					else
+						local speed = isR15 and 0.7 or 0.65
+						local limit = isR15 and 0.7 or 0.65
+						local okP = pcall(function()
+							track:Play(0.1)
+							track:AdjustSpeed(speed)
+							track.TimePosition = 0.6
+						end)
+						if okP then
+							local guard = 0
+							while mySession == jerkoffSession
+								and track.IsPlaying
+								and track.TimePosition < limit
+								and guard < 60 do
+								task.wait(0.05)
+								guard += 1
+							end
+						end
+						pcall(function() track:Stop(0.1) end)
+						if jerkoffTrack == track then
+							jerkoffTrack = nil
+						end
+					end
+				end
+			end
+			if myTrack then
+				pcall(function() myTrack:Stop(0.1) end)
+			end
+		end)
+	end
+
+	createToggleButton(GameRow3, "Jerkoff  •  X", function(state)
+		jerkoffFeatureOn = state
+		if state then JO_start() else JO_stop() end
+	end, 2)
+
+	-- X apenas alterna a animação (começa/para), sem mudar o estado do botão
+	-- e só funciona enquanto o botão estiver ligado.
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not gameProcessed and input.KeyCode == Enum.KeyCode.X
+			and not UserInputService:GetFocusedTextBox() then
+			if not jerkoffFeatureOn then return end
+			if jerkoffEnabled then
+				JO_stop()
+			else
+				JO_start()
+			end
+		end
+	end)
+
+	LocalPlayer.CharacterAdded:Connect(function()
+		jerkoffTrack = nil
+	end)
+end)
+
+if not okJerkoff then
+	warn("[Jogo] erro ao iniciar Jerkoff: " .. tostring(errJerkoff))
+end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed or UserInputService:GetFocusedTextBox() or not animationSpeedEnabled then return end
@@ -2162,30 +2333,29 @@ local function GetRoleColor(role)
 	return Color3.fromRGB(50, 255, 50)
 end
 
-createToggleButton(ESPTab, "ESP  •  wallhack", function(state)
+createToggleButton(ESPTab, "👁 ESP  •  wallhack", function(state)
 	roleEspEnabled = state
 end, 2)
 
-createSection(ESPTab, "AIMBOT", "Mira automática com FOV ajustável", 4)
+createSection(ESPTab, "AIMBOT", "Ligue a mira e arraste o raio do FOV na mesma linha.", 4)
 
-local AimbotRow1 = createControlRow(ESPTab, 5)
-createToggleButton(AimbotRow1, "Aimbot (Segure M2)", function(state) aimbotEnabled = state end, 1)
-createToggleButton(AimbotRow1, "Exibir FOV", function(state) showFov = state end, 2)
-
-local AimbotRow2 = createControlRow(ESPTab, 6)
-createToggleButton(AimbotRow2, "FOV RGB", function(state) fovRainbow = state end, 1)
-
-createSliderControl(ESPTab, "Raio do FOV", 50, 500, fovRadius, 7, function(value)
+createComboControl(ESPTab, "🎯 Aimbot  •  Segure M2", 50, 500, fovRadius, 5, function(state)
+	aimbotEnabled = state
+end, function(value)
 	fovRadius = value
 end)
 
-createSliderControl(ESPTab, "Suavização Aimbot", 0, 10, smoothingFactor * 10, 8, function(value)
+local AimbotRow1 = createControlRow(ESPTab, 6)
+createToggleButton(AimbotRow1, "⭕ Exibir FOV", function(state) showFov = state end, 1)
+createToggleButton(AimbotRow1, "🌈 FOV RGB", function(state) fovRainbow = state end, 2)
+
+createSliderControl(ESPTab, "🎚 Suavização Aimbot", 0, 10, smoothingFactor * 10, 7, function(value)
 	smoothingFactor = value / 10
 end)
 
-createSection(ESPTab, "PARTE ALVO", "Selecionar parte do corpo para mira", 9)
-local PartRow = createControlRow(ESPTab, 10)
-local partButton = createActionButton(PartRow, "Parte: " .. targetPart, 1)
+createSection(ESPTab, "PARTE ALVO", "Selecionar parte do corpo para mira", 8)
+local PartRow = createControlRow(ESPTab, 9)
+local partButton = createActionButton(PartRow, "🦴 Parte: " .. targetPart, 1)
 partButton.MouseButton1Click:Connect(function()
 	local parts = {"Head", "HumanoidRootPart", "Torso"}
 	local idx = 1
@@ -2194,7 +2364,7 @@ partButton.MouseButton1Click:Connect(function()
 	end
 	idx = idx % #parts + 1
 	targetPart = parts[idx]
-	partButton.Text = "Parte: " .. targetPart
+	partButton.Text = "🦴 Parte: " .. targetPart
 end)
 
 local fovCircle = Drawing.new("Circle")
@@ -2380,7 +2550,7 @@ createSection(MiscTab, "Extras", "Ferramentas adicionais e efeitos visuais.", 1)
 local MiscRow1 = createControlRow(MiscTab, 2)
 local antiAfkEnabled = false
 local antiAfkConnection = nil
-createToggleButton(MiscRow1, "Anti-AFK", function(state)
+createToggleButton(MiscRow1, "💤 Anti-AFK", function(state)
 	antiAfkEnabled = state
 	if antiAfkConnection then antiAfkConnection:Disconnect() antiAfkConnection = nil end
 	if antiAfkEnabled then
@@ -2393,7 +2563,7 @@ createToggleButton(MiscRow1, "Anti-AFK", function(state)
 	end
 end, 1)
 
-local infinityButton = createActionButton(MiscRow1, "Infinite Yield", 2)
+local infinityButton = createActionButton(MiscRow1, "📜 Infinite Yield", 2)
 infinityButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
@@ -2401,14 +2571,14 @@ infinityButton.MouseButton1Click:Connect(function()
 end)
 
 local MiscRow2 = createControlRow(MiscTab, 3)
-local emoteButton = createActionButton(MiscRow2, "Free emotes", 1)
+local emoteButton = createActionButton(MiscRow2, "💃 Free emotes", 1)
 emoteButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024"))()
 	end)
 end)
 
-local rejoinButton = createActionButton(MiscRow2, "Rejoin", 2)
+local rejoinButton = createActionButton(MiscRow2, "🔄 Rejoin", 2)
 rejoinButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
@@ -2418,33 +2588,34 @@ end)
 local savedSpawnCFrame = nil
 createSection(MiscTab, "Spawn", "Defina um ponto para retornar automaticamente depois do reset.", 4)
 local SpawnRow = createControlRow(MiscTab, 5)
-local setSpawnButton = createActionButton(SpawnRow, "Definir Spawn", 1)
+local setSpawnButton = createActionButton(SpawnRow, "📍 Definir Spawn", 1)
 setSpawnButton.MouseButton1Click:Connect(function()
 	local char = LocalPlayer.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if root then
 		savedSpawnCFrame = root.CFrame
-		setSpawnButton.Text = "Spawn definido"
+		setSpawnButton.Text = "📍 Spawn definido"
 		task.delay(1.2, function()
 			if setSpawnButton and setSpawnButton.Parent then
-				setSpawnButton.Text = "Definir Spawn"
+				setSpawnButton.Text = "📍 Definir Spawn"
 			end
 		end)
 	end
 end)
 
-local removeSpawnButton = createActionButton(SpawnRow, "Remover Spawn", 2, true)
+local removeSpawnButton = createActionButton(SpawnRow, "🗑 Remover Spawn", 2, true)
 removeSpawnButton.MouseButton1Click:Connect(function()
 	savedSpawnCFrame = nil
-	removeSpawnButton.Text = "Spawn removido"
+	removeSpawnButton.Text = "🗑 Spawn removido"
 	task.delay(1.2, function()
 		if removeSpawnButton and removeSpawnButton.Parent then
-			removeSpawnButton.Text = "Remover Spawn"
+			removeSpawnButton.Text = "🗑 Remover Spawn"
 		end
 	end)
 end)
 
--- Shaders
+-- Shader (Tokyowami)
+-- Credits to Instance Serializer for helping me convert the Tokyowami shrine whatever thing to luau
 local shadersObj = {}
 local shaderLightingBackup = nil
 
@@ -2457,11 +2628,16 @@ local function backupLighting()
 	if shaderLightingBackup then return end
 	shaderLightingBackup = {
 		Brightness = Lighting.Brightness,
+		ColorShift_Bottom = Lighting.ColorShift_Bottom,
+		ColorShift_Top = Lighting.ColorShift_Top,
+		OutdoorAmbient = Lighting.OutdoorAmbient,
+		ClockTime = Lighting.ClockTime,
+		FogColor = Lighting.FogColor,
+		FogEnd = Lighting.FogEnd,
+		FogStart = Lighting.FogStart,
 		ExposureCompensation = Lighting.ExposureCompensation,
-		GlobalShadows = Lighting.GlobalShadows,
 		ShadowSoftness = Lighting.ShadowSoftness,
-		Ambient = Lighting.Ambient,
-		OutdoorAmbient = Lighting.OutdoorAmbient
+		Ambient = Lighting.Ambient
 	}
 end
 
@@ -2473,55 +2649,140 @@ local function restoreLighting()
 	shaderLightingBackup = nil
 end
 
-local function addEffect(className, name, properties)
-	local obj = Instance.new(className)
-	obj.Name = name
-	for property, value in pairs(properties or {}) do
-		pcall(function() obj[property] = value end)
-	end
-	obj.Parent = Lighting
+local function addShaderObject(obj)
 	table.insert(shadersObj, obj)
 	return obj
 end
 
-local function applyShaderPreset(presetName)
+local function applyTokyowamiShader()
 	backupLighting()
 	destroyShaderObjects()
-	if presetName == "OLED" then
-		pcall(function()
-			Lighting.Brightness = 2
-			Lighting.ExposureCompensation = -0.05
-			Lighting.GlobalShadows = true
-			Lighting.ShadowSoftness = 0.35
-		end)
-		addEffect("ColorCorrectionEffect", "Chosen_OLED_Color", {Brightness = -0.02, Contrast = 0.30, Saturation = 0.12, TintColor = Color3.fromRGB(255, 248, 242)})
-		addEffect("BloomEffect", "Chosen_Soft_HDR", {Intensity = 0.12, Size = 22, Threshold = 1.20})
-	elseif presetName == "Cinematic" then
-		pcall(function()
-			Lighting.Brightness = 2
-			Lighting.ExposureCompensation = -0.10
-			Lighting.GlobalShadows = true
-			Lighting.ShadowSoftness = 0.20
-		end)
-		addEffect("ColorCorrectionEffect", "Chosen_Cinematic_Color", {Brightness = -0.03, Contrast = 0.25, Saturation = -0.05, TintColor = Color3.fromRGB(255, 244, 232)})
-		addEffect("BloomEffect", "Chosen_Cinematic_Bloom", {Intensity = 0.18, Size = 28, Threshold = 1.05})
-	elseif presetName == "Vibrant" then
-		pcall(function()
-			Lighting.Brightness = 2
-			Lighting.ExposureCompensation = 0.05
-			Lighting.GlobalShadows = true
-		end)
-		addEffect("ColorCorrectionEffect", "Chosen_Vibrant_Color", {Brightness = 0.02, Contrast = 0.18, Saturation = 0.30, TintColor = Color3.fromRGB(255, 255, 255)})
-		addEffect("BloomEffect", "Chosen_Vibrant_Bloom", {Intensity = 0.22, Size = 20, Threshold = 0.90})
-	elseif presetName == "Soft" then
-		pcall(function()
-			Lighting.ExposureCompensation = 0
-			Lighting.GlobalShadows = true
-			Lighting.ShadowSoftness = 0.50
-		end)
-		addEffect("ColorCorrectionEffect", "Chosen_Soft_Color", {Brightness = 0.03, Contrast = 0.08, Saturation = 0.05, TintColor = Color3.fromRGB(255, 250, 246)})
-		addEffect("BloomEffect", "Chosen_Soft_Bloom", {Intensity = 0.08, Size = 30, Threshold = 1.40})
-	end
+
+	local Bloom = Instance.new("BloomEffect")
+	Bloom.Intensity = 0.1
+	Bloom.Threshold = 0
+	Bloom.Size = 100
+
+	local Tropic = Instance.new("Sky")
+	Tropic.Name = "Tropic"
+	Tropic.SkyboxUp = "http://www.roblox.com/asset/?id=169210149"
+	Tropic.SkyboxLf = "http://www.roblox.com/asset/?id=169210133"
+	Tropic.SkyboxBk = "http://www.roblox.com/asset/?id=169210090"
+	Tropic.SkyboxFt = "http://www.roblox.com/asset/?id=169210121"
+	Tropic.StarCount = 100
+	Tropic.SkyboxDn = "http://www.roblox.com/asset/?id=169210108"
+	Tropic.SkyboxRt = "http://www.roblox.com/asset/?id=169210143"
+	Tropic.Parent = Bloom
+
+	local Sky = Instance.new("Sky")
+	Sky.SkyboxUp = "http://www.roblox.com/asset/?id=196263782"
+	Sky.SkyboxLf = "http://www.roblox.com/asset/?id=196263721"
+	Sky.SkyboxBk = "http://www.roblox.com/asset/?id=196263721"
+	Sky.SkyboxFt = "http://www.roblox.com/asset/?id=196263721"
+	Sky.CelestialBodiesShown = false
+	Sky.SkyboxDn = "http://www.roblox.com/asset/?id=196263643"
+	Sky.SkyboxRt = "http://www.roblox.com/asset/?id=196263721"
+	Sky.Parent = Bloom
+
+	addShaderObject(Bloom)
+	Bloom.Parent = Lighting
+
+	local Bloom = Instance.new("BloomEffect")
+	Bloom.Enabled = false
+	Bloom.Intensity = 0.35
+	Bloom.Threshold = 0.2
+	Bloom.Size = 56
+
+	local Tropic = Instance.new("Sky")
+	Tropic.Name = "Tropic"
+	Tropic.SkyboxUp = "http://www.roblox.com/asset/?id=169210149"
+	Tropic.SkyboxLf = "http://www.roblox.com/asset/?id=169210133"
+	Tropic.SkyboxBk = "http://www.roblox.com/asset/?id=169210090"
+	Tropic.SkyboxFt = "http://www.roblox.com/asset/?id=169210121"
+	Tropic.StarCount = 100
+	Tropic.SkyboxDn = "http://www.roblox.com/asset/?id=169210108"
+	Tropic.SkyboxRt = "http://www.roblox.com/asset/?id=169210143"
+	Tropic.Parent = Bloom
+
+	local Sky = Instance.new("Sky")
+	Sky.SkyboxUp = "http://www.roblox.com/asset/?id=196263782"
+	Sky.SkyboxLf = "http://www.roblox.com/asset/?id=196263721"
+	Sky.SkyboxBk = "http://www.roblox.com/asset/?id=196263721"
+	Sky.SkyboxFt = "http://www.roblox.com/asset/?id=196263721"
+	Sky.CelestialBodiesShown = false
+	Sky.SkyboxDn = "http://www.roblox.com/asset/?id=196263643"
+	Sky.SkyboxRt = "http://www.roblox.com/asset/?id=196263721"
+	Sky.Parent = Bloom
+
+	addShaderObject(Bloom)
+	Bloom.Parent = Lighting
+
+	local Blur = Instance.new("BlurEffect")
+	Blur.Size = 2
+	addShaderObject(Blur)
+	Blur.Parent = Lighting
+
+	local Efecto = Instance.new("BlurEffect")
+	Efecto.Name = "Efecto"
+	Efecto.Enabled = false
+	Efecto.Size = 2
+	addShaderObject(Efecto)
+	Efecto.Parent = Lighting
+
+	local Inaritaisha = Instance.new("ColorCorrectionEffect")
+	Inaritaisha.Name = "Inari taisha"
+	Inaritaisha.Saturation = 0.05
+	Inaritaisha.TintColor = Color3.fromRGB(255, 224, 219)
+	addShaderObject(Inaritaisha)
+	Inaritaisha.Parent = Lighting
+
+	local Normal = Instance.new("ColorCorrectionEffect")
+	Normal.Name = "Normal"
+	Normal.Enabled = false
+	Normal.Saturation = -0.2
+	Normal.TintColor = Color3.fromRGB(255, 232, 215)
+	addShaderObject(Normal)
+	Normal.Parent = Lighting
+
+	local SunRays = Instance.new("SunRaysEffect")
+	SunRays.Intensity = 0.05
+	addShaderObject(SunRays)
+	SunRays.Parent = Lighting
+
+	local Sunset = Instance.new("Sky")
+	Sunset.Name = "Sunset"
+	Sunset.SkyboxUp = "rbxassetid://323493360"
+	Sunset.SkyboxLf = "rbxassetid://323494252"
+	Sunset.SkyboxBk = "rbxassetid://323494035"
+	Sunset.SkyboxFt = "rbxassetid://323494130"
+	Sunset.SkyboxDn = "rbxassetid://323494368"
+	Sunset.SunAngularSize = 14
+	Sunset.SkyboxRt = "rbxassetid://323494067"
+	addShaderObject(Sunset)
+	Sunset.Parent = Lighting
+
+	local Takayama = Instance.new("ColorCorrectionEffect")
+	Takayama.Name = "Takayama"
+	Takayama.Enabled = false
+	Takayama.Saturation = -0.3
+	Takayama.Contrast = 0.1
+	Takayama.TintColor = Color3.fromRGB(235, 214, 204)
+	addShaderObject(Takayama)
+	Takayama.Parent = Lighting
+
+	pcall(function()
+		Lighting.Brightness = 2.14
+		Lighting.ColorShift_Bottom = Color3.fromRGB(11, 0, 20)
+		Lighting.ColorShift_Top = Color3.fromRGB(240, 127, 14)
+		Lighting.OutdoorAmbient = Color3.fromRGB(34, 0, 49)
+		Lighting.ClockTime = 6.7
+		Lighting.FogColor = Color3.fromRGB(94, 76, 106)
+		Lighting.FogEnd = 1000
+		Lighting.FogStart = 0
+		Lighting.ExposureCompensation = 0.24
+		Lighting.ShadowSoftness = 0
+		Lighting.Ambient = Color3.fromRGB(59, 33, 27)
+	end)
 end
 
 local function disableShader()
@@ -2529,28 +2790,12 @@ local function disableShader()
 	restoreLighting()
 end
 
-createSection(MiscTab, "Shaders", "presets visuais com efeitos de pós-processamento", 6)
+createSection(MiscTab, "Shaders", "shader visual com efeitos de pós-processamento", 6)
 local MiscShaderRow1 = createControlRow(MiscTab, 7)
-createToggleButton(MiscShaderRow1, "Shader  •  OLED", function(state)
-	if state then applyShaderPreset("OLED") else disableShader() end
+createToggleButton(MiscShaderRow1, "🎨 Shader  •  Tokyowami", function(state)
+	if state then applyTokyowamiShader() else disableShader() end
 end, 1)
-createActionButton(MiscShaderRow1, "Shader Preset  •  Cinematic", 2).MouseButton1Click:Connect(function()
-	applyShaderPreset("Cinematic")
-end)
-
-local MiscShaderRow2 = createControlRow(MiscTab, 8)
-createActionButton(MiscShaderRow2, "Shader Preset  •  Vibrant", 1).MouseButton1Click:Connect(function()
-	applyShaderPreset("Vibrant")
-end)
-createActionButton(MiscShaderRow2, "Shader Preset  •  Realistic", 2).MouseButton1Click:Connect(function()
-	applyShaderPreset("Realistic")
-end)
-
-local MiscShaderRow3 = createControlRow(MiscTab, 9)
-createActionButton(MiscShaderRow3, "Shader Preset  •  Soft", 1).MouseButton1Click:Connect(function()
-	applyShaderPreset("Soft")
-end)
-createActionButton(MiscShaderRow3, "Desativar shaders", 2, true).MouseButton1Click:Connect(function()
+createActionButton(MiscShaderRow1, "🚫 Desativar shader", 2, true).MouseButton1Click:Connect(function()
 	disableShader()
 end)
 
