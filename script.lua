@@ -1145,7 +1145,7 @@ ChosenPermissionLabel.Name = "ChosenPermissions"
 ChosenPermissionLabel.Size = UDim2.new(1, -140, 0, 13)
 ChosenPermissionLabel.Position = UDim2.new(0, 118, 0, 122)
 ChosenPermissionLabel.BackgroundTransparency = 1
-ChosenPermissionLabel.Text = "PERMISSÕES: carregando..."
+ChosenPermissionLabel.Text = "PREMIUM: carregando..."
 ChosenPermissionLabel.TextColor3 = COLOR_MUTED
 ChosenPermissionLabel.Font = Enum.Font.GothamMedium
 ChosenPermissionLabel.TextSize = 8
@@ -1268,7 +1268,7 @@ local function chosenUpdateProfile()
 
     if not data.success or type(data.profile) ~= "table" then
         ChosenRoleLabel.Text = "CARGO: não encontrado"
-        ChosenPermissionLabel.Text = "PERMISSÕES: indisponíveis"
+        ChosenPermissionLabel.Text = "PREMIUM: indisponível"
         UserStatus.Text = "PERFIL NÃO LOCALIZADO"
         UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
         return false
@@ -1276,7 +1276,7 @@ local function chosenUpdateProfile()
 
     if type(data.permissions) ~= "table" then
         ChosenRoleLabel.Text = "CARGO: permissões indisponíveis"
-        ChosenPermissionLabel.Text = "PERMISSÕES: API não retornou os dados"
+        ChosenPermissionLabel.Text = "PREMIUM: API não retornou os dados"
         UserStatus.Text = "PERFIL ENCONTRADO • PERMISSÕES OFFLINE"
         UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
         return false
@@ -1362,42 +1362,51 @@ local function chosenShowLiveToast(message, author)
     end
 
     -- Altura dinâmica: mensagens longas pedem um toast maior
-    -- (cada linha comporta ~38 caracteres no TextSize 12)
-    local estLines = math.max(1, math.ceil(#message / 38))
+    -- (cada linha comporta ~34 caracteres no TextSize 12)
+    local estLines = math.max(1, math.ceil(#message / 34))
     local textH = math.min(estLines * 16 + 4, 380)
-    local toastH = 44 + textH
+    local toastH = 66 + textH + 8
 
     local toast = Instance.new("Frame")
     toast.Name = "ChosenLiveMessageToast"
     toast.AnchorPoint = Vector2.new(1, 0)
-    toast.Position = UDim2.new(1, 320, 0, 18) -- fora da tela; entra deslizando
-    toast.Size = UDim2.new(0, 300, 0, toastH)
-    toast.BackgroundColor3 = COLOR_CARD
-    toast.BackgroundTransparency = 0.04
+    toast.Position = UDim2.new(1, 340, 0, 18) -- fora da tela; entra deslizando
+    toast.Size = UDim2.new(0, 316, 0, toastH)
+    toast.BackgroundColor3 = COLOR_PANEL
+    toast.BackgroundTransparency = 0.03
     toast.BorderSizePixel = 0
     toast.ZIndex = 60
     toast.Parent = ScreenGui
     corner(toast, 14)
-    stroke(toast, COLOR_SUCCESS, 1.5, 0.15)
+    stroke(toast, COLOR_SUCCESS, 1.2, 0.35)
+
+    -- Barra lateral de destaque (verde)
+    local toastBar = Instance.new("Frame")
+    toastBar.Size = UDim2.new(0, 4, 1, 0)
+    toastBar.BackgroundColor3 = COLOR_SUCCESS
+    toastBar.BorderSizePixel = 0
+    toastBar.ZIndex = 61
+    toastBar.Parent = toast
+    corner(toastBar, 2)
 
     local toastTitle = Instance.new("TextLabel")
-    toastTitle.Size = UDim2.new(1, -44, 0, 18)
-    toastTitle.Position = UDim2.new(0, 14, 0, 9)
+    toastTitle.Size = UDim2.new(1, -64, 0, 16)
+    toastTitle.Position = UDim2.new(0, 18, 0, 10)
     toastTitle.BackgroundTransparency = 1
-    toastTitle.Text = "💬  MENSAGEM"
+    toastTitle.Text = "💬  MENSAGEM INSTANTÂNEA"
     toastTitle.TextColor3 = COLOR_SUCCESS
     toastTitle.Font = Enum.Font.GothamBlack
-    toastTitle.TextSize = 12
+    toastTitle.TextSize = 11
     toastTitle.TextXAlignment = Enum.TextXAlignment.Left
     toastTitle.ZIndex = 60
     toastTitle.Parent = toast
 
     local toastAuthor = Instance.new("TextLabel")
-    toastAuthor.Size = UDim2.new(1, -44, 0, 13)
-    toastAuthor.Position = UDim2.new(0, 14, 0, 28)
+    toastAuthor.Size = UDim2.new(1, -64, 0, 13)
+    toastAuthor.Position = UDim2.new(0, 18, 0, 27)
     toastAuthor.BackgroundTransparency = 1
     toastAuthor.Text = (type(author) == "string" and author ~= "")
-        and ("de " .. author) or ""
+        and ("👤  enviado por " .. author) or ""
     toastAuthor.TextColor3 = COLOR_MUTED
     toastAuthor.Font = Enum.Font.GothamMedium
     toastAuthor.TextSize = 9
@@ -1407,8 +1416,8 @@ local function chosenShowLiveToast(message, author)
     toastAuthor.Parent = toast
 
     local toastText = Instance.new("TextLabel")
-    toastText.Size = UDim2.new(1, -28, 0, textH)
-    toastText.Position = UDim2.new(0, 14, 0, 44)
+    toastText.Size = UDim2.new(1, -36, 0, textH)
+    toastText.Position = UDim2.new(0, 18, 0, 46)
     toastText.BackgroundTransparency = 1
     toastText.Text = message
     toastText.TextColor3 = COLOR_TEXT
@@ -1422,21 +1431,37 @@ local function chosenShowLiveToast(message, author)
     toastText.Parent = toast
 
     local toastClose = Instance.new("TextButton")
-    toastClose.Size = UDim2.new(0, 26, 0, 26)
-    toastClose.Position = UDim2.new(1, -32, 0, 8)
-    toastClose.BackgroundTransparency = 1
+    toastClose.Size = UDim2.new(0, 24, 0, 24)
+    toastClose.Position = UDim2.new(1, -32, 0, 9)
+    toastClose.BackgroundColor3 = COLOR_CARD2
+    toastClose.BackgroundTransparency = 0.2
     toastClose.Text = "✕"
     toastClose.TextColor3 = COLOR_MUTED
     toastClose.Font = Enum.Font.GothamBold
-    toastClose.TextSize = 14
+    toastClose.TextSize = 12
     toastClose.ZIndex = 61
     toastClose.Parent = toast
+    corner(toastClose, 12)
 
-    tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.4)
+    -- Barra de contagem: o tempo restante (10s) esvazia da direita
+    local toastTimer = Instance.new("Frame")
+    toastTimer.Name = "ToastTimer"
+    toastTimer.AnchorPoint = Vector2.new(1, 0.5)
+    toastTimer.Position = UDim2.new(1, -8, 1, -7)
+    toastTimer.Size = UDim2.new(1, -16, 0, 3)
+    toastTimer.BackgroundColor3 = COLOR_SUCCESS
+    toastTimer.BackgroundTransparency = 0.3
+    toastTimer.BorderSizePixel = 0
+    toastTimer.ZIndex = 61
+    toastTimer.Parent = toast
+    corner(toastTimer, 2)
+
+    tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.35)
+    tween(toastTimer, {Size = UDim2.new(0, 0, 0, 3)}, 10)
 
     local function dismiss()
         if not toast.Parent then return end
-        tween(toast, {Position = UDim2.new(1, 320, 0, 18)}, 0.35)
+        tween(toast, {Position = UDim2.new(1, 340, 0, 18)}, 0.35)
         task.delay(0.4, function()
             pcall(function() toast:Destroy() end)
         end)
@@ -1460,17 +1485,40 @@ task.spawn(function()
         })
 
         if ok and type(data.message) == "table" then
-            local text = data.message.text or data.message.message
-            local createdAt = tostring(data.message.created_at or "")
+            local m = data.message
+            local createdAt = tostring(m.created_at or "")
 
-            if type(text) == "string" and text ~= "" then
-                local key = createdAt .. "|" .. text
-                if key ~= chosenLastLiveKey then
-                    chosenLastLiveKey = key
-                    chosenShowLiveToast(
-                        text,
-                        data.message.author_username
-                    )
+            if m.kind == "kick" then
+                -- Kick via painel: só o alvo executa (expulsa a si
+                -- mesmo). Ninguém vê toast; não mistura com a dedup
+                -- das mensagens normais.
+                if tostring(m.target_id or "") == tostring(LocalPlayer.UserId) then
+                    local kickKey = "kick|" .. createdAt
+                    if kickKey ~= chosenLastLiveKey then
+                        chosenLastLiveKey = kickKey
+                        local kickReason = tostring(m.text or m.reason or "")
+                        local kicker = tostring(m.author_username or "moderação")
+                        pcall(function()
+                            LocalPlayer:Kick(
+                                "Chosen Hub — você foi expulso por " .. kicker
+                                .. (#kickReason > 0
+                                    and (".\nMotivo: " .. kickReason)
+                                    or ".")
+                            )
+                        end)
+                    end
+                end
+            else
+                local text = m.text or m.message
+                if type(text) == "string" and text ~= "" then
+                    local key = createdAt .. "|" .. text
+                    if key ~= chosenLastLiveKey then
+                        chosenLastLiveKey = key
+                        chosenShowLiveToast(
+                            text,
+                            m.author_username
+                        )
+                    end
                 end
             end
         end
@@ -2035,10 +2083,8 @@ chosenApplyPermissions = function(role, permissions, isTemporary)
 
     ChosenPermissionLabel.Text = "PREMIUM: "
         .. (permissions.can_use_premium == true and "SIM" or "NÃO")
-        .. "  •  MODERAÇÃO: "
-        .. (permissions.can_moderate_users == true and "SIM" or "NÃO")
-        .. "  •  OWNER: "
-        .. (permissions.can_manage_roles == true and "SIM" or "NÃO")
+    ChosenPermissionLabel.TextColor3 = permissions.can_use_premium == true
+        and COLOR_SUCCESS or COLOR_MUTED
 end
 
 chosenBuildModerationTab = function()
@@ -2097,7 +2143,7 @@ chosenBuildModerationTab = function()
     -- ------------------------------------------------------
     -- ESTATÍSTICAS (GET /stats)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "Estatísticas", "Usuários registrados e presença agora.", nextOrder())
+    createSection(chosenModTab, "📊 Estatísticas", "Usuários registrados e presença agora.", nextOrder())
 
     local StatsRow = Instance.new("Frame")
     StatsRow.Size = UDim2.new(1, -4, 0, 86)
@@ -2211,7 +2257,7 @@ chosenBuildModerationTab = function()
     -- ------------------------------------------------------
     -- USUÁRIOS ONLINE (can_view_online)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "Usuários online", "Sessões ativas reportadas pelo heartbeat.", nextOrder())
+    createSection(chosenModTab, "👥 Usuários online", "Sessões ativas reportadas pelo heartbeat.", nextOrder())
 
     local OnlineRow = createControlRow(chosenModTab, nextOrder())
     local OnlineRefresh = createActionButton(OnlineRow, "🔄 Atualizar", 1)
@@ -2372,7 +2418,8 @@ chosenBuildModerationTab = function()
     -- ------------------------------------------------------
     -- ANÚNCIO (Owner e Moderador)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "Anúncio", "Para todos os usuários • Owner e Moderador.", nextOrder())
+    createSection(chosenModTab, "📣 Anúncio global",
+        "Mensagem permanente • todos veem no Início • Owner e Moderador.", nextOrder())
 
     local AnnCard = Instance.new("Frame")
     AnnCard.Size = UDim2.new(1, -4, 0, 56)
@@ -2448,7 +2495,8 @@ chosenBuildModerationTab = function()
     -- ------------------------------------------------------
     -- MENSAGEM INSTANTÂNEA (Owner e Moderador)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "Mensagem instantânea", "Aviso do momento • some da tela em 10s.", nextOrder())
+    createSection(chosenModTab, "💬 Mensagem instantânea",
+        "Aviso do momento • some da tela em 10s • Owner e Moderador.", nextOrder())
 
     local LiveCard = Instance.new("Frame")
     LiveCard.Size = UDim2.new(1, -4, 0, 56)
@@ -2537,9 +2585,161 @@ chosenBuildModerationTab = function()
     end)
 
     -- ------------------------------------------------------
+    -- KICK DO SERVIDOR (Owner e Moderador)
+    -- Expulsa o jogador da sessão: tenta o Kick direto e, em
+    -- paralelo, avisa pelo canal ao vivo — o painel do alvo
+    -- expulsa ele mesmo ao receber. Funciona em quem está
+    -- online com o painel aberto naquele momento.
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "🚪 Kick",
+        "Expulsa um jogador desta sessão • motivo opcional.", nextOrder())
+
+    local KickTargetInput, KickTargetAvatar = createInputWithAvatar(
+        chosenModTab, "Nome do jogador...", nextOrder())
+
+    KickTargetInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local player = nil
+        local lower = KickTargetInput.Text:lower()
+        if lower ~= "" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Name:lower():sub(1, #lower) == lower then
+                    player = p
+                    break
+                end
+            end
+        end
+
+        if player then
+            pcall(function()
+                KickTargetAvatar.Image = Players:GetUserThumbnailAsync(
+                    player.UserId,
+                    Enum.ThumbnailType.AvatarBust,
+                    Enum.ThumbnailSize.Size420x420
+                )
+            end)
+        else
+            KickTargetAvatar.Image = "rbxassetid://0"
+        end
+    end)
+
+    local KickReasonCard = Instance.new("Frame")
+    KickReasonCard.Size = UDim2.new(1, -4, 0, 48)
+    KickReasonCard.BackgroundColor3 = COLOR_CARD
+    KickReasonCard.BackgroundTransparency = 0.1
+    KickReasonCard.BorderSizePixel = 0
+    KickReasonCard.LayoutOrder = nextOrder()
+    KickReasonCard.Parent = chosenModTab
+    corner(KickReasonCard, 12)
+    stroke(KickReasonCard, COLOR_BORDER, 1, 0.3)
+
+    local KickReasonBox = Instance.new("TextBox")
+    KickReasonBox.Size = UDim2.new(1, -24, 1, -12)
+    KickReasonBox.Position = UDim2.new(0, 12, 0, 6)
+    KickReasonBox.BackgroundTransparency = 1
+    KickReasonBox.PlaceholderText = "Motivo do kick (opcional)..."
+    KickReasonBox.PlaceholderColor3 = COLOR_MUTED
+    KickReasonBox.Text = ""
+    KickReasonBox.TextColor3 = COLOR_TEXT
+    KickReasonBox.Font = Enum.Font.GothamMedium
+    KickReasonBox.TextSize = 12
+    KickReasonBox.TextXAlignment = Enum.TextXAlignment.Left
+    KickReasonBox.TextYAlignment = Enum.TextYAlignment.Center
+    KickReasonBox.ClearTextOnFocus = false
+    KickReasonBox.TextWrapped = true
+    KickReasonBox.Parent = KickReasonCard
+
+    local KickRow = createControlRow(chosenModTab, nextOrder())
+    local KickSend = createActionButton(KickRow, "🚪 Expulsar jogador", 1)
+    local KickStatus = createModStatus(KickRow)
+    refs.KickStatus = KickStatus
+
+    -- Anti-spam: 5 segundos entre um kick e outro
+    local kickCooldownUntil = 0
+
+    local function resolveKickTarget()
+        local lower = KickTargetInput.Text:lower()
+        if lower == "" then return nil end
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Name:lower():sub(1, #lower) == lower then
+                return p
+            end
+        end
+        return nil
+    end
+
+    KickSend.MouseButton1Click:Connect(function()
+        local role = ScreenGui:GetAttribute("CHOSEN_Role")
+        if role ~= "Owner" and role ~= "Moderator" then
+            chosenLockNotice(KickStatus, "cargo Owner ou Moderador")
+            return
+        end
+
+        local nowClock = os.clock()
+        if nowClock < kickCooldownUntil then
+            KickStatus.Text = "⏳  Aguarde "
+                .. math.ceil(kickCooldownUntil - nowClock)
+                .. "s para kickar de novo"
+            KickStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+
+        local target = resolveKickTarget()
+        if not target then
+            KickStatus.Text = "⚠  Digite o nome de um jogador da sessão"
+            KickStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+
+        local reason = KickReasonBox.Text
+        kickCooldownUntil = os.clock() + 5
+        KickStatus.Text = "Expulsando " .. target.Name .. "..."
+        KickStatus.TextColor3 = COLOR_DIM
+
+        task.spawn(function()
+            -- 1) Kick direto (funciona em alguns jogos/executores)
+            local directOk = pcall(function()
+                target:Kick(#reason > 0 and reason or "Expulso da experiência")
+            end)
+
+            -- 2) Kick via painel: o alvo recebe pelo canal ao vivo e
+            -- se expulsa com o motivo (só Owner/Moderador podem enviar;
+            -- o servidor valida o cargo real de quem mandou).
+            local ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/live-message",
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json",
+                    ["Accept"] = "application/json"
+                },
+                Body = HttpService:JSONEncode({
+                    message = #reason > 0 and reason or "kick",
+                    kind = "kick",
+                    target_id = tostring(target.UserId),
+                    author_id = tostring(LocalPlayer.UserId)
+                })
+            })
+
+            if directOk then
+                KickStatus.Text = "✅  " .. target.Name .. " expulso"
+                KickStatus.TextColor3 = COLOR_SUCCESS
+            elseif ok and data.success then
+                KickStatus.Text = "✅  Kick enviado (expulsa quem está com o painel)"
+                KickStatus.TextColor3 = COLOR_SUCCESS
+            else
+                KickStatus.Text = "⚠  " .. tostring(data):sub(1, 80)
+                KickStatus.TextColor3 = CHOSEN_WARN
+            end
+            KickTargetInput.Text = ""
+            KickTargetAvatar.Image = "rbxassetid://0"
+            KickReasonBox.Text = ""
+        end)
+    end)
+
+    -- ------------------------------------------------------
     -- CARGO TEMPORÁRIO (SÓ NESTA SESSÃO • QUALQUER JOGADOR)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "Cargo temporário", "Aplica a um jogador da sessão; só muda na SUA tela.", nextOrder())
+    createSection(chosenModTab, "🎭 Cargo temporário",
+        "Aplica a um jogador da sessão • só muda na SUA tela.", nextOrder())
 
     local TempTargetInput, TempTargetAvatar = createInputWithAvatar(chosenModTab, "Nome do jogador (vazio = você)", nextOrder())
 
@@ -4511,7 +4711,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	-- (independente do layout da aba, impossível passar despercebido).
 	local WF_noticeToken = 0
 	local function WF_showNotice()
-		warn("[Chosen] Fling bloqueado: requer Premium, Moderator ou Owner")
+		warn("[Chosen] Fling bloqueado: requer Premium ou superior")
 		WF_noticeToken += 1
 		local token = WF_noticeToken
 
@@ -4524,30 +4724,65 @@ local okWalkFling, errWalkFling = pcall(function()
 		notice.Name = "WFLockNotice"
 		notice.AnchorPoint = Vector2.new(0.5, 0)
 		notice.Position = UDim2.new(0.5, 0, 0, 14)
-		notice.Size = UDim2.new(0, 340, 0, 42)
-		notice.BackgroundColor3 = Color3.fromRGB(32, 24, 10)
-		notice.BackgroundTransparency = 0.05
+		notice.Size = UDim2.new(0, 330, 0, 58)
+		notice.BackgroundColor3 = Color3.fromRGB(30, 22, 8)
+		notice.BackgroundTransparency = 0.03
 		notice.BorderSizePixel = 0
 		notice.ZIndex = 90
 		notice.Parent = ScreenGui
-		corner(notice, 12)
-		stroke(notice, Color3.fromRGB(255, 170, 60), 1.5, 0.1)
+		corner(notice, 14)
+		stroke(notice, Color3.fromRGB(255, 170, 60), 1.2, 0.35)
+
+		-- Barra lateral de destaque (âmbar)
+		local noticeBar = Instance.new("Frame")
+		noticeBar.Size = UDim2.new(0, 4, 1, 0)
+		noticeBar.BackgroundColor3 = Color3.fromRGB(255, 170, 60)
+		noticeBar.BorderSizePixel = 0
+		noticeBar.ZIndex = 91
+		noticeBar.Parent = notice
+		corner(noticeBar, 2)
+
+		local noticeTitle = Instance.new("TextLabel")
+		noticeTitle.Size = UDim2.new(1, -30, 0, 16)
+		noticeTitle.Position = UDim2.new(0, 18, 0, 9)
+		noticeTitle.BackgroundTransparency = 1
+		noticeTitle.Text = "🔒  ACESSO NEGADO"
+		noticeTitle.TextColor3 = Color3.fromRGB(255, 190, 90)
+		noticeTitle.Font = Enum.Font.GothamBlack
+		noticeTitle.TextSize = 11
+		noticeTitle.TextXAlignment = Enum.TextXAlignment.Left
+		noticeTitle.ZIndex = 91
+		noticeTitle.Parent = notice
 
 		local noticeText = Instance.new("TextLabel")
-		noticeText.Size = UDim2.new(1, -24, 1, 0)
-		noticeText.Position = UDim2.new(0, 12, 0, 0)
+		noticeText.Size = UDim2.new(1, -30, 0, 26)
+		noticeText.Position = UDim2.new(0, 18, 0, 27)
 		noticeText.BackgroundTransparency = 1
-		noticeText.Text = "🔒  Fling é exclusivo de Premium, Moderator e Owner"
-		noticeText.TextColor3 = Color3.fromRGB(255, 190, 90)
-		noticeText.Font = Enum.Font.GothamBold
-		noticeText.TextSize = 12
-		noticeText.TextWrapped = true
+		noticeText.Text = "Fling é exclusivo de Premium\nou cargo superior"
+		noticeText.TextColor3 = Color3.fromRGB(240, 235, 225)
+		noticeText.Font = Enum.Font.GothamMedium
+		noticeText.TextSize = 11
+		noticeText.TextXAlignment = Enum.TextXAlignment.Left
+		noticeText.TextYAlignment = Enum.TextYAlignment.Top
 		noticeText.ZIndex = 91
 		noticeText.Parent = notice
 
+		-- Barra de contagem: o tempo restante (2.5s) esvazia
+		local noticeTimer = Instance.new("Frame")
+		noticeTimer.AnchorPoint = Vector2.new(1, 0.5)
+		noticeTimer.Position = UDim2.new(1, -8, 1, -7)
+		noticeTimer.Size = UDim2.new(1, -16, 0, 3)
+		noticeTimer.BackgroundColor3 = Color3.fromRGB(255, 170, 60)
+		noticeTimer.BackgroundTransparency = 0.3
+		noticeTimer.BorderSizePixel = 0
+		noticeTimer.ZIndex = 91
+		noticeTimer.Parent = notice
+		corner(noticeTimer, 2)
+
 		-- Entra deslizando do topo
-		notice.Position = UDim2.new(0.5, 0, 0, -50)
+		notice.Position = UDim2.new(0.5, 0, 0, -66)
 		tween(notice, {Position = UDim2.new(0.5, 0, 0, 14)}, 0.25)
+		tween(noticeTimer, {Size = UDim2.new(0, 0, 0, 3)}, 2.5)
 
 		task.delay(2.5, function()
 			if token == WF_noticeToken and notice.Parent then
@@ -4572,6 +4807,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	end, function(value)
 		WF_power = value
 	end)
+	local WFComboCard = WFCombo.card
 
 	-- Antifling: zera velocidades absurdas aplicadas por outros flings.
 	-- Pausa automaticamente enquanto o próprio WalkFling está ativo para
@@ -4596,7 +4832,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	end)
 
 	local WFRow2 = createControlRow(GameTab, 7)
-	local _, WFAntiSet = createToggleButton(WFRow2, "Antifling", function(state)
+	local WFAntiCard, WFAntiSet = createToggleButton(WFRow2, "Antifling", function(state)
 		if state and not WF_hasPermission() then
 			WF_showNotice()
 			WFAntiSet(false)
@@ -4605,7 +4841,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		WF_antiFling = state
 	end, 1)
 
-	local _, WFSkipSet = createToggleButton(WFRow2, "Skip Friends", function(state)
+	local WFSkipCard, WFSkipSet = createToggleButton(WFRow2, "Skip Friends", function(state)
 		if state and not WF_hasPermission() then
 			WF_showNotice()
 			WFSkipSet(false)
@@ -4614,8 +4850,45 @@ local okWalkFling, errWalkFling = pcall(function()
 		WF_skipFriends = state
 	end, 2)
 
-	-- Cargo rebaixado com o WalkFling ligado? Desliga na hora.
+	-- BLOQUEIO VISUAL: sem Premium ou superior, os cards ficam
+	-- escurecidos e cobertos por um escudo não-clicável (a checagem
+	-- no callback continua valendo como segunda barreira).
+	local WF_shields = {}
+	for _, card in ipairs({ WFComboCard, WFAntiCard, WFSkipCard }) do
+		local shield = Instance.new("TextButton")
+		shield.Name = "WFLockShield"
+		shield.Size = UDim2.new(1, 0, 1, 0)
+		shield.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+		shield.BackgroundTransparency = 0.55
+		shield.Text = "🔒"
+		shield.TextColor3 = Color3.fromRGB(255, 170, 60)
+		shield.Font = Enum.Font.GothamBold
+		shield.TextSize = 16
+		shield.AutoButtonColor = false
+		shield.ZIndex = 10
+		shield.Visible = false
+		-- Clicar no escudo (nada responde embaixo) mostra o aviso
+		-- de que o Fling exige Premium ou superior.
+		shield.MouseButton1Click:Connect(WF_showNotice)
+		shield.Parent = card
+		WF_shields[card] = shield
+	end
+
+	local function WF_updateLock()
+		local locked = not WF_hasPermission()
+		for card, shield in pairs(WF_shields) do
+			shield.Visible = locked
+			tween(card, {
+				BackgroundTransparency = locked and 0.5 or 0.1
+			}, 0.15)
+		end
+	end
+	WF_updateLock()
+
+	-- Cargo carregado ou rebaixado? Atualiza o bloqueio e desliga
+	-- o WalkFling na hora se a permissão foi perdida.
 	local function WF_revokeIfNeeded()
+		WF_updateLock()
 		if not WF_hasPermission() and WF_walkfling then
 			WF_walkfling = false
 			WF_showNotice()
