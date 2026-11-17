@@ -321,7 +321,7 @@ local Version = Instance.new("TextLabel")
 Version.Size = UDim2.new(1, -28, 0, 20)
 Version.Position = UDim2.new(0, 14, 1, -27)
 Version.BackgroundTransparency = 1
-Version.Text = "v2.2  •  B ABRE/FECHA"
+Version.Text = "v2.5  •  B ABRE/FECHA"
 Version.TextColor3 = COLOR_MUTED
 Version.Font = Enum.Font.GothamMedium
 Version.TextSize = 9
@@ -364,7 +364,8 @@ local TabIcons = {
 	["Jogo"] = "🎮",
 	["Jogador"] = "🏃",
 	ESP = "👁",
-	["Diversos"] = "🧰"
+	["Diversos"] = "🧰",
+	["Moderação"] = "🛡"
 }
 
 local function createTab(name, order)
@@ -1125,18 +1126,1598 @@ UserSub.TextTruncate = Enum.TextTruncate.AtEnd
 UserSub.Parent = WelcomeCard
 
 local UserStatus = Instance.new("TextLabel")
-UserStatus.Size = UDim2.new(0, 210, 0, 20)
-UserStatus.Position = UDim2.new(0, 118, 0, 103)
+UserStatus.Size = UDim2.new(1, -140, 0, 18)
+UserStatus.Position = UDim2.new(0, 118, 0, 101)
 UserStatus.BackgroundColor3 = COLOR_SUCCESS
 UserStatus.BackgroundTransparency = 0.85
 UserStatus.Text = "USUÁRIO LOCAL  -  SESSÃO ATIVA"
 UserStatus.TextColor3 = COLOR_DIM
 UserStatus.Font = Enum.Font.GothamMedium
-UserStatus.TextSize = 10
+UserStatus.TextSize = 9
 UserStatus.TextXAlignment = Enum.TextXAlignment.Left
+UserStatus.TextTruncate = Enum.TextTruncate.AtEnd
 UserStatus.Parent = WelcomeCard
-corner(UserStatus, 10)
+corner(UserStatus, 9)
 padding(UserStatus, 9, 6, 0, 0)
+
+local ChosenPermissionLabel = Instance.new("TextLabel")
+ChosenPermissionLabel.Name = "ChosenPermissions"
+ChosenPermissionLabel.Size = UDim2.new(1, -140, 0, 13)
+ChosenPermissionLabel.Position = UDim2.new(0, 118, 0, 122)
+ChosenPermissionLabel.BackgroundTransparency = 1
+ChosenPermissionLabel.Text = "PERMISSÕES: carregando..."
+ChosenPermissionLabel.TextColor3 = COLOR_MUTED
+ChosenPermissionLabel.Font = Enum.Font.GothamMedium
+ChosenPermissionLabel.TextSize = 8
+ChosenPermissionLabel.TextXAlignment = Enum.TextXAlignment.Left
+ChosenPermissionLabel.TextTruncate = Enum.TextTruncate.AtEnd
+ChosenPermissionLabel.Parent = WelcomeCard
+
+-- CHOSEN HUB API isolada em um bloco local para evitar conflito de sintaxe e escopo.
+-- Ponte para o botão 👁 (fora do bloco): alterna a visibilidade
+-- das tags na tela local e devolve o novo estado (true = oculto).
+local chosenToggleTagsVisibility = nil
+do
+-- CHOSEN HUB API: perfil, cargo e presença
+-- Substitua apenas o domínio abaixo pelo domínio do seu projeto Supabase.
+local CHOSEN_API_URL = "https://mxbwgjqoupnkgdbbigvr.supabase.co/functions/v1/chosen-api" -- Troque SEU-PROJETO pelo ID do seu projeto Supabase.
+local CHOSEN_API_VERSION = "1.3.0"
+
+local ChosenRoleLabel = Instance.new("TextLabel")
+ChosenRoleLabel.Name = "ChosenRole"
+ChosenRoleLabel.Size = UDim2.new(1, -140, 0, 18)
+ChosenRoleLabel.Position = UDim2.new(0, 118, 0, 83)
+ChosenRoleLabel.BackgroundTransparency = 1
+ChosenRoleLabel.Text = "CARGO: carregando..."
+ChosenRoleLabel.TextColor3 = COLOR_DIM
+ChosenRoleLabel.Font = Enum.Font.GothamBold
+ChosenRoleLabel.TextSize = 10
+ChosenRoleLabel.TextXAlignment = Enum.TextXAlignment.Left
+ChosenRoleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+ChosenRoleLabel.Parent = WelcomeCard
+
+local chosenHttpRequest = request
+    or (http and http.request)
+    or http_request
+
+local chosenSessionId = HttpService:GenerateGUID(false)
+local chosenApiReady = false
+local chosenProfile = nil
+
+-- A aba Moderação é construída sob demanda: na primeira carga de
+-- perfil bem-sucedida em que o jogador possui alguma permissão de
+-- moderação. A variável é declarada aqui para chosenUpdateProfile
+-- poder chamá-la (o corpo é atribuído mais abaixo).
+local chosenBuildModerationTab = nil
+local chosenProfilePermissions = nil
+local chosenApplyPermissions = nil
+local chosenTemporaryRole = nil
+
+-- Cargo temporário por jogador (UserId em texto → cargo) e estado
+-- visual das tags. Usados pelo bloco de tags e pela aba Moderação.
+-- chosenApplyTempRole(userId, role) aplica/remove o temporário e
+-- atualiza a tag na hora (o corpo é atribuído no bloco de tags).
+local chosenTempRoles = {}
+local chosenTagsHidden = false
+local chosenApplyTempRole = nil
+local chosenRoleTags = {}
+
+local function chosenApiCall(options)
+    if type(chosenHttpRequest) ~= "function" then
+        return false, "HTTP não disponível neste executor"
+    end
+
+    local ok, response = pcall(function()
+        return chosenHttpRequest(options)
+    end)
+
+    if not ok then
+        if type(response) == "table" then
+            local message = response.Message or response.message or response.Error or response.error
+            return false, tostring(message or "Falha interna na requisição HTTP")
+        end
+        return false, tostring(response or "Falha na requisição HTTP")
+    end
+
+    if type(response) ~= "table" then
+        return false, "Formato de resposta HTTP inesperado: " .. type(response)
+    end
+
+    local body = response.Body or response.body or response.ResponseBody
+    if type(body) ~= "string" then
+        local status = response.StatusCode or response.Status or response.status_code or "desconhecido"
+        local message = response.StatusMessage or response.StatusMessage or response.Error or response.error
+        return false, "Resposta HTTP sem Body (status " .. tostring(status) .. "): " .. tostring(message or "sem detalhe")
+    end
+
+    local decodedOk, decoded = pcall(function()
+        return HttpService:JSONDecode(body)
+    end)
+
+    if not decodedOk or type(decoded) ~= "table" then
+        return false, "Resposta da API inválida"
+    end
+
+    local statusCode = tonumber(response.StatusCode or response.Status or 200)
+    if statusCode and statusCode >= 400 then
+        return false, decoded.error or ("HTTP " .. tostring(statusCode))
+    end
+
+    return true, decoded
+end
+
+local function chosenUpdateProfile()
+    local url = CHOSEN_API_URL
+        .. "/profile?user_id="
+        .. HttpService:UrlEncode(tostring(LocalPlayer.UserId))
+
+    local ok, data = chosenApiCall({
+        Url = url,
+        Method = "GET",
+        Headers = {
+            ["Accept"] = "application/json"
+        }
+    })
+
+    if not ok then
+        ChosenRoleLabel.Text = "CARGO: indisponível"
+        UserStatus.Text = "API OFFLINE  -  " .. tostring(data)
+        UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
+        return false
+    end
+
+    if not data.success or type(data.profile) ~= "table" then
+        ChosenRoleLabel.Text = "CARGO: não encontrado"
+        ChosenPermissionLabel.Text = "PERMISSÕES: indisponíveis"
+        UserStatus.Text = "PERFIL NÃO LOCALIZADO"
+        UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
+        return false
+    end
+
+    if type(data.permissions) ~= "table" then
+        ChosenRoleLabel.Text = "CARGO: permissões indisponíveis"
+        ChosenPermissionLabel.Text = "PERMISSÕES: API não retornou os dados"
+        UserStatus.Text = "PERFIL ENCONTRADO • PERMISSÕES OFFLINE"
+        UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
+        return false
+    end
+
+    chosenProfile = data.profile
+    chosenProfilePermissions = data.permissions
+    local role = tostring(data.profile.role or "Member")
+    local banned = data.profile.is_banned == true
+    local permissions = type(data.permissions) == "table" and data.permissions or {}
+
+    -- Aplica cargo + permissões (atributos e rótulos da Home).
+    -- Enquanto um cargo temporário estiver ativo para VOCÊ, mantém
+    -- as permissões dele na sessão; o cargo real volta ao restaurar.
+    local selfTempRole = chosenTempRoles[tostring(LocalPlayer.UserId)]
+    if type(selfTempRole) == "string"
+        and type(chosenApplyPermissions) == "function" then
+        pcall(chosenApplyPermissions, selfTempRole, nil, true)
+    elseif type(chosenApplyPermissions) == "function" then
+        pcall(chosenApplyPermissions, role, permissions, false)
+    end
+
+    if type(chosenBuildModerationTab) == "function" then
+        pcall(chosenBuildModerationTab)
+    end
+
+    if banned then
+        UserStatus.Text = "CONTA MARCADA COMO BANIDA"
+        UserStatus.BackgroundColor3 = Color3.fromRGB(190, 55, 65)
+    else
+        UserStatus.Text = "API ONLINE  -  ACESSO LIVRE"
+        UserStatus.BackgroundColor3 = COLOR_SUCCESS
+    end
+
+    chosenApiReady = true
+    return true
+end
+
+local function chosenHeartbeat()
+    local ok, data = chosenApiCall({
+        Url = CHOSEN_API_URL .. "/heartbeat",
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json",
+            ["Accept"] = "application/json"
+        },
+        Body = HttpService:JSONEncode({
+            session_id = chosenSessionId,
+            roblox_user_id = tostring(LocalPlayer.UserId),
+            username = LocalPlayer.Name,
+            version = CHOSEN_API_VERSION
+        })
+    })
+
+    if not ok then
+        warn("[CHOSEN API] Heartbeat falhou: " .. tostring(data))
+        return false
+    end
+
+    return data.success == true
+end
+
+-- Referências antecipadas: o loop abaixo busca o anúncio para
+-- todos os usuários e refresca as estatísticas da aba Moderação
+-- (os corpos são atribuídos adiante, nos blocos respectivos).
+local chosenFetchAnnouncement = nil
+local chosenRefreshModStats = nil
+
+-- ==========================================================
+-- ANÚNCIO FLUTUANTE (TOAST)
+-- Quando um anúncio novo chega, uma mensagem flutuante desliza
+-- no canto da tela, fica 10 segundos e some sozinha. Pode ser
+-- fechada antes pelo botão ✕. Não reaparece para o mesmo
+-- anúncio (só para anúncios novos).
+-- ==========================================================
+
+local chosenLastAnnouncementKey = nil
+
+local function chosenShowAnnouncementToast(message, author)
+    -- Remove um toast anterior, se ainda estiver na tela
+    local old = ScreenGui:FindFirstChild("ChosenAnnouncementToast")
+    if old then
+        old:Destroy()
+    end
+
+    local toast = Instance.new("Frame")
+    toast.Name = "ChosenAnnouncementToast"
+    toast.AnchorPoint = Vector2.new(1, 0)
+    toast.Position = UDim2.new(1, 320, 0, 18) -- fora da tela; entra deslizando
+    toast.Size = UDim2.new(0, 300, 0, 108)
+    toast.BackgroundColor3 = COLOR_CARD
+    toast.BackgroundTransparency = 0.04
+    toast.BorderSizePixel = 0
+    toast.ZIndex = 60
+    toast.Parent = ScreenGui
+    corner(toast, 14)
+    stroke(toast, COLOR_ACCENT, 1.5, 0.15)
+
+    local toastTitle = Instance.new("TextLabel")
+    toastTitle.Size = UDim2.new(1, -44, 0, 18)
+    toastTitle.Position = UDim2.new(0, 14, 0, 9)
+    toastTitle.BackgroundTransparency = 1
+    toastTitle.Text = "📣  ANÚNCIO NOVO"
+    toastTitle.TextColor3 = COLOR_ACCENT
+    toastTitle.Font = Enum.Font.GothamBlack
+    toastTitle.TextSize = 12
+    toastTitle.TextXAlignment = Enum.TextXAlignment.Left
+    toastTitle.ZIndex = 60
+    toastTitle.Parent = toast
+
+    local toastAuthor = Instance.new("TextLabel")
+    toastAuthor.Size = UDim2.new(1, -44, 0, 13)
+    toastAuthor.Position = UDim2.new(0, 14, 0, 28)
+    toastAuthor.BackgroundTransparency = 1
+    toastAuthor.Text = (type(author) == "string" and author ~= "")
+        and ("por " .. author) or ""
+    toastAuthor.TextColor3 = COLOR_MUTED
+    toastAuthor.Font = Enum.Font.GothamMedium
+    toastAuthor.TextSize = 9
+    toastAuthor.TextXAlignment = Enum.TextXAlignment.Left
+    toastAuthor.TextTruncate = Enum.TextTruncate.AtEnd
+    toastAuthor.ZIndex = 60
+    toastAuthor.Parent = toast
+
+    local toastText = Instance.new("TextLabel")
+    toastText.Size = UDim2.new(1, -28, 0, 56)
+    toastText.Position = UDim2.new(0, 14, 0, 44)
+    toastText.BackgroundTransparency = 1
+    toastText.Text = message
+    toastText.TextColor3 = COLOR_TEXT
+    toastText.Font = Enum.Font.GothamMedium
+    toastText.TextSize = 12
+    toastText.TextXAlignment = Enum.TextXAlignment.Left
+    toastText.TextYAlignment = Enum.TextYAlignment.Top
+    toastText.TextWrapped = true
+    toastText.TextTruncate = Enum.TextTruncate.AtEnd
+    toastText.ZIndex = 60
+    toastText.Parent = toast
+
+    local toastClose = Instance.new("TextButton")
+    toastClose.Size = UDim2.new(0, 26, 0, 26)
+    toastClose.Position = UDim2.new(1, -32, 0, 8)
+    toastClose.BackgroundTransparency = 1
+    toastClose.Text = "✕"
+    toastClose.TextColor3 = COLOR_MUTED
+    toastClose.Font = Enum.Font.GothamBold
+    toastClose.TextSize = 14
+    toastClose.ZIndex = 61
+    toastClose.Parent = toast
+
+    -- Desliza para dentro do canto
+    tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.4)
+
+    local function dismiss()
+        if not toast.Parent then return end
+        tween(toast, {Position = UDim2.new(1, 320, 0, 18)}, 0.35)
+        task.delay(0.4, function()
+            pcall(function() toast:Destroy() end)
+        end)
+    end
+
+    toastClose.MouseButton1Click:Connect(dismiss)
+
+    -- Fica 10 segundos e some sozinho
+    task.delay(10, dismiss)
+end
+
+-- ==========================================================
+-- MENSAGEM INSTANTÂNEA (LIVE)
+-- Diferente do anúncio (que fica salvo e aparece no cartão da
+-- aba Início), a mensagem instantânea é um aviso do momento:
+-- desliza no canto da tela, fica 10 segundos e some. Nova
+-- mensagem substitui o toast anterior.
+-- ==========================================================
+
+local chosenLastLiveKey = nil
+
+local function chosenShowLiveToast(message, author)
+    local old = ScreenGui:FindFirstChild("ChosenLiveMessageToast")
+    if old then
+        old:Destroy()
+    end
+
+    -- Altura dinâmica: mensagens longas pedem um toast maior
+    -- (cada linha comporta ~38 caracteres no TextSize 12)
+    local estLines = math.max(1, math.ceil(#message / 38))
+    local textH = math.min(estLines * 16 + 4, 380)
+    local toastH = 44 + textH
+
+    local toast = Instance.new("Frame")
+    toast.Name = "ChosenLiveMessageToast"
+    toast.AnchorPoint = Vector2.new(1, 0)
+    toast.Position = UDim2.new(1, 320, 0, 136) -- abaixo do toast de anúncio
+    toast.Size = UDim2.new(0, 300, 0, toastH)
+    toast.BackgroundColor3 = COLOR_CARD
+    toast.BackgroundTransparency = 0.04
+    toast.BorderSizePixel = 0
+    toast.ZIndex = 60
+    toast.Parent = ScreenGui
+    corner(toast, 14)
+    stroke(toast, COLOR_SUCCESS, 1.5, 0.15)
+
+    local toastTitle = Instance.new("TextLabel")
+    toastTitle.Size = UDim2.new(1, -44, 0, 18)
+    toastTitle.Position = UDim2.new(0, 14, 0, 9)
+    toastTitle.BackgroundTransparency = 1
+    toastTitle.Text = "💬  MENSAGEM"
+    toastTitle.TextColor3 = COLOR_SUCCESS
+    toastTitle.Font = Enum.Font.GothamBlack
+    toastTitle.TextSize = 12
+    toastTitle.TextXAlignment = Enum.TextXAlignment.Left
+    toastTitle.ZIndex = 60
+    toastTitle.Parent = toast
+
+    local toastAuthor = Instance.new("TextLabel")
+    toastAuthor.Size = UDim2.new(1, -44, 0, 13)
+    toastAuthor.Position = UDim2.new(0, 14, 0, 28)
+    toastAuthor.BackgroundTransparency = 1
+    toastAuthor.Text = (type(author) == "string" and author ~= "")
+        and ("de " .. author) or ""
+    toastAuthor.TextColor3 = COLOR_MUTED
+    toastAuthor.Font = Enum.Font.GothamMedium
+    toastAuthor.TextSize = 9
+    toastAuthor.TextXAlignment = Enum.TextXAlignment.Left
+    toastAuthor.TextTruncate = Enum.TextTruncate.AtEnd
+    toastAuthor.ZIndex = 60
+    toastAuthor.Parent = toast
+
+    local toastText = Instance.new("TextLabel")
+    toastText.Size = UDim2.new(1, -28, 0, textH)
+    toastText.Position = UDim2.new(0, 14, 0, 44)
+    toastText.BackgroundTransparency = 1
+    toastText.Text = message
+    toastText.TextColor3 = COLOR_TEXT
+    toastText.Font = Enum.Font.GothamMedium
+    toastText.TextSize = 12
+    toastText.TextXAlignment = Enum.TextXAlignment.Left
+    toastText.TextYAlignment = Enum.TextYAlignment.Top
+    toastText.TextWrapped = true
+    toastText.TextTruncate = Enum.TextTruncate.AtEnd
+    toastText.ZIndex = 60
+    toastText.Parent = toast
+
+    local toastClose = Instance.new("TextButton")
+    toastClose.Size = UDim2.new(0, 26, 0, 26)
+    toastClose.Position = UDim2.new(1, -32, 0, 8)
+    toastClose.BackgroundTransparency = 1
+    toastClose.Text = "✕"
+    toastClose.TextColor3 = COLOR_MUTED
+    toastClose.Font = Enum.Font.GothamBold
+    toastClose.TextSize = 14
+    toastClose.ZIndex = 61
+    toastClose.Parent = toast
+
+    tween(toast, {Position = UDim2.new(1, -16, 0, 136)}, 0.4)
+
+    local function dismiss()
+        if not toast.Parent then return end
+        tween(toast, {Position = UDim2.new(1, 320, 0, 136)}, 0.35)
+        task.delay(0.4, function()
+            pcall(function() toast:Destroy() end)
+        end)
+    end
+
+    toastClose.MouseButton1Click:Connect(dismiss)
+
+    task.delay(10, dismiss)
+end
+
+-- Consulta a mensagem instantânea a cada 8s (é um aviso do
+-- momento, então a checagem é mais frequente que a do anúncio).
+task.spawn(function()
+    while ScreenGui.Parent do
+        local ok, data = chosenApiCall({
+            Url = CHOSEN_API_URL .. "/live-message",
+            Method = "GET",
+            Headers = {
+                ["Accept"] = "application/json"
+            }
+        })
+
+        if ok and type(data.message) == "table" then
+            local text = data.message.text or data.message.message
+            local createdAt = tostring(data.message.created_at or "")
+
+            if type(text) == "string" and text ~= "" then
+                local key = createdAt .. "|" .. text
+                if key ~= chosenLastLiveKey then
+                    chosenLastLiveKey = key
+                    chosenShowLiveToast(
+                        text,
+                        data.message.author_username
+                    )
+                end
+            end
+        end
+
+        task.wait(8)
+    end
+end)
+
+-- ==========================================================
+-- ANÚNCIO GLOBAL
+-- GET /announcement a cada ciclo: todos os usuários veem o
+-- cartão na aba Início. Sem rota na API ou sem anúncio
+-- publicado, o cartão permanece oculto.
+-- A publicação (POST /announcement) fica na aba Moderação e
+-- é permitida para Owner e Moderador (validado no servidor).
+-- ==========================================================
+
+local AnnouncementCard = Instance.new("Frame")
+AnnouncementCard.Name = "ChosenAnnouncement"
+AnnouncementCard.Size = UDim2.new(1, -4, 0, 84)
+AnnouncementCard.BackgroundColor3 = COLOR_CARD
+AnnouncementCard.BackgroundTransparency = 0.08
+AnnouncementCard.BorderSizePixel = 0
+AnnouncementCard.LayoutOrder = 9
+AnnouncementCard.Visible = false
+AnnouncementCard.Parent = HomeTab
+corner(AnnouncementCard, 14)
+stroke(AnnouncementCard, COLOR_BORDER, 1, 0.2)
+
+local AnnBannerTitle = Instance.new("TextLabel")
+AnnBannerTitle.Size = UDim2.new(1, -28, 0, 18)
+AnnBannerTitle.Position = UDim2.new(0, 14, 0, 8)
+AnnBannerTitle.BackgroundTransparency = 1
+AnnBannerTitle.Text = "📣  ANÚNCIO"
+AnnBannerTitle.TextColor3 = COLOR_ACCENT
+AnnBannerTitle.Font = Enum.Font.GothamBlack
+AnnBannerTitle.TextSize = 11
+AnnBannerTitle.TextXAlignment = Enum.TextXAlignment.Left
+AnnBannerTitle.Parent = AnnouncementCard
+
+local AnnBannerAuthor = Instance.new("TextLabel")
+AnnBannerAuthor.Size = UDim2.new(1, -28, 0, 14)
+AnnBannerAuthor.Position = UDim2.new(0, 14, 0, 27)
+AnnBannerAuthor.BackgroundTransparency = 1
+AnnBannerAuthor.Text = ""
+AnnBannerAuthor.TextColor3 = COLOR_MUTED
+AnnBannerAuthor.Font = Enum.Font.GothamMedium
+AnnBannerAuthor.TextSize = 9
+AnnBannerAuthor.TextXAlignment = Enum.TextXAlignment.Left
+AnnBannerAuthor.TextTruncate = Enum.TextTruncate.AtEnd
+AnnBannerAuthor.Parent = AnnouncementCard
+
+local AnnBannerText = Instance.new("TextLabel")
+AnnBannerText.Size = UDim2.new(1, -28, 0, 38)
+AnnBannerText.Position = UDim2.new(0, 14, 0, 43)
+AnnBannerText.BackgroundTransparency = 1
+AnnBannerText.Text = ""
+AnnBannerText.TextColor3 = COLOR_TEXT
+AnnBannerText.Font = Enum.Font.GothamMedium
+AnnBannerText.TextSize = 12
+AnnBannerText.TextXAlignment = Enum.TextXAlignment.Left
+AnnBannerText.TextYAlignment = Enum.TextYAlignment.Top
+AnnBannerText.TextWrapped = true
+AnnBannerText.TextTruncate = Enum.TextTruncate.AtEnd
+AnnBannerText.Parent = AnnouncementCard
+
+chosenFetchAnnouncement = function()
+    local ok, data = chosenApiCall({
+        Url = CHOSEN_API_URL .. "/announcement",
+        Method = "GET",
+        Headers = {
+            ["Accept"] = "application/json"
+        }
+    })
+
+    -- Rota inexistente ou falha: cartão some silenciosamente.
+    if not ok then
+        AnnouncementCard.Visible = false
+        return
+    end
+
+    local ann = (type(data.announcement) == "table" and data.announcement)
+        or (type(data.data) == "table" and data.data)
+        or data
+
+    local message
+    if type(ann) == "table" then
+        message = ann.message or ann.text
+    elseif type(ann) == "string" then
+        message = ann
+    end
+
+    if type(message) ~= "string" or message == "" then
+        AnnouncementCard.Visible = false
+        return
+    end
+
+    AnnBannerText.Text = message
+
+    local meta = {}
+    local author = type(ann) == "table" and (ann.author_username or ann.author) or nil
+    local createdAt = type(ann) == "table" and (ann.created_at or ann.date) or nil
+
+    if type(author) == "string" and author ~= "" then
+        table.insert(meta, "por " .. author)
+    end
+    if type(createdAt) == "string" and createdAt ~= "" then
+        table.insert(meta, (createdAt:sub(1, 16):gsub("T", " ")))
+    end
+    AnnBannerAuthor.Text = table.concat(meta, "   •   ")
+
+    AnnouncementCard.Visible = true
+
+    -- Anúncio novo? Mostra o toast flutuante no canto da tela.
+    -- Anúncios já vistos nesta sessão não reaparecem.
+    local annKey = tostring(
+        type(ann) == "table" and (ann.id or ann.created_at) or ""
+    ) .. "|" .. message
+    if annKey ~= chosenLastAnnouncementKey then
+        chosenLastAnnouncementKey = annKey
+        chosenShowAnnouncementToast(message, author)
+    end
+end
+
+-- ==========================================================
+-- TAGS DE CARGO (BILLBOARD)
+-- Mostra o nome do cargo flutuando acima da cabeça de cada
+-- jogador que tenha o script registrado (incluindo o próprio).
+-- Consulta o cargo via /profile e REPETE a consulta: quem entra
+-- depois (ou se registra depois) ganha a tag assim que o registro
+-- existir, e mudanças de cargo aparecem em até ~15s.
+-- O cargo temporário da sessão (aplicado na aba Moderação)
+-- sobrepõe o cargo real na tag do jogador alvo.
+-- Efeitos suaves (senoidais, sem trocas bruscas de cor):
+-- Owner (vermelho pulsante), Moderador (azul pulsante),
+-- Premium (amarelo pulsante) e Membro (cinza transparente).
+-- O botão 👁 da aba Início esconde as tags só na sua tela.
+-- ==========================================================
+
+local chosenTagClock = 0
+local chosenTagPending = {} -- jogadores consultados sem registro ainda
+
+local CHOSEN_TAG_BASE = {
+    Owner = Color3.fromRGB(255, 70, 70),
+    Moderator = Color3.fromRGB(80, 150, 255),
+    Premium = Color3.fromRGB(255, 210, 60),
+    Member = Color3.fromRGB(175, 175, 175)
+}
+
+local function chosenRoleTagText(role)
+    if role == "Owner" then return "👑 OWNER" end
+    if role == "Moderator" then return "🛡 MODERADOR" end
+    if role == "Premium" then return "⭐ PREMIUM" end
+    if role == "Member" then return "MEMBRO" end
+    return string.upper(role)
+end
+
+-- Atualiza o cargo exibido na tag de um jogador.
+local function chosenSetTagRole(player, role)
+    local tag = chosenRoleTags[player]
+    if not tag then return end
+
+    tag.role = role
+    tag.roleLabel.Text = chosenRoleTagText(role)
+    if tag.shadow then
+        tag.shadow.Text = chosenRoleTagText(role)
+    end
+end
+
+-- Consulta o cargo real de um jogador na API (assíncrono).
+local function chosenQueryTagRole(player, callback)
+    task.spawn(function()
+        local ok, data = chosenApiCall({
+            Url = CHOSEN_API_URL .. "/profile?user_id=" .. tostring(player.UserId),
+            Method = "GET",
+            Headers = {
+                ["Accept"] = "application/json"
+            }
+        })
+
+        if ok
+            and type(data.profile) == "table"
+            and data.profile.is_banned ~= true then
+            callback(tostring(data.profile.role or "Member"))
+        end
+    end)
+end
+
+-- Cargo temporário da sessão para QUALQUER jogador (incluindo
+-- você). role nil restaura o cargo real do jogador.
+chosenApplyTempRole = function(userId, role)
+    userId = tostring(userId)
+
+    if role ~= nil then
+        chosenTempRoles[userId] = role
+    else
+        chosenTempRoles[userId] = nil
+    end
+
+    -- Atualiza a tag do jogador alvo imediatamente, se ela existir.
+    for player in pairs(chosenRoleTags) do
+        if tostring(player.UserId) == userId then
+            if role ~= nil then
+                chosenSetTagRole(player, role)
+            else
+                -- Restaura o cargo real reconsultando a API
+                chosenQueryTagRole(player, function(realRole)
+                    if chosenTempRoles[userId] == nil then
+                        chosenSetTagRole(player, realRole)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+local function chosenEnsureRoleTag(player)
+    -- Tag já existe (e não está pendente de nova consulta): nada a fazer.
+    if chosenRoleTags[player] and not chosenTagPending[player] then return end
+    chosenTagPending[player] = nil
+
+    task.spawn(function()
+        local ok, data = chosenApiCall({
+            Url = CHOSEN_API_URL .. "/profile?user_id=" .. tostring(player.UserId),
+            Method = "GET",
+            Headers = {
+                ["Accept"] = "application/json"
+            }
+        })
+
+        -- Sem registro ou banido: nenhuma tag ainda (reconsulta depois).
+        if not ok or type(data.profile) ~= "table" then
+            chosenTagPending[player] = true
+            return
+        end
+        if data.profile.is_banned == true then
+            return
+        end
+
+        -- Cargo temporário da sessão sobrepõe o cargo real.
+        local role = chosenTempRoles[tostring(player.UserId)]
+            or tostring(data.profile.role or "Member")
+        local base = CHOSEN_TAG_BASE[role] or CHOSEN_TAG_BASE.Member
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ChosenRoleTag"
+        billboard.Size = UDim2.new(0, 210, 0, 44)
+        billboard.StudsOffset = Vector3.new(0, 2.7, 0)
+        billboard.AlwaysOnTop = true
+        billboard.MaxDistance = 140
+        billboard.Enabled = not chosenTagsHidden
+
+        -- Sombra projetada atrás do texto (dá profundidade)
+        local shadow = Instance.new("TextLabel")
+        shadow.Size = UDim2.new(1, 0, 1, 0)
+        shadow.Position = UDim2.new(0, 1, 0, 3)
+        shadow.BackgroundTransparency = 1
+        shadow.Text = chosenRoleTagText(role)
+        shadow.Font = Enum.Font.FredokaOne
+        shadow.TextSize = 28
+        shadow.TextColor3 = Color3.new(0, 0, 0)
+        shadow.TextTransparency = 0.55
+        shadow.ZIndex = 1
+        shadow.Parent = billboard
+
+        local roleLabel = Instance.new("TextLabel")
+        roleLabel.Size = UDim2.new(1, 0, 1, 0)
+        roleLabel.BackgroundTransparency = 1
+        roleLabel.Text = chosenRoleTagText(role)
+        roleLabel.Font = Enum.Font.FredokaOne
+        roleLabel.TextSize = 28
+        roleLabel.TextColor3 = base
+        roleLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        roleLabel.TextStrokeTransparency = 0.4
+        roleLabel.ZIndex = 2
+        roleLabel.Parent = billboard
+
+        -- Sombreado suave no texto (deixa a fonte com mais volume)
+        local labelGradient = Instance.new("UIGradient")
+        labelGradient.Rotation = 90
+        labelGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
+        })
+        labelGradient.Parent = roleLabel
+
+        chosenRoleTags[player] = {
+            role = role,
+            billboard = billboard,
+            roleLabel = roleLabel,
+            shadow = shadow,
+            -- Fase própria de flutuação (cada tag sobe/desce fora de sync)
+            phase = (player.UserId % 314) / 50
+        }
+
+        -- Anexa na cabeça atual e reconecta a cada respawn.
+        local char = player.Character or player.CharacterAdded:Wait()
+        local head = char:WaitForChild("Head", 8)
+        if head then
+            billboard.Parent = head
+        end
+
+        player.CharacterAdded:Connect(function(newChar)
+            local newHead = newChar:WaitForChild("Head", 8)
+            if newHead then
+                billboard.Parent = newHead
+            end
+        end)
+    end)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    chosenEnsureRoleTag(player)
+end
+Players.PlayerAdded:Connect(chosenEnsureRoleTag)
+
+Players.PlayerRemoving:Connect(function(player)
+    local tag = chosenRoleTags[player]
+    if tag then
+        pcall(function() tag.billboard:Destroy() end)
+        chosenRoleTags[player] = nil
+    end
+    chosenTagPending[player] = nil
+end)
+
+-- Loop de efeitos: um único laço atualiza todas as tags com
+-- transições senoidais, sem "pulos" de cor. A cada ~15s também
+-- reconsulta os cargos (jogadores que se registraram depois
+-- ganham a tag; mudanças de cargo aparecem sozinhas).
+task.spawn(function()
+    local refreshClock = 0
+
+    while ScreenGui.Parent do
+        chosenTagClock = (chosenTagClock + 0.03) % 1000
+        refreshClock = refreshClock + 0.05
+
+        for _, tag in pairs(chosenRoleTags) do
+            pcall(function()
+                local label = tag.roleLabel
+                if not label or not label.Parent then return end
+
+                -- Flutuação suave: sobe e desce alguns centésimos,
+                -- com fase própria por jogador (não fica em sync)
+                tag.billboard.StudsOffset = Vector3.new(
+                    0,
+                    2.7 + 0.14 * math.sin(chosenTagClock * 2 + (tag.phase or 0)),
+                    0
+                )
+
+                if tag.role == "Owner" then
+                    -- Vermelho pulsante (brilho + transparência oscilam)
+                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
+                    label.TextColor3 = Color3.fromHSV(0, 0.85, 0.72 + 0.28 * pulse)
+                    label.TextTransparency = 0.25 * (1 - pulse)
+                elseif tag.role == "Moderator" then
+                    -- Azul pulsante (brilho + transparência oscilam)
+                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
+                    label.TextColor3 = Color3.fromHSV(0.58, 0.85, 0.72 + 0.28 * pulse)
+                    label.TextTransparency = 0.25 * (1 - pulse)
+                elseif tag.role == "Premium" then
+                    -- Amarelo pulsante (brilho + transparência oscilam)
+                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
+                    label.TextColor3 = Color3.fromHSV(0.13, 1, 0.78 + 0.22 * pulse)
+                    label.TextTransparency = 0.25 * (1 - pulse)
+                else
+                    -- Membro: cinza transparente
+                    label.TextColor3 = CHOSEN_TAG_BASE.Member
+                    label.TextTransparency = 0.35
+                end
+            end)
+        end
+
+        -- Reconsulta periódica: tags que faltam + cargos atualizados.
+        if refreshClock >= 15 then
+            refreshClock = 0
+
+            for _, player in ipairs(Players:GetPlayers()) do
+                if not chosenRoleTags[player] then
+                    chosenEnsureRoleTag(player)
+                elseif chosenTempRoles[tostring(player.UserId)] == nil then
+                    chosenQueryTagRole(player, function(newRole)
+                        if chosenRoleTags[player]
+                            and chosenTempRoles[tostring(player.UserId)] == nil then
+                            chosenSetTagRole(player, newRole)
+                        end
+                    end)
+                end
+            end
+        end
+
+        task.wait(0.05)
+    end
+end)
+
+-- Ponte do botão 👁 (declarado fora do bloco da API):
+-- alterna a visibilidade das tags e devolve o novo estado.
+chosenToggleTagsVisibility = function()
+    chosenTagsHidden = not chosenTagsHidden
+
+    for _, tag in pairs(chosenRoleTags) do
+        pcall(function()
+            tag.billboard.Enabled = not chosenTagsHidden
+        end)
+    end
+
+    return chosenTagsHidden
+end
+
+-- ==========================================================
+-- ABA MODERAÇÃO
+-- Construída sob demanda: só aparece para quem tem alguma
+-- permissão de moderação (can_view_online, can_moderate_users,
+-- can_manage_roles ou can_manage_announcements). Seções sem
+-- permissão ficam com 🔒 + aviso ao interagir.
+--
+-- As rotas /online, /role, /moderate e /announcement ainda não
+-- existem na Edge Function: enquanto isso o status mostra o erro
+-- real da API (ex.: "Route not found") e os recursos passam a
+-- funcionar automaticamente quando as rotas forem adicionadas
+-- ao backend.
+-- ==========================================================
+
+local chosenModTab = nil
+local chosenModRefs = nil
+
+local function chosenHasPerm(flag)
+    return ScreenGui:GetAttribute(flag) == true
+end
+
+local function chosenHasAnyModeration()
+    return chosenHasPerm("CHOSEN_CanViewOnline")
+        or chosenHasPerm("CHOSEN_CanModerateUsers")
+        or chosenHasPerm("CHOSEN_CanManageRoles")
+        or chosenHasPerm("CHOSEN_CanManageAnnouncements")
+end
+
+local CHOSEN_ROLE_COLORS = {
+    Owner = Color3.fromRGB(255, 170, 60),
+    Moderator = Color3.fromRGB(90, 170, 255),
+    Premium = Color3.fromRGB(200, 120, 255),
+    Member = Color3.fromRGB(150, 165, 185)
+}
+
+local CHOSEN_WARN = Color3.fromRGB(255, 170, 60)
+
+local function chosenLockNotice(statusLabel, permissionText)
+    statusLabel.Text = "🔒  Requer " .. permissionText
+    statusLabel.TextColor3 = CHOSEN_WARN
+end
+
+-- Permissões aproximadas usadas pelo cargo temporário da sessão
+-- (o cargo real e as permissões verdadeiras vêm sempre da API).
+local CHOSEN_TEMP_PERMISSIONS = {
+    Owner = {
+        can_use_panel = true,
+        can_use_premium = true,
+        can_moderate_users = true,
+        can_manage_roles = true,
+        can_manage_announcements = true,
+        can_view_online = true
+    },
+    Moderator = {
+        can_use_panel = true,
+        can_use_premium = true,
+        can_moderate_users = true,
+        can_manage_roles = false,
+        can_manage_announcements = true,
+        can_view_online = true
+    },
+    Premium = {
+        can_use_panel = true,
+        can_use_premium = true,
+        can_moderate_users = false,
+        can_manage_roles = false,
+        can_manage_announcements = false,
+        can_view_online = false
+    },
+    Member = {
+        can_use_panel = true,
+        can_use_premium = false,
+        can_moderate_users = false,
+        can_manage_roles = false,
+        can_manage_announcements = false,
+        can_view_online = false
+    }
+}
+
+-- Aplica cargo + permissões como atributos do ScreenGui e
+-- atualiza os rótulos da Home. Usado pelo perfil real (vindo da
+-- API) e pelo cargo temporário da sessão.
+chosenApplyPermissions = function(role, permissions, isTemporary)
+    permissions = (type(permissions) == "table" and permissions)
+        or CHOSEN_TEMP_PERMISSIONS[role]
+        or {}
+
+    ScreenGui:SetAttribute("CHOSEN_Role", role)
+    ScreenGui:SetAttribute("CHOSEN_CanUsePanel", permissions.can_use_panel == true)
+    ScreenGui:SetAttribute("CHOSEN_CanUsePremium", permissions.can_use_premium == true)
+    ScreenGui:SetAttribute("CHOSEN_CanModerateUsers", permissions.can_moderate_users == true)
+    ScreenGui:SetAttribute("CHOSEN_CanManageRoles", permissions.can_manage_roles == true)
+    ScreenGui:SetAttribute("CHOSEN_CanManageAnnouncements", permissions.can_manage_announcements == true)
+    ScreenGui:SetAttribute("CHOSEN_CanViewOnline", permissions.can_view_online == true)
+
+    if isTemporary then
+        ChosenRoleLabel.Text = "CARGO: " .. string.upper(role) .. "  •  TEMPORÁRIO"
+    else
+        local whitelisted = chosenProfile ~= nil and chosenProfile.is_whitelisted == true
+        ChosenRoleLabel.Text = "CARGO: " .. string.upper(role)
+            .. "  •  WHITELIST: " .. (whitelisted and "SIM" or "NÃO")
+    end
+
+    ChosenPermissionLabel.Text = "PREMIUM: "
+        .. (permissions.can_use_premium == true and "SIM" or "NÃO")
+        .. "  •  MODERAÇÃO: "
+        .. (permissions.can_moderate_users == true and "SIM" or "NÃO")
+        .. "  •  OWNER: "
+        .. (permissions.can_manage_roles == true and "SIM" or "NÃO")
+end
+
+chosenBuildModerationTab = function()
+    if chosenModTab then return end
+    if not chosenHasAnyModeration() then return end
+
+    chosenModTab = createTab("Moderação", 8)
+
+    -- Ajusta a sidebar para acomodar 8 abas sem cortar.
+    TabLayout.Padding = UDim.new(0, 2)
+    for _, data in pairs(Tabs) do
+        data.button.Size = UDim2.new(1, 0, 0, 32)
+    end
+
+    local refs = {}
+    chosenModRefs = refs
+
+    local modOrder = 0
+    local function nextOrder()
+        modOrder += 1
+        return modOrder
+    end
+
+    -- Status curto (dentro de uma control row, alinhado à direita).
+    local function createModStatus(parentRow)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.5, -10, 1, 0)
+        label.Position = UDim2.new(0.5, 5, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "—"
+        label.TextColor3 = COLOR_DIM
+        label.Font = Enum.Font.GothamMedium
+        label.TextSize = 10
+        label.TextXAlignment = Enum.TextXAlignment.Right
+        label.TextTruncate = Enum.TextTruncate.AtEnd
+        label.Parent = parentRow
+        return label
+    end
+
+    -- Status largo (linha própria na lista, alinhado à esquerda).
+    local function createModStatusWide()
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -4, 0, 16)
+        label.BackgroundTransparency = 1
+        label.Text = "—"
+        label.TextColor3 = COLOR_DIM
+        label.Font = Enum.Font.GothamMedium
+        label.TextSize = 9
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextTruncate = Enum.TextTruncate.AtEnd
+        label.LayoutOrder = nextOrder()
+        label.Parent = chosenModTab
+        return label
+    end
+
+    -- ------------------------------------------------------
+    -- ESTATÍSTICAS (GET /stats)
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "Estatísticas", "Usuários registrados e presença agora.", nextOrder())
+
+    local StatsRow = Instance.new("Frame")
+    StatsRow.Size = UDim2.new(1, -4, 0, 86)
+    StatsRow.BackgroundColor3 = COLOR_CARD
+    StatsRow.BackgroundTransparency = 0.08
+    StatsRow.BorderSizePixel = 0
+    StatsRow.LayoutOrder = nextOrder()
+    StatsRow.Parent = chosenModTab
+    corner(StatsRow, 14)
+    stroke(StatsRow, COLOR_BORDER, 1, 0.2)
+
+    local RegisteredBox = Instance.new("Frame")
+    RegisteredBox.Size = UDim2.new(0.5, -14, 1, -20)
+    RegisteredBox.Position = UDim2.new(0, 10, 0, 10)
+    RegisteredBox.BackgroundColor3 = COLOR_PANEL
+    RegisteredBox.BackgroundTransparency = 0.25
+    RegisteredBox.BorderSizePixel = 0
+    RegisteredBox.Parent = StatsRow
+    corner(RegisteredBox, 12)
+    stroke(RegisteredBox, COLOR_BORDER, 1, 0.35)
+
+    local RegisteredCaption = Instance.new("TextLabel")
+    RegisteredCaption.Size = UDim2.new(1, -20, 0, 16)
+    RegisteredCaption.Position = UDim2.new(0, 10, 0, 10)
+    RegisteredCaption.BackgroundTransparency = 1
+    RegisteredCaption.Text = "👥 CADASTRO"
+    RegisteredCaption.TextColor3 = COLOR_MUTED
+    RegisteredCaption.Font = Enum.Font.GothamBold
+    RegisteredCaption.TextSize = 10
+    RegisteredCaption.TextXAlignment = Enum.TextXAlignment.Left
+    RegisteredCaption.Parent = RegisteredBox
+
+    local RegisteredLabel = Instance.new("TextLabel")
+    RegisteredLabel.Size = UDim2.new(1, -20, 0, 28)
+    RegisteredLabel.Position = UDim2.new(0, 10, 0, 36)
+    RegisteredLabel.BackgroundTransparency = 1
+    RegisteredLabel.Text = "👥 Carregando..."
+    RegisteredLabel.TextColor3 = COLOR_DIM
+    RegisteredLabel.Font = Enum.Font.GothamBold
+    RegisteredLabel.TextSize = 17
+    RegisteredLabel.TextXAlignment = Enum.TextXAlignment.Left
+    RegisteredLabel.Parent = RegisteredBox
+
+    local OnlineNowBox = Instance.new("Frame")
+    OnlineNowBox.Size = UDim2.new(0.5, -14, 1, -20)
+    OnlineNowBox.Position = UDim2.new(0.5, 4, 0, 10)
+    OnlineNowBox.BackgroundColor3 = COLOR_PANEL
+    OnlineNowBox.BackgroundTransparency = 0.25
+    OnlineNowBox.BorderSizePixel = 0
+    OnlineNowBox.Parent = StatsRow
+    corner(OnlineNowBox, 12)
+    stroke(OnlineNowBox, COLOR_BORDER, 1, 0.35)
+
+    local OnlineNowCaption = Instance.new("TextLabel")
+    OnlineNowCaption.Size = UDim2.new(1, -20, 0, 16)
+    OnlineNowCaption.Position = UDim2.new(0, 10, 0, 10)
+    OnlineNowCaption.BackgroundTransparency = 1
+    OnlineNowCaption.Text = "🟢 PRESENÇA"
+    OnlineNowCaption.TextColor3 = COLOR_MUTED
+    OnlineNowCaption.Font = Enum.Font.GothamBold
+    OnlineNowCaption.TextSize = 10
+    OnlineNowCaption.TextXAlignment = Enum.TextXAlignment.Left
+    OnlineNowCaption.Parent = OnlineNowBox
+
+    local OnlineNowLabel = Instance.new("TextLabel")
+    OnlineNowLabel.Size = UDim2.new(1, -20, 0, 28)
+    OnlineNowLabel.Position = UDim2.new(0, 10, 0, 36)
+    OnlineNowLabel.BackgroundTransparency = 1
+    OnlineNowLabel.Text = "🟢 Carregando..."
+    OnlineNowLabel.TextColor3 = COLOR_SUCCESS
+    OnlineNowLabel.Font = Enum.Font.GothamBold
+    OnlineNowLabel.TextSize = 17
+    OnlineNowLabel.TextXAlignment = Enum.TextXAlignment.Left
+    OnlineNowLabel.Parent = OnlineNowBox
+
+    local function loadModStats()
+        task.spawn(function()
+            local ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/stats",
+                Method = "GET",
+                Headers = {
+                    ["Accept"] = "application/json"
+                }
+            })
+
+            if not ok then
+                RegisteredLabel.Text = "👥 —"
+                OnlineNowLabel.Text = "🟢 —"
+                return
+            end
+
+            local total = tonumber(data.total_users)
+                or tonumber(data.users_total)
+                or tonumber(data.registered)
+                or (type(data.registered_users) == "table" and #data.registered_users)
+                or nil
+
+            local onlineNow = tonumber(data.online_now)
+                or tonumber(data.online)
+                or tonumber(data.active_sessions)
+                or nil
+
+            RegisteredLabel.Text = total and ("👥 " .. total) or "👥 —"
+            OnlineNowLabel.Text = onlineNow and ("🟢 " .. onlineNow) or "🟢 —"
+        end)
+    end
+
+    -- O loop principal chama isto a cada ciclo (atualiza sozinho).
+    chosenRefreshModStats = loadModStats
+
+    -- ------------------------------------------------------
+    -- USUÁRIOS ONLINE (can_view_online)
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "Usuários online", "Sessões ativas reportadas pelo heartbeat.", nextOrder())
+
+    local OnlineRow = createControlRow(chosenModTab, nextOrder())
+    local OnlineRefresh = createActionButton(OnlineRow, "🔄 Atualizar", 1)
+    OnlineRefresh.Size = UDim2.new(0, 104, 0, 26)
+    OnlineRefresh.Position = UDim2.new(0, 0, 0.5, -13)
+    OnlineRefresh.TextSize = 10
+
+    local OnlineStatus = createModStatus(OnlineRow)
+    refs.OnlineStatus = OnlineStatus
+
+    local OnlineList = Instance.new("ScrollingFrame")
+    OnlineList.Size = UDim2.new(1, -4, 0, 150)
+    OnlineList.BackgroundColor3 = COLOR_CARD
+    OnlineList.BackgroundTransparency = 0.08
+    OnlineList.BorderSizePixel = 0
+    OnlineList.ScrollBarThickness = 3
+    OnlineList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    OnlineList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    OnlineList.LayoutOrder = nextOrder()
+    OnlineList.Parent = chosenModTab
+    corner(OnlineList, 12)
+    stroke(OnlineList, COLOR_BORDER, 1, 0.3)
+
+    local OnlineListLayout = Instance.new("UIListLayout")
+    OnlineListLayout.Padding = UDim.new(0, 6)
+    OnlineListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    OnlineListLayout.Parent = OnlineList
+
+    local OnlineListPadding = Instance.new("UIPadding")
+    OnlineListPadding.PaddingTop = UDim.new(0, 8)
+    OnlineListPadding.PaddingBottom = UDim.new(0, 8)
+    OnlineListPadding.PaddingLeft = UDim.new(0, 8)
+    OnlineListPadding.PaddingRight = UDim.new(0, 8)
+    OnlineListPadding.Parent = OnlineList
+
+    local function clearOnlineList()
+        for _, child in ipairs(OnlineList:GetChildren()) do
+            if child:IsA("GuiObject") then child:Destroy() end
+        end
+    end
+
+    local function addOnlineEntry(user, index)
+        local userId = tostring(user.user_id or user.id or "")
+        local username = tostring(user.username or ("User " .. userId))
+        local role = tostring(user.role or "Member")
+
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, -4, 0, 48)
+        row.BackgroundColor3 = COLOR_CARD2
+        row.BackgroundTransparency = 0.12
+        row.BorderSizePixel = 0
+        row.LayoutOrder = index
+        row.Parent = OnlineList
+        corner(row, 12)
+        stroke(row, COLOR_BORDER, 1, 0.3)
+
+        local avatar = Instance.new("ImageLabel")
+        avatar.Size = UDim2.new(0, 34, 0, 34)
+        avatar.Position = UDim2.new(0, 8, 0.5, -17)
+        avatar.BackgroundColor3 = COLOR_SIDE
+        avatar.Image = "rbxassetid://0"
+        avatar.Parent = row
+        corner(avatar, 17)
+        stroke(avatar, COLOR_ACCENT, 1, 0.3)
+
+        local idNumber = tonumber(userId)
+        if idNumber then
+            pcall(function()
+                avatar.Image = Players:GetUserThumbnailAsync(
+                    idNumber,
+                    Enum.ThumbnailType.AvatarBust,
+                    Enum.ThumbnailSize.Size420x420
+                )
+            end)
+        end
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(0, 170, 0, 18)
+        nameLabel.Position = UDim2.new(0, 52, 0, 6)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = username
+        nameLabel.TextColor3 = COLOR_TEXT
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 12
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        nameLabel.Parent = row
+
+        local idLabel = Instance.new("TextLabel")
+        idLabel.Size = UDim2.new(0, 170, 0, 14)
+        idLabel.Position = UDim2.new(0, 52, 0, 27)
+        idLabel.BackgroundTransparency = 1
+        idLabel.Text = "UserID " .. userId
+        idLabel.TextColor3 = COLOR_MUTED
+        idLabel.Font = Enum.Font.GothamMedium
+        idLabel.TextSize = 9
+        idLabel.TextXAlignment = Enum.TextXAlignment.Left
+        idLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        idLabel.Parent = row
+
+        local roleLabel = Instance.new("TextLabel")
+        roleLabel.Size = UDim2.new(0, 120, 0, 20)
+        roleLabel.Position = UDim2.new(1, -130, 0.5, -10)
+        roleLabel.BackgroundColor3 = COLOR_SIDE
+        roleLabel.BackgroundTransparency = 0.25
+        roleLabel.Text = string.upper(role)
+        roleLabel.TextColor3 = CHOSEN_ROLE_COLORS[role] or COLOR_DIM
+        roleLabel.Font = Enum.Font.GothamBold
+        roleLabel.TextSize = 10
+        roleLabel.TextXAlignment = Enum.TextXAlignment.Center
+        roleLabel.Parent = row
+        corner(roleLabel, 10)
+    end
+
+    local function loadOnline()
+        if not chosenHasPerm("CHOSEN_CanViewOnline") then
+            chosenLockNotice(OnlineStatus, "can_view_online")
+            return
+        end
+        clearOnlineList()
+        OnlineStatus.Text = "Carregando..."
+        OnlineStatus.TextColor3 = COLOR_DIM
+        task.spawn(function()
+            local ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/online",
+                Method = "GET",
+                Headers = {
+                    ["Accept"] = "application/json"
+                }
+            })
+
+            if not ok then
+                OnlineStatus.Text = "⚠  " .. tostring(data):sub(1, 44)
+                OnlineStatus.TextColor3 = CHOSEN_WARN
+                return
+            end
+
+            local users = (type(data.users) == "table" and data.users)
+                or (type(data.data) == "table" and data.data)
+                or {}
+
+            local shown = 0
+            for _, user in ipairs(users) do
+                if type(user) == "table" then
+                    shown += 1
+                    addOnlineEntry(user, shown)
+                end
+            end
+
+            OnlineStatus.Text = shown > 0
+                and (shown .. " usuário(s) online")
+                or "Nenhum usuário online"
+            OnlineStatus.TextColor3 = COLOR_DIM
+        end)
+    end
+    OnlineRefresh.MouseButton1Click:Connect(loadOnline)
+
+    -- ------------------------------------------------------
+    -- ANÚNCIO (Owner e Moderador)
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "Anúncio", "Para todos os usuários • Owner e Moderador.", nextOrder())
+
+    local AnnCard = Instance.new("Frame")
+    AnnCard.Size = UDim2.new(1, -4, 0, 56)
+    AnnCard.BackgroundColor3 = COLOR_CARD
+    AnnCard.BackgroundTransparency = 0.1
+    AnnCard.BorderSizePixel = 0
+    AnnCard.LayoutOrder = nextOrder()
+    AnnCard.Parent = chosenModTab
+    corner(AnnCard, 12)
+    stroke(AnnCard, COLOR_BORDER, 1, 0.3)
+
+    local AnnBox = Instance.new("TextBox")
+    AnnBox.Size = UDim2.new(1, -24, 1, -12)
+    AnnBox.Position = UDim2.new(0, 12, 0, 6)
+    AnnBox.BackgroundTransparency = 1
+    AnnBox.PlaceholderText = "Digite o anúncio para os usuários..."
+    AnnBox.PlaceholderColor3 = COLOR_MUTED
+    AnnBox.Text = ""
+    AnnBox.TextColor3 = COLOR_TEXT
+    AnnBox.Font = Enum.Font.GothamMedium
+    AnnBox.TextSize = 12
+    AnnBox.TextXAlignment = Enum.TextXAlignment.Left
+    AnnBox.TextYAlignment = Enum.TextYAlignment.Center
+    AnnBox.ClearTextOnFocus = false
+    AnnBox.TextWrapped = true
+    AnnBox.Parent = AnnCard
+
+    local AnnRow = createControlRow(chosenModTab, nextOrder())
+    local AnnSend = createActionButton(AnnRow, "📣 Enviar anúncio", 1)
+    local AnnStatus = createModStatus(AnnRow)
+    refs.AnnStatus = AnnStatus
+
+    AnnSend.MouseButton1Click:Connect(function()
+        -- Owner e Moderador podem anunciar (o servidor valida o cargo real).
+        local role = ScreenGui:GetAttribute("CHOSEN_Role")
+        if role ~= "Owner" and role ~= "Moderator" then
+            chosenLockNotice(AnnStatus, "cargo Owner ou Moderador")
+            return
+        end
+        local message = AnnBox.Text
+        if message == "" then
+            AnnStatus.Text = "⚠  Escreva o anúncio primeiro"
+            AnnStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+        AnnStatus.Text = "Enviando..."
+        AnnStatus.TextColor3 = COLOR_DIM
+        task.spawn(function()
+            local ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/announcement",
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json",
+                    ["Accept"] = "application/json"
+                },
+                Body = HttpService:JSONEncode({
+                    message = message,
+                    author_id = tostring(LocalPlayer.UserId)
+                })
+            })
+
+            if ok and data.success then
+                AnnStatus.Text = "✅  Anúncio publicado"
+                AnnStatus.TextColor3 = COLOR_SUCCESS
+                AnnBox.Text = ""
+            else
+                AnnStatus.Text = "⚠  " .. tostring(data):sub(1, 100)
+                AnnStatus.TextColor3 = CHOSEN_WARN
+            end
+        end)
+    end)
+
+    -- ------------------------------------------------------
+    -- MENSAGEM INSTANTÂNEA (Owner e Moderador)
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "Mensagem instantânea", "Aviso do momento • some da tela em 10s.", nextOrder())
+
+    local LiveCard = Instance.new("Frame")
+    LiveCard.Size = UDim2.new(1, -4, 0, 56)
+    LiveCard.BackgroundColor3 = COLOR_CARD
+    LiveCard.BackgroundTransparency = 0.1
+    LiveCard.BorderSizePixel = 0
+    LiveCard.LayoutOrder = nextOrder()
+    LiveCard.Parent = chosenModTab
+    corner(LiveCard, 12)
+    stroke(LiveCard, COLOR_BORDER, 1, 0.3)
+
+    local LiveBox = Instance.new("TextBox")
+    LiveBox.Size = UDim2.new(1, -24, 1, -12)
+    LiveBox.Position = UDim2.new(0, 12, 0, 6)
+    LiveBox.BackgroundTransparency = 1
+    LiveBox.PlaceholderText = "Digite a mensagem do momento..."
+    LiveBox.PlaceholderColor3 = COLOR_MUTED
+    LiveBox.Text = ""
+    LiveBox.TextColor3 = COLOR_TEXT
+    LiveBox.Font = Enum.Font.GothamMedium
+    LiveBox.TextSize = 12
+    LiveBox.TextXAlignment = Enum.TextXAlignment.Left
+    LiveBox.TextYAlignment = Enum.TextYAlignment.Center
+    LiveBox.ClearTextOnFocus = false
+    LiveBox.TextWrapped = true
+    LiveBox.Parent = LiveCard
+
+    local LiveRow = createControlRow(chosenModTab, nextOrder())
+    local LiveSend = createActionButton(LiveRow, "💬 Enviar mensagem", 1)
+    local LiveStatus = createModStatus(LiveRow)
+    refs.LiveStatus = LiveStatus
+
+    LiveSend.MouseButton1Click:Connect(function()
+        local role = ScreenGui:GetAttribute("CHOSEN_Role")
+        if role ~= "Owner" and role ~= "Moderator" then
+            chosenLockNotice(LiveStatus, "cargo Owner ou Moderador")
+            return
+        end
+        local message = LiveBox.Text
+        if message == "" then
+            LiveStatus.Text = "⚠  Escreva a mensagem primeiro"
+            LiveStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+        LiveStatus.Text = "Enviando..."
+        LiveStatus.TextColor3 = COLOR_DIM
+        task.spawn(function()
+            local ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/live-message",
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json",
+                    ["Accept"] = "application/json"
+                },
+                Body = HttpService:JSONEncode({
+                    message = message,
+                    author_id = tostring(LocalPlayer.UserId)
+                })
+            })
+
+            if ok and data.success then
+                LiveStatus.Text = "✅  Mensagem enviada (aparece por 10s)"
+                LiveStatus.TextColor3 = COLOR_SUCCESS
+                LiveBox.Text = ""
+            else
+                LiveStatus.Text = "⚠  " .. tostring(data):sub(1, 100)
+                LiveStatus.TextColor3 = CHOSEN_WARN
+            end
+        end)
+    end)
+
+    -- ------------------------------------------------------
+    -- CARGO TEMPORÁRIO (SÓ NESTA SESSÃO • QUALQUER JOGADOR)
+    -- ------------------------------------------------------
+    createSection(chosenModTab, "Cargo temporário", "Aplica a um jogador da sessão; só muda na SUA tela.", nextOrder())
+
+    local TempTargetInput, TempTargetAvatar = createInputWithAvatar(chosenModTab, "Nome do jogador (vazio = você)", nextOrder())
+
+    TempTargetInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local player = nil
+        local text = TempTargetInput.Text
+        if text ~= "" then
+            local lower = text:lower()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Name:lower():sub(1, #lower) == lower then
+                    player = p
+                    break
+                end
+            end
+        else
+            player = LocalPlayer
+        end
+
+        if player then
+            pcall(function()
+                TempTargetAvatar.Image = Players:GetUserThumbnailAsync(
+                    player.UserId,
+                    Enum.ThumbnailType.AvatarBust,
+                    Enum.ThumbnailSize.Size420x420
+                )
+            end)
+        else
+            TempTargetAvatar.Image = "rbxassetid://0"
+        end
+    end)
+
+    local TempStatus = createModStatusWide()
+    refs.TempStatus = TempStatus
+
+    local function resolveTempTarget()
+        local text = TempTargetInput.Text
+        if text == "" or text:lower() == LocalPlayer.Name:lower() then
+            return LocalPlayer
+        end
+
+        local lower = text:lower()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Name:lower():sub(1, #lower) == lower then
+                return p
+            end
+        end
+
+        return nil
+    end
+
+    local function setTemporaryRole(role)
+        local target = resolveTempTarget()
+
+        if not target then
+            TempStatus.Text = "⚠  Jogador não está nesta sessão"
+            TempStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+
+        -- Aplica o temporário na tag do alvo (na sua tela).
+        pcall(chosenApplyTempRole, target.UserId, role)
+
+        if target == LocalPlayer then
+            chosenTemporaryRole = role
+            pcall(chosenApplyPermissions, role, CHOSEN_TEMP_PERMISSIONS[role], true)
+            TempStatus.Text = "✅  Cargo temporário: " .. role .. " → você (só nesta sessão)"
+        else
+            TempStatus.Text = "✅  Cargo temporário: " .. role .. " → " .. target.Name .. " (só na sua tela)"
+        end
+        TempStatus.TextColor3 = COLOR_SUCCESS
+    end
+
+    local TempRowA = createControlRow(chosenModTab, nextOrder())
+    createActionButton(TempRowA, "👑 Owner", 1).MouseButton1Click:Connect(function()
+        setTemporaryRole("Owner")
+    end)
+    createActionButton(TempRowA, "🛡 Moderador", 2).MouseButton1Click:Connect(function()
+        setTemporaryRole("Moderator")
+    end)
+
+    local TempRowB = createControlRow(chosenModTab, nextOrder())
+    createActionButton(TempRowB, "⭐ Premium", 1).MouseButton1Click:Connect(function()
+        setTemporaryRole("Premium")
+    end)
+    createActionButton(TempRowB, "👤 Membro", 2).MouseButton1Click:Connect(function()
+        setTemporaryRole("Member")
+    end)
+
+    local TempRowC = createControlRow(chosenModTab, nextOrder())
+    createActionButton(TempRowC, "↩ Restaurar todos os cargos reais", 1).MouseButton1Click:Connect(function()
+        -- Remove todos os temporários da sessão (seu + dos outros)
+        local userIds = {}
+        for userId in pairs(chosenTempRoles) do
+            table.insert(userIds, userId)
+        end
+        for _, userId in ipairs(userIds) do
+            pcall(chosenApplyTempRole, userId, nil)
+        end
+
+        chosenTemporaryRole = nil
+
+        if chosenProfile and chosenProfilePermissions then
+            pcall(chosenApplyPermissions,
+                tostring(chosenProfile.role or "Member"),
+                chosenProfilePermissions,
+                false
+            )
+        end
+
+        TempStatus.Text = "✅  Cargos reais restaurados"
+        TempStatus.TextColor3 = COLOR_SUCCESS
+    end)
+
+    -- Primeira carga: estatísticas e lista de online sem esperar o ciclo.
+    loadModStats()
+    task.defer(loadOnline)
+end
+
+task.spawn(function()
+    if CHOSEN_API_URL:find("SEU%-PROJETO") then
+        ChosenRoleLabel.Text = "CONFIGURE A URL DA API"
+        UserStatus.Text = "API NÃO CONFIGURADA"
+        UserStatus.BackgroundColor3 = Color3.fromRGB(170, 90, 55)
+        warn("[CHOSEN API] Configure CHOSEN_API_URL com o domínio do seu Supabase.")
+        return
+    end
+
+    while ScreenGui.Parent do
+        chosenHeartbeat()
+        chosenUpdateProfile()
+
+        -- Anúncio: todos os usuários buscam a cada ciclo.
+        if type(chosenFetchAnnouncement) == "function" then
+            pcall(chosenFetchAnnouncement)
+        end
+
+        -- Estatísticas: só refresca se a aba Moderação existir.
+        if type(chosenRefreshModStats) == "function" then
+            pcall(chosenRefreshModStats)
+        end
+
+        task.wait(30)
+    end
+end)
+
+end
 
 local StatsCard = Instance.new("Frame")
 StatsCard.Size = UDim2.new(1, -4, 0, 100)
@@ -1246,9 +2827,19 @@ HomeRejoinButton.MouseButton1Click:Connect(function()
 		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 	end)
 end)
-local HomeToggleButton = createActionButton(HomeActions, "⌨️ B  •  ABRIR / FECHAR", 2)
-HomeToggleButton.TextSize = 11
-HomeToggleButton.Font = Enum.Font.GothamBold
+local HomeTagsButton = createActionButton(HomeActions, "👁  OCULTAR CARGOS", 2)
+HomeTagsButton.TextSize = 11
+HomeTagsButton.Font = Enum.Font.GothamBold
+HomeTagsButton.MouseButton1Click:Connect(function()
+	local nowHidden = false
+	if type(chosenToggleTagsVisibility) == "function" then
+		nowHidden = chosenToggleTagsVisibility() == true
+	end
+
+	HomeTagsButton.Text = nowHidden
+		and "👁  MOSTRAR CARGOS"
+		or "👁  OCULTAR CARGOS"
+end)
 
 createSection(HomeTab, "Servidores", "Veja os servidores públicos disponíveis e escolha onde entrar.", 6)
 local ServerToolbar = createControlRow(HomeTab, 7)
@@ -1820,6 +3411,8 @@ pcall(function()
 	task.defer(loadFriendsInServer)
 end)
 
+-- Jogo Tab (bloco autocontido: libera os registros locais ao fim)
+do
 -- Jogo Tab
 createSection(GameTab, "Jogo", "Movimento, atalhos e utilidades.", 1)
 local noclip = false
@@ -2279,10 +3872,12 @@ end)
 UserInputService.InputEnded:Connect(function(input, gp)
 	if flashback and not gp and input.KeyCode == Enum.KeyCode.V then isRewinding = false end
 end)
+end -- fim do bloco Jogo
 
 --------------------------------------------------------------------------------
--- ABA ESP INTEGRADA
+-- ABA ESP INTEGRADA (bloco autocontido: libera registros ao fim)
 --------------------------------------------------------------------------------
+do
 createSection(ESPTab, "VISUALIZAÇÃO", "Role ESP: Box, Nome, Distância e Inocentes", 1)
 
 local roleEspEnabled = false
@@ -2542,10 +4137,12 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 end)
+end -- fim do bloco ESP
 
 --------------------------------------------------------------------------------
--- Diversos Tab
+-- Diversos Tab (bloco autocontido: libera registros ao fim)
 --------------------------------------------------------------------------------
+do
 createSection(MiscTab, "Extras", "Ferramentas adicionais e efeitos visuais.", 1)
 local MiscRow1 = createControlRow(MiscTab, 2)
 local antiAfkEnabled = false
@@ -2817,6 +4414,7 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
 		end)
 	end
 end)
+end -- fim do bloco Diversos/Shaders
 
 --------------------------------------------------------------------------------
 -- WALKFLING (ABA JOGO)
