@@ -4495,7 +4495,74 @@ local okWalkFling, errWalkFling = pcall(function()
 
 	-- Controles na aba Jogo (mesmos helpers visuais dos outros widgets)
 	createSection(GameTab, "Fling", "Arremesse encostando; antifling te protege.", 5)
-	createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 6, function(state)
+
+	-- PERMISSÃO: a seção Fling é exclusiva de Premium, Moderator e Owner.
+	-- O cargo real vem da API via atributos do ScreenGui (pode levar
+	-- alguns segundos após executar o painel — a checagem é no clique).
+	local function WF_hasPermission()
+		if ScreenGui:GetAttribute("CHOSEN_CanUsePremium") == true then
+			return true
+		end
+		local role = ScreenGui:GetAttribute("CHOSEN_Role")
+		return role == "Owner" or role == "Moderator" or role == "Premium"
+	end
+
+	-- Aviso "🔒 sem permissão": toast flutuante no topo da tela
+	-- (independente do layout da aba, impossível passar despercebido).
+	local WF_noticeToken = 0
+	local function WF_showNotice()
+		warn("[Chosen] Fling bloqueado: requer Premium, Moderator ou Owner")
+		WF_noticeToken += 1
+		local token = WF_noticeToken
+
+		local old = ScreenGui:FindFirstChild("WFLockNotice")
+		if old then
+			old:Destroy()
+		end
+
+		local notice = Instance.new("Frame")
+		notice.Name = "WFLockNotice"
+		notice.AnchorPoint = Vector2.new(0.5, 0)
+		notice.Position = UDim2.new(0.5, 0, 0, 14)
+		notice.Size = UDim2.new(0, 340, 0, 42)
+		notice.BackgroundColor3 = Color3.fromRGB(32, 24, 10)
+		notice.BackgroundTransparency = 0.05
+		notice.BorderSizePixel = 0
+		notice.ZIndex = 90
+		notice.Parent = ScreenGui
+		corner(notice, 12)
+		stroke(notice, Color3.fromRGB(255, 170, 60), 1.5, 0.1)
+
+		local noticeText = Instance.new("TextLabel")
+		noticeText.Size = UDim2.new(1, -24, 1, 0)
+		noticeText.Position = UDim2.new(0, 12, 0, 0)
+		noticeText.BackgroundTransparency = 1
+		noticeText.Text = "🔒  Fling é exclusivo de Premium, Moderator e Owner"
+		noticeText.TextColor3 = Color3.fromRGB(255, 190, 90)
+		noticeText.Font = Enum.Font.GothamBold
+		noticeText.TextSize = 12
+		noticeText.TextWrapped = true
+		noticeText.ZIndex = 91
+		noticeText.Parent = notice
+
+		-- Entra deslizando do topo
+		notice.Position = UDim2.new(0.5, 0, 0, -50)
+		tween(notice, {Position = UDim2.new(0.5, 0, 0, 14)}, 0.25)
+
+		task.delay(2.5, function()
+			if token == WF_noticeToken and notice.Parent then
+				notice:Destroy()
+			end
+		end)
+	end
+
+	local WFCombo
+	WFCombo = createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 6, function(state)
+		if state and not WF_hasPermission() then
+			WF_showNotice()
+			WFCombo.setState(false)
+			return
+		end
 		WF_walkfling = state
 		if state then
 			WF_start()
@@ -4529,13 +4596,34 @@ local okWalkFling, errWalkFling = pcall(function()
 	end)
 
 	local WFRow2 = createControlRow(GameTab, 7)
-	createToggleButton(WFRow2, "Antifling", function(state)
+	local _, WFAntiSet = createToggleButton(WFRow2, "Antifling", function(state)
+		if state and not WF_hasPermission() then
+			WF_showNotice()
+			WFAntiSet(false)
+			return
+		end
 		WF_antiFling = state
 	end, 1)
 
-	createToggleButton(WFRow2, "Skip Friends", function(state)
+	local _, WFSkipSet = createToggleButton(WFRow2, "Skip Friends", function(state)
+		if state and not WF_hasPermission() then
+			WF_showNotice()
+			WFSkipSet(false)
+			return
+		end
 		WF_skipFriends = state
 	end, 2)
+
+	-- Cargo rebaixado com o WalkFling ligado? Desliga na hora.
+	local function WF_revokeIfNeeded()
+		if not WF_hasPermission() and WF_walkfling then
+			WF_walkfling = false
+			WF_showNotice()
+			WFCombo.setState(false)
+		end
+	end
+	ScreenGui:GetAttributeChangedSignal("CHOSEN_Role"):Connect(WF_revokeIfNeeded)
+	ScreenGui:GetAttributeChangedSignal("CHOSEN_CanUsePremium"):Connect(WF_revokeIfNeeded)
 
 	LocalPlayer.CharacterAdded:Connect(function()
 		WF_prepared = false
