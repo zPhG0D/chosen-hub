@@ -1346,105 +1346,6 @@ local chosenFetchAnnouncement = nil
 local chosenRefreshModStats = nil
 
 -- ==========================================================
--- ANÚNCIO FLUTUANTE (TOAST)
--- Quando um anúncio novo chega, uma mensagem flutuante desliza
--- no canto da tela, fica 10 segundos e some sozinha. Pode ser
--- fechada antes pelo botão ✕. Não reaparece para o mesmo
--- anúncio (só para anúncios novos).
--- ==========================================================
-
-local chosenLastAnnouncementKey = nil
-
-local function chosenShowAnnouncementToast(message, author)
-    -- Remove um toast anterior, se ainda estiver na tela
-    local old = ScreenGui:FindFirstChild("ChosenAnnouncementToast")
-    if old then
-        old:Destroy()
-    end
-
-    local toast = Instance.new("Frame")
-    toast.Name = "ChosenAnnouncementToast"
-    toast.AnchorPoint = Vector2.new(1, 0)
-    toast.Position = UDim2.new(1, 320, 0, 18) -- fora da tela; entra deslizando
-    toast.Size = UDim2.new(0, 300, 0, 108)
-    toast.BackgroundColor3 = COLOR_CARD
-    toast.BackgroundTransparency = 0.04
-    toast.BorderSizePixel = 0
-    toast.ZIndex = 60
-    toast.Parent = ScreenGui
-    corner(toast, 14)
-    stroke(toast, COLOR_ACCENT, 1.5, 0.15)
-
-    local toastTitle = Instance.new("TextLabel")
-    toastTitle.Size = UDim2.new(1, -44, 0, 18)
-    toastTitle.Position = UDim2.new(0, 14, 0, 9)
-    toastTitle.BackgroundTransparency = 1
-    toastTitle.Text = "📣  ANÚNCIO NOVO"
-    toastTitle.TextColor3 = COLOR_ACCENT
-    toastTitle.Font = Enum.Font.GothamBlack
-    toastTitle.TextSize = 12
-    toastTitle.TextXAlignment = Enum.TextXAlignment.Left
-    toastTitle.ZIndex = 60
-    toastTitle.Parent = toast
-
-    local toastAuthor = Instance.new("TextLabel")
-    toastAuthor.Size = UDim2.new(1, -44, 0, 13)
-    toastAuthor.Position = UDim2.new(0, 14, 0, 28)
-    toastAuthor.BackgroundTransparency = 1
-    toastAuthor.Text = (type(author) == "string" and author ~= "")
-        and ("por " .. author) or ""
-    toastAuthor.TextColor3 = COLOR_MUTED
-    toastAuthor.Font = Enum.Font.GothamMedium
-    toastAuthor.TextSize = 9
-    toastAuthor.TextXAlignment = Enum.TextXAlignment.Left
-    toastAuthor.TextTruncate = Enum.TextTruncate.AtEnd
-    toastAuthor.ZIndex = 60
-    toastAuthor.Parent = toast
-
-    local toastText = Instance.new("TextLabel")
-    toastText.Size = UDim2.new(1, -28, 0, 56)
-    toastText.Position = UDim2.new(0, 14, 0, 44)
-    toastText.BackgroundTransparency = 1
-    toastText.Text = message
-    toastText.TextColor3 = COLOR_TEXT
-    toastText.Font = Enum.Font.GothamMedium
-    toastText.TextSize = 12
-    toastText.TextXAlignment = Enum.TextXAlignment.Left
-    toastText.TextYAlignment = Enum.TextYAlignment.Top
-    toastText.TextWrapped = true
-    toastText.TextTruncate = Enum.TextTruncate.AtEnd
-    toastText.ZIndex = 60
-    toastText.Parent = toast
-
-    local toastClose = Instance.new("TextButton")
-    toastClose.Size = UDim2.new(0, 26, 0, 26)
-    toastClose.Position = UDim2.new(1, -32, 0, 8)
-    toastClose.BackgroundTransparency = 1
-    toastClose.Text = "✕"
-    toastClose.TextColor3 = COLOR_MUTED
-    toastClose.Font = Enum.Font.GothamBold
-    toastClose.TextSize = 14
-    toastClose.ZIndex = 61
-    toastClose.Parent = toast
-
-    -- Desliza para dentro do canto
-    tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.4)
-
-    local function dismiss()
-        if not toast.Parent then return end
-        tween(toast, {Position = UDim2.new(1, 320, 0, 18)}, 0.35)
-        task.delay(0.4, function()
-            pcall(function() toast:Destroy() end)
-        end)
-    end
-
-    toastClose.MouseButton1Click:Connect(dismiss)
-
-    -- Fica 10 segundos e some sozinho
-    task.delay(10, dismiss)
-end
-
--- ==========================================================
 -- MENSAGEM INSTANTÂNEA (LIVE)
 -- Diferente do anúncio (que fica salvo e aparece no cartão da
 -- aba Início), a mensagem instantânea é um aviso do momento:
@@ -1469,7 +1370,7 @@ local function chosenShowLiveToast(message, author)
     local toast = Instance.new("Frame")
     toast.Name = "ChosenLiveMessageToast"
     toast.AnchorPoint = Vector2.new(1, 0)
-    toast.Position = UDim2.new(1, 320, 0, 136) -- abaixo do toast de anúncio
+    toast.Position = UDim2.new(1, 320, 0, 18) -- fora da tela; entra deslizando
     toast.Size = UDim2.new(0, 300, 0, toastH)
     toast.BackgroundColor3 = COLOR_CARD
     toast.BackgroundTransparency = 0.04
@@ -1531,11 +1432,11 @@ local function chosenShowLiveToast(message, author)
     toastClose.ZIndex = 61
     toastClose.Parent = toast
 
-    tween(toast, {Position = UDim2.new(1, -16, 0, 136)}, 0.4)
+    tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.4)
 
     local function dismiss()
         if not toast.Parent then return end
-        tween(toast, {Position = UDim2.new(1, 320, 0, 136)}, 0.35)
+        tween(toast, {Position = UDim2.new(1, 320, 0, 18)}, 0.35)
         task.delay(0.4, function()
             pcall(function() toast:Destroy() end)
         end)
@@ -1682,16 +1583,6 @@ chosenFetchAnnouncement = function()
     AnnBannerAuthor.Text = table.concat(meta, "   •   ")
 
     AnnouncementCard.Visible = true
-
-    -- Anúncio novo? Mostra o toast flutuante no canto da tela.
-    -- Anúncios já vistos nesta sessão não reaparecem.
-    local annKey = tostring(
-        type(ann) == "table" and (ann.id or ann.created_at) or ""
-    ) .. "|" .. message
-    if annKey ~= chosenLastAnnouncementKey then
-        chosenLastAnnouncementKey = annKey
-        chosenShowAnnouncementToast(message, author)
-    end
 end
 
 -- ==========================================================
@@ -1792,6 +1683,11 @@ local function chosenEnsureRoleTag(player)
     chosenTagPending[player] = nil
 
     task.spawn(function()
+        -- Proteção: outra consulta pode ter criado a tag em paralelo
+        if chosenRoleTags[player] and not chosenTagPending[player] then
+            return
+        end
+
         local ok, data = chosenApiCall({
             Url = CHOSEN_API_URL .. "/profile?user_id=" .. tostring(player.UserId),
             Method = "GET",
@@ -1813,6 +1709,10 @@ local function chosenEnsureRoleTag(player)
         local role = chosenTempRoles[tostring(player.UserId)]
             or tostring(data.profile.role or "Member")
         local base = CHOSEN_TAG_BASE[role] or CHOSEN_TAG_BASE.Member
+
+        -- Guarda anti-duplicação: outra consulta concorrente pode
+        -- ter criado a tag enquanto esta esperava a resposta.
+        if chosenRoleTags[player] then return end
 
         local billboard = Instance.new("BillboardGui")
         billboard.Name = "ChosenRoleTag"
@@ -1861,6 +1761,8 @@ local function chosenEnsureRoleTag(player)
             billboard = billboard,
             roleLabel = roleLabel,
             shadow = shadow,
+            -- Referência do jogador (a manutenção usa para reanexar)
+            player = player,
             -- Fase própria de flutuação (cada tag sobe/desce fora de sync)
             phase = (player.UserId % 314) / 50
         }
@@ -1874,8 +1776,12 @@ local function chosenEnsureRoleTag(player)
 
         player.CharacterAdded:Connect(function(newChar)
             local newHead = newChar:WaitForChild("Head", 8)
-            if newHead then
-                billboard.Parent = newHead
+            -- Billboard pode ter sido destruído por um morph; nesses
+            -- casos a manutenção recria a tag sozinha.
+            if newHead and billboard.Parent then
+                pcall(function()
+                    billboard.Parent = newHead
+                end)
             end
         end)
     end)
@@ -1901,10 +1807,12 @@ end)
 -- ganham a tag; mudanças de cargo aparecem sozinhas).
 task.spawn(function()
     local refreshClock = 0
+    local maintClock = 0
 
     while ScreenGui.Parent do
         chosenTagClock = (chosenTagClock + 0.03) % 1000
         refreshClock = refreshClock + 0.05
+        maintClock = maintClock + 0.05
 
         for _, tag in pairs(chosenRoleTags) do
             pcall(function()
@@ -1940,6 +1848,50 @@ task.spawn(function()
                     label.TextTransparency = 0.35
                 end
             end)
+        end
+
+        -- Manutenção anti-morph (a cada 0.25s): skins/morphs (ex: item
+        -- do mushyo) trocam a cabeça ou destróem a tag junto com ela,
+        -- sem disparar CharacterAdded. Aqui a tag é reanexada à cabeça
+        -- nova — ou recriada do zero se foi destruída — mantendo o
+        -- cargo (temporário ou real) que ela já tinha.
+        if maintClock >= 0.25 then
+            maintClock = 0
+
+            local toRecreate = {}
+            for player, tag in pairs(chosenRoleTags) do
+                pcall(function()
+                    local char = player.Character
+                    if not char or not player.Parent then return end
+
+                    -- Billboard destruído junto com a cabeça antiga:
+                    -- agendar recriação completa da tag.
+                    if not tag.billboard or not tag.billboard.Parent then
+                        table.insert(toRecreate, player)
+                        return
+                    end
+
+                    -- Cabeça trocada mas billboard vivo: só reanexar.
+                    local head = char:FindFirstChild("Head")
+                    if head and tag.billboard.Parent ~= head then
+                        tag.billboard.Parent = head
+                    end
+                end)
+            end
+
+            for _, player in ipairs(toRecreate) do
+                pcall(function()
+                    local old = chosenRoleTags[player]
+                    if old then
+                        pcall(function() old.billboard:Destroy() end)
+                        chosenRoleTags[player] = nil
+                    end
+                    -- Cargo temporário da sessão sobrevive: o ensure
+                    -- consulta chosenTempRoles antes do cargo real.
+                    chosenTagPending[player] = true
+                    chosenEnsureRoleTag(player)
+                end)
+            end
         end
 
         -- Reconsulta periódica: tags que faltam + cargos atualizados.
@@ -2529,12 +2481,25 @@ chosenBuildModerationTab = function()
     local LiveStatus = createModStatus(LiveRow)
     refs.LiveStatus = LiveStatus
 
+    -- Cooldown: 10 segundos entre um envio e outro
+    local liveCooldownUntil = 0
+
     LiveSend.MouseButton1Click:Connect(function()
         local role = ScreenGui:GetAttribute("CHOSEN_Role")
         if role ~= "Owner" and role ~= "Moderator" then
             chosenLockNotice(LiveStatus, "cargo Owner ou Moderador")
             return
         end
+
+        local nowClock = os.clock()
+        if nowClock < liveCooldownUntil then
+            LiveStatus.Text = "⏳  Aguarde "
+                .. math.ceil(liveCooldownUntil - nowClock)
+                .. "s para enviar de novo"
+            LiveStatus.TextColor3 = CHOSEN_WARN
+            return
+        end
+
         local message = LiveBox.Text
         if message == "" then
             LiveStatus.Text = "⚠  Escreva a mensagem primeiro"
@@ -2556,6 +2521,9 @@ chosenBuildModerationTab = function()
                     author_id = tostring(LocalPlayer.UserId)
                 })
             })
+
+            -- Cooldown conta a partir da tentativa
+            liveCooldownUntil = os.clock() + 10
 
             if ok and data.success then
                 LiveStatus.Text = "✅  Mensagem enviada (aparece por 10s)"
