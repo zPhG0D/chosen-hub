@@ -1157,6 +1157,10 @@ ChosenPermissionLabel.Parent = WelcomeCard
 -- Ponte para o botão 👁 (fora do bloco): alterna a visibilidade
 -- das tags na tela local e devolve o novo estado (true = oculto).
 local chosenToggleTagsVisibility = nil
+-- Ponte para a lista de servidores (fora do bloco): devolve os
+-- usuários online com painel (com servidor atual de cada um),
+-- ou nil em caso de falha.
+local chosenGetOnlineSessions = nil
 do
 -- CHOSEN HUB API: perfil, cargo e presença
 -- Substitua apenas o domínio abaixo pelo domínio do seu projeto Supabase.
@@ -1327,7 +1331,11 @@ local function chosenHeartbeat()
             session_id = chosenSessionId,
             roblox_user_id = tostring(LocalPlayer.UserId),
             username = LocalPlayer.Name,
-            version = CHOSEN_API_VERSION
+            version = CHOSEN_API_VERSION,
+            -- Servidor atual: usado pela lista de servidores para
+            -- mostrar amigos que estão no mesmo servidor.
+            place_id = game.PlaceId,
+            job_id = game.JobId
         })
     })
 
@@ -1393,7 +1401,7 @@ local function chosenShowLiveToast(message, author)
     toastTitle.Size = UDim2.new(1, -64, 0, 16)
     toastTitle.Position = UDim2.new(0, 18, 0, 10)
     toastTitle.BackgroundTransparency = 1
-    toastTitle.Text = "💬  MENSAGEM INSTANTÂNEA"
+    toastTitle.Text = "💬  AVISO"
     toastTitle.TextColor3 = COLOR_SUCCESS
     toastTitle.Font = Enum.Font.GothamBlack
     toastTitle.TextSize = 11
@@ -1406,7 +1414,7 @@ local function chosenShowLiveToast(message, author)
     toastAuthor.Position = UDim2.new(0, 18, 0, 27)
     toastAuthor.BackgroundTransparency = 1
     toastAuthor.Text = (type(author) == "string" and author ~= "")
-        and ("👤  enviado por " .. author) or ""
+        and ("por " .. author) or ""
     toastAuthor.TextColor3 = COLOR_MUTED
     toastAuthor.Font = Enum.Font.GothamMedium
     toastAuthor.TextSize = 9
@@ -1435,8 +1443,8 @@ local function chosenShowLiveToast(message, author)
     toastClose.Position = UDim2.new(1, -32, 0, 9)
     toastClose.BackgroundColor3 = COLOR_CARD2
     toastClose.BackgroundTransparency = 0.2
-    toastClose.Text = "✕"
-    toastClose.TextColor3 = COLOR_MUTED
+    toastClose.Text = "X"
+    toastClose.TextColor3 = COLOR_TEXT
     toastClose.Font = Enum.Font.GothamBold
     toastClose.TextSize = 12
     toastClose.ZIndex = 61
@@ -1651,6 +1659,72 @@ end
 local chosenTagClock = 0
 local chosenTagPending = {} -- jogadores consultados sem registro ainda
 
+-- PRESENÇA: a tag só aparece se o DONO dela também estiver com o
+-- painel aberto (heartbeat recente — janela de 90s do servidor).
+-- O conjunto guarda os user_ids online no momento.
+local chosenOnlineNow = {}
+
+-- Sessões online (para a lista de servidores da aba Início):
+-- devolve data.users da rota /online (user_id, username, place_id,
+-- job_id...) ou nil se falhar. Usa cache de ~20s pra não martelar
+-- a API quando a lista é redesenhada.
+local chosenSessionsCache = nil
+local chosenSessionsCacheAt = 0
+
+chosenGetOnlineSessions = function()
+    if chosenSessionsCache
+        and (os.clock() - chosenSessionsCacheAt) < 20 then
+        return chosenSessionsCache
+    end
+
+    local ok, data = chosenApiCall({
+        Url = CHOSEN_API_URL .. "/online",
+        Method = "GET",
+        Headers = {
+            ["Accept"] = "application/json"
+        }
+    })
+
+    if ok and type(data.users) == "table" then
+        chosenSessionsCache = data.users
+        chosenSessionsCacheAt = os.clock()
+        return chosenSessionsCache
+    end
+
+    return nil
+end
+
+local function chosenRefreshOnlineSet()
+    task.spawn(function()
+        local ok, data = chosenApiCall({
+            Url = CHOSEN_API_URL .. "/online",
+            Method = "GET",
+            Headers = {
+                ["Accept"] = "application/json"
+            }
+        })
+
+        if ok and type(data.users) == "table" then
+            local fresh = {}
+            for _, user in ipairs(data.users) do
+                if type(user) == "table" and user.user_id then
+                    fresh[tostring(user.user_id)] = true
+                end
+            end
+            -- Só substitui em caso de sucesso (falha mantém o estado)
+            chosenOnlineNow = fresh
+        end
+    end)
+end
+
+-- Tag visível? Precisa: olho aberto + dono com painel aberto.
+-- Você mesmo vê sempre (obviamente está com o painel).
+local function chosenTagShouldShow(player)
+    if chosenTagsHidden then return false end
+    if player == LocalPlayer then return true end
+    return chosenOnlineNow[tostring(player.UserId)] == true
+end
+
 local CHOSEN_TAG_BASE = {
     Owner = Color3.fromRGB(255, 70, 70),
     Moderator = Color3.fromRGB(80, 150, 255),
@@ -1768,7 +1842,8 @@ local function chosenEnsureRoleTag(player)
         billboard.StudsOffset = Vector3.new(0, 2.7, 0)
         billboard.AlwaysOnTop = true
         billboard.MaxDistance = 140
-        billboard.Enabled = not chosenTagsHidden
+        -- Visibilidade inicial já respeita presença + olho
+        billboard.Enabled = chosenTagShouldShow(player)
 
         -- Sombra projetada atrás do texto (dá profundidade)
         local shadow = Instance.new("TextLabel")
@@ -1857,6 +1932,9 @@ task.spawn(function()
     local refreshClock = 0
     local maintClock = 0
 
+    -- Primeira carga: descobre quem está online já no arranque
+    chosenRefreshOnlineSet()
+
     while ScreenGui.Parent do
         chosenTagClock = (chosenTagClock + 0.03) % 1000
         refreshClock = refreshClock + 0.05
@@ -1864,6 +1942,9 @@ task.spawn(function()
 
         for _, tag in pairs(chosenRoleTags) do
             pcall(function()
+                -- Visibilidade: dono com painel aberto + olho aberto
+                tag.billboard.Enabled = chosenTagShouldShow(tag.player)
+
                 local label = tag.roleLabel
                 if not label or not label.Parent then return end
 
@@ -1942,9 +2023,11 @@ task.spawn(function()
             end
         end
 
-        -- Reconsulta periódica: tags que faltam + cargos atualizados.
+        -- Reconsulta periódica: tags que faltam + cargos atualizados
+        -- + quem está com o painel aberto (presença).
         if refreshClock >= 15 then
             refreshClock = 0
+            chosenRefreshOnlineSet()
 
             for _, player in ipairs(Players:GetPlayers()) do
                 if not chosenRoleTags[player] then
@@ -1969,9 +2052,9 @@ end)
 chosenToggleTagsVisibility = function()
     chosenTagsHidden = not chosenTagsHidden
 
-    for _, tag in pairs(chosenRoleTags) do
+    for player, tag in pairs(chosenRoleTags) do
         pcall(function()
-            tag.billboard.Enabled = not chosenTagsHidden
+            tag.billboard.Enabled = chosenTagShouldShow(player)
         end)
     end
 
@@ -2138,6 +2221,57 @@ chosenBuildModerationTab = function()
         label.LayoutOrder = nextOrder()
         label.Parent = chosenModTab
         return label
+    end
+
+    -- Compositor compacto: caixa de texto, botão de envio e status
+    -- DENTRO do mesmo card — a aba fica coesa, sem blocos soltos
+    -- espalhados pela lista.
+    local function createModComposer(placeholder, buttonText, order)
+        local card = Instance.new("Frame")
+        card.Size = UDim2.new(1, -4, 0, 104)
+        card.BackgroundColor3 = COLOR_CARD
+        card.BackgroundTransparency = 0.1
+        card.BorderSizePixel = 0
+        card.LayoutOrder = order
+        card.Parent = chosenModTab
+        corner(card, 12)
+        stroke(card, COLOR_BORDER, 1, 0.3)
+
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(1, -28, 0, 46)
+        box.Position = UDim2.new(0, 14, 0, 10)
+        box.BackgroundTransparency = 1
+        box.PlaceholderText = placeholder
+        box.PlaceholderColor3 = COLOR_MUTED
+        box.Text = ""
+        box.TextColor3 = COLOR_TEXT
+        box.Font = Enum.Font.GothamMedium
+        box.TextSize = 12
+        box.TextXAlignment = Enum.TextXAlignment.Left
+        box.TextYAlignment = Enum.TextYAlignment.Center
+        box.ClearTextOnFocus = false
+        box.TextWrapped = true
+        box.Parent = card
+
+        local send = createActionButton(card, buttonText, 1)
+        send.Size = UDim2.new(0, 158, 0, 34)
+        send.Position = UDim2.new(0, 14, 1, -44)
+        send.TextSize = 11
+
+        local status = Instance.new("TextLabel")
+        status.Size = UDim2.new(1, -190, 0, 34)
+        status.Position = UDim2.new(0, 182, 1, -44)
+        status.BackgroundTransparency = 1
+        status.Text = "—"
+        status.TextColor3 = COLOR_DIM
+        status.Font = Enum.Font.GothamMedium
+        status.TextSize = 10
+        status.TextXAlignment = Enum.TextXAlignment.Left
+        status.TextYAlignment = Enum.TextYAlignment.Center
+        status.TextTruncate = Enum.TextTruncate.AtEnd
+        status.Parent = card
+
+        return box, send, status
     end
 
     -- ------------------------------------------------------
@@ -2421,35 +2555,8 @@ chosenBuildModerationTab = function()
     createSection(chosenModTab, "📣 Anúncio global",
         "Mensagem permanente • todos veem no Início • Owner e Moderador.", nextOrder())
 
-    local AnnCard = Instance.new("Frame")
-    AnnCard.Size = UDim2.new(1, -4, 0, 56)
-    AnnCard.BackgroundColor3 = COLOR_CARD
-    AnnCard.BackgroundTransparency = 0.1
-    AnnCard.BorderSizePixel = 0
-    AnnCard.LayoutOrder = nextOrder()
-    AnnCard.Parent = chosenModTab
-    corner(AnnCard, 12)
-    stroke(AnnCard, COLOR_BORDER, 1, 0.3)
-
-    local AnnBox = Instance.new("TextBox")
-    AnnBox.Size = UDim2.new(1, -24, 1, -12)
-    AnnBox.Position = UDim2.new(0, 12, 0, 6)
-    AnnBox.BackgroundTransparency = 1
-    AnnBox.PlaceholderText = "Digite o anúncio para os usuários..."
-    AnnBox.PlaceholderColor3 = COLOR_MUTED
-    AnnBox.Text = ""
-    AnnBox.TextColor3 = COLOR_TEXT
-    AnnBox.Font = Enum.Font.GothamMedium
-    AnnBox.TextSize = 12
-    AnnBox.TextXAlignment = Enum.TextXAlignment.Left
-    AnnBox.TextYAlignment = Enum.TextYAlignment.Center
-    AnnBox.ClearTextOnFocus = false
-    AnnBox.TextWrapped = true
-    AnnBox.Parent = AnnCard
-
-    local AnnRow = createControlRow(chosenModTab, nextOrder())
-    local AnnSend = createActionButton(AnnRow, "📣 Enviar anúncio", 1)
-    local AnnStatus = createModStatus(AnnRow)
+    local AnnBox, AnnSend, AnnStatus = createModComposer(
+        "Digite o anúncio para os usuários...", "📣  Enviar", nextOrder())
     refs.AnnStatus = AnnStatus
 
     AnnSend.MouseButton1Click:Connect(function()
@@ -2493,40 +2600,13 @@ chosenBuildModerationTab = function()
     end)
 
     -- ------------------------------------------------------
-    -- MENSAGEM INSTANTÂNEA (Owner e Moderador)
+    -- AVISO (Owner e Moderador)
     -- ------------------------------------------------------
-    createSection(chosenModTab, "💬 Mensagem instantânea",
-        "Aviso do momento • some da tela em 10s • Owner e Moderador.", nextOrder())
+    createSection(chosenModTab, "💬 Aviso",
+        "Aviso do momento • aparece no canto e some em 10s • Owner e Moderador.", nextOrder())
 
-    local LiveCard = Instance.new("Frame")
-    LiveCard.Size = UDim2.new(1, -4, 0, 56)
-    LiveCard.BackgroundColor3 = COLOR_CARD
-    LiveCard.BackgroundTransparency = 0.1
-    LiveCard.BorderSizePixel = 0
-    LiveCard.LayoutOrder = nextOrder()
-    LiveCard.Parent = chosenModTab
-    corner(LiveCard, 12)
-    stroke(LiveCard, COLOR_BORDER, 1, 0.3)
-
-    local LiveBox = Instance.new("TextBox")
-    LiveBox.Size = UDim2.new(1, -24, 1, -12)
-    LiveBox.Position = UDim2.new(0, 12, 0, 6)
-    LiveBox.BackgroundTransparency = 1
-    LiveBox.PlaceholderText = "Digite a mensagem do momento..."
-    LiveBox.PlaceholderColor3 = COLOR_MUTED
-    LiveBox.Text = ""
-    LiveBox.TextColor3 = COLOR_TEXT
-    LiveBox.Font = Enum.Font.GothamMedium
-    LiveBox.TextSize = 12
-    LiveBox.TextXAlignment = Enum.TextXAlignment.Left
-    LiveBox.TextYAlignment = Enum.TextYAlignment.Center
-    LiveBox.ClearTextOnFocus = false
-    LiveBox.TextWrapped = true
-    LiveBox.Parent = LiveCard
-
-    local LiveRow = createControlRow(chosenModTab, nextOrder())
-    local LiveSend = createActionButton(LiveRow, "💬 Enviar mensagem", 1)
-    local LiveStatus = createModStatus(LiveRow)
+    local LiveBox, LiveSend, LiveStatus = createModComposer(
+        "Digite o aviso do momento...", "💬  Enviar", nextOrder())
     refs.LiveStatus = LiveStatus
 
     -- Cooldown: 10 segundos entre um envio e outro
@@ -2550,7 +2630,7 @@ chosenBuildModerationTab = function()
 
         local message = LiveBox.Text
         if message == "" then
-            LiveStatus.Text = "⚠  Escreva a mensagem primeiro"
+            LiveStatus.Text = "⚠  Escreva o aviso primeiro"
             LiveStatus.TextColor3 = CHOSEN_WARN
             return
         end
@@ -2574,7 +2654,7 @@ chosenBuildModerationTab = function()
             liveCooldownUntil = os.clock() + 10
 
             if ok and data.success then
-                LiveStatus.Text = "✅  Mensagem enviada (aparece por 10s)"
+                LiveStatus.Text = "✅  Aviso enviado (aparece por 10s)"
                 LiveStatus.TextColor3 = COLOR_SUCCESS
                 LiveBox.Text = ""
             else
@@ -2622,35 +2702,8 @@ chosenBuildModerationTab = function()
         end
     end)
 
-    local KickReasonCard = Instance.new("Frame")
-    KickReasonCard.Size = UDim2.new(1, -4, 0, 48)
-    KickReasonCard.BackgroundColor3 = COLOR_CARD
-    KickReasonCard.BackgroundTransparency = 0.1
-    KickReasonCard.BorderSizePixel = 0
-    KickReasonCard.LayoutOrder = nextOrder()
-    KickReasonCard.Parent = chosenModTab
-    corner(KickReasonCard, 12)
-    stroke(KickReasonCard, COLOR_BORDER, 1, 0.3)
-
-    local KickReasonBox = Instance.new("TextBox")
-    KickReasonBox.Size = UDim2.new(1, -24, 1, -12)
-    KickReasonBox.Position = UDim2.new(0, 12, 0, 6)
-    KickReasonBox.BackgroundTransparency = 1
-    KickReasonBox.PlaceholderText = "Motivo do kick (opcional)..."
-    KickReasonBox.PlaceholderColor3 = COLOR_MUTED
-    KickReasonBox.Text = ""
-    KickReasonBox.TextColor3 = COLOR_TEXT
-    KickReasonBox.Font = Enum.Font.GothamMedium
-    KickReasonBox.TextSize = 12
-    KickReasonBox.TextXAlignment = Enum.TextXAlignment.Left
-    KickReasonBox.TextYAlignment = Enum.TextYAlignment.Center
-    KickReasonBox.ClearTextOnFocus = false
-    KickReasonBox.TextWrapped = true
-    KickReasonBox.Parent = KickReasonCard
-
-    local KickRow = createControlRow(chosenModTab, nextOrder())
-    local KickSend = createActionButton(KickRow, "🚪 Expulsar jogador", 1)
-    local KickStatus = createModStatus(KickRow)
+    local KickReasonBox, KickSend, KickStatus = createModComposer(
+        "Motivo do kick (opcional)...", "🚪  Expulsar", nextOrder())
     refs.KickStatus = KickStatus
 
     -- Anti-spam: 5 segundos entre um kick e outro
@@ -3063,6 +3116,43 @@ local function clearServerList()
 	end
 end
 
+-- Ícones de amigos que usam o painel, agrupados por servidor
+-- (job_id). Vem da NOSSA API: o heartbeat de cada usuário envia
+-- place_id/job_id e a rota /online devolve. Só aparecem amigos
+-- que também estão com o painel aberto (limitação: Roblox não
+-- libera a lista de occupants de servidores alheios).
+local FriendsIconByServer = {}
+
+local function loadServerFriends()
+	FriendsIconByServer = {}
+
+	if type(chosenGetOnlineSessions) ~= "function" then return end
+
+	local ok, sessions = pcall(chosenGetOnlineSessions)
+	if not ok or type(sessions) ~= "table" then return end
+
+	for _, user in ipairs(sessions) do
+		local uid = type(user) == "table"
+			and tonumber(user.user_id) or nil
+		if uid
+			and tostring(uid) ~= tostring(LocalPlayer.UserId)
+			and user.place_id ~= nil
+			and tonumber(user.place_id) == game.PlaceId
+			and type(user.job_id) == "string"
+			and user.job_id ~= ""
+			and pcall(function()
+				return LocalPlayer:IsFriendsWith(uid)
+			end) then
+			FriendsIconByServer[user.job_id] =
+				FriendsIconByServer[user.job_id] or {}
+			table.insert(FriendsIconByServer[user.job_id], {
+				id = uid,
+				name = tostring(user.username or "")
+			})
+		end
+	end
+end
+
 local function addServerEntry(server, index)
 	local maxPlayers = tonumber(server.maxPlayers) or 0
 	local playing = tonumber(server.playing) or 0
@@ -3077,7 +3167,7 @@ local function addServerEntry(server, index)
 	row.LayoutOrder = index
 	row.Parent = ServerList
 	corner(row, 12)
-	stroke(row, COLOR_BORDER, 1, 0.3)
+	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.3)
 
 	local gameThumb = Instance.new("ImageLabel")
 	gameThumb.Size = UDim2.new(0, 38, 0, 38)
@@ -3110,6 +3200,44 @@ local function addServerEntry(server, index)
 	pingLabel.TextXAlignment = Enum.TextXAlignment.Left
 	pingLabel.Parent = row
 
+	-- Ícones dos amigos (com painel) neste servidor: logo após
+	-- o ping, até 3 avatares sobrepostos, +N quando passa disso.
+	local friends = id and FriendsIconByServer[id] or nil
+	if type(friends) == "table" and #friends > 0 then
+		rowStroke.Color = COLOR_SUCCESS
+
+		local shown = math.min(#friends, 3)
+		for i = 1, shown do
+			local av = Instance.new("ImageLabel")
+			av.Size = UDim2.new(0, 22, 0, 22)
+			av.Position = UDim2.new(0, 230 + (i - 1) * 15, 0.5, -11)
+			av.BackgroundColor3 = COLOR_SIDE
+			av.ZIndex = 2 + i
+			av.Parent = row
+			corner(av, 11)
+			pcall(function()
+				av.Image = Players:GetUserThumbnailAsync(
+					friends[i].id,
+					Enum.ThumbnailType.AvatarBust,
+					Enum.ThumbnailSize.Size100x100
+				)
+			end)
+		end
+
+		if #friends > 3 then
+			local extra = Instance.new("TextLabel")
+			extra.Size = UDim2.new(0, 24, 0, 16)
+			extra.Position = UDim2.new(0, 230 + shown * 15, 0.5, -8)
+			extra.BackgroundTransparency = 1
+			extra.Text = "+" .. (#friends - shown)
+			extra.TextColor3 = COLOR_DIM
+			extra.Font = Enum.Font.GothamBold
+			extra.TextSize = 9
+			extra.TextXAlignment = Enum.TextXAlignment.Left
+			extra.Parent = row
+		end
+	end
+
 	local join = createActionButton(row, "🚪 ENTRAR", 1)
 	join.Size = UDim2.new(0, 92, 0, 32)
 	join.Position = UDim2.new(1, -100, 0.5, -16)
@@ -3127,6 +3255,10 @@ local function loadPublicServers()
 	clearServerList()
 	ServerStatusLabel.Text = "Carregando..."
 	task.spawn(function()
+		-- Amigos por servidor primeiro (usa a mesma API já
+		-- consultada pelas tags; em falha, lista segue normal).
+		pcall(loadServerFriends)
+
 		local ok, result = pcall(function()
 			local url = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
 			local response = game:HttpGet(url)
@@ -3763,8 +3895,8 @@ createToggleButton(GameRow2, "Impulse  •  Tecla M", function(state)
 end, 2)
 
 -- Fly movido para a aba Jogador (mesma lógica/callback), com ajuste na mesma linha
-createSection(PlayerTab, "Fly", "Ligue o voo e ajuste a velocidade na mesma linha.", 1)
-createComboControl(PlayerTab, "✈️ Fly  •  Tecla F", 1, 1000, flySpeed, 2, function(state)
+createSection(PlayerTab, "Fly", "Ligue o voo e ajuste a velocidade na mesma linha.", 3)
+createComboControl(PlayerTab, "✈️ Fly  •  Tecla F", 1, 1000, flySpeed, 4, function(state)
 	flyHotkeyEnabled = state
 	if not state and flying then stopFly() end
 end, function(value)
@@ -3818,8 +3950,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Movimento do jogador (Walk Speed / Jump Power): cada recurso com botão
--- liga/desliga + slider na mesma linha; desligado volta ao padrão do jogo.
+-- Aba Jogador: seção Character — caixas de Walk/Jump com botões
+-- APPLY (coluna esquerda) e cards Respawn/Checkpoint com RUN
+-- (coluna direita). O spawn da aba Diversos veio pra cá.
 local okPlayerMove, errPlayerMove = pcall(function()
 	local MOVE_walkSpeed = 16
 	local MOVE_jumpPower = 50
@@ -3827,6 +3960,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	local MOVE_jumpOn = false
 	local MOVE_DEFAULT_WALK = 16
 	local MOVE_DEFAULT_JUMP = 50
+	local savedSpawnCFrame = nil
 
 	local function MOVE_apply()
 		local char = LocalPlayer.Character
@@ -3839,25 +3973,235 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		end)
 	end
 
-	createSection(PlayerTab, "Movimento", "Ligue e ajuste na mesma linha; desligado volta ao normal.", 3)
-	createComboControl(PlayerTab, "🚶 Walk Speed", 0, 500, MOVE_walkSpeed, 4, function(state)
-		MOVE_walkOn = state
-		MOVE_apply()
-	end, function(value)
-		MOVE_walkSpeed = value
-		MOVE_apply()
-	end)
-	createComboControl(PlayerTab, "🦘 Jump Power", 0, 500, MOVE_jumpPower, 5, function(state)
-		MOVE_jumpOn = state
-		MOVE_apply()
-	end, function(value)
-		MOVE_jumpPower = value
-		MOVE_apply()
+	createSection(PlayerTab, "Character", "Velocidade, pulo, respawn e checkpoint.", 1)
+
+	local CharacterGrid = Instance.new("Frame")
+	CharacterGrid.Size = UDim2.new(1, -4, 0, 168)
+	CharacterGrid.BackgroundTransparency = 1
+	CharacterGrid.BorderSizePixel = 0
+	CharacterGrid.LayoutOrder = 2
+	CharacterGrid.Parent = PlayerTab
+
+	-- Coluna esquerda: card com Walk Speed e Jump Power
+	local MoveCard = Instance.new("Frame")
+	MoveCard.Size = UDim2.new(0.48, -4, 0, 128)
+	MoveCard.BackgroundColor3 = COLOR_CARD
+	MoveCard.BackgroundTransparency = 0.08
+	MoveCard.BorderSizePixel = 0
+	MoveCard.Parent = CharacterGrid
+	corner(MoveCard, 12)
+	stroke(MoveCard, COLOR_BORDER, 1, 0.3)
+
+	local function moveCaption(text, y)
+		local cap = Instance.new("TextLabel")
+		cap.Size = UDim2.new(1, -24, 0, 14)
+		cap.Position = UDim2.new(0, 12, 0, y)
+		cap.BackgroundTransparency = 1
+		cap.Text = text
+		cap.TextColor3 = COLOR_MUTED
+		cap.Font = Enum.Font.GothamBold
+		cap.TextSize = 9
+		cap.TextXAlignment = Enum.TextXAlignment.Left
+		cap.Parent = MoveCard
+	end
+
+	local function moveBox(y)
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(1, -24, 0, 36)
+		box.Position = UDim2.new(0, 12, 0, y)
+		box.BackgroundColor3 = COLOR_SIDE
+		box.BackgroundTransparency = 0.15
+		box.Text = ""
+		box.PlaceholderColor3 = COLOR_MUTED
+		box.TextColor3 = COLOR_TEXT
+		box.Font = Enum.Font.GothamBold
+		box.TextSize = 14
+		box.TextXAlignment = Enum.TextXAlignment.Center
+		box.TextYAlignment = Enum.TextYAlignment.Center
+		box.ClearTextOnFocus = false
+		box.Parent = MoveCard
+		corner(box, 10)
+		stroke(box, COLOR_ACCENT, 1, 0.55)
+		return box
+	end
+
+	moveCaption("WALK SPEED", 10)
+	local WalkBox = moveBox(26)
+	WalkBox.Text = "16"
+	moveCaption("JUMP POWER", 68)
+	local JumpBox = moveBox(84)
+	JumpBox.Text = "50"
+
+	-- Botões APPLY (abaixo do card, alinhados à coluna esquerda)
+	local function applyButton(text, x, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.24, -5, 0, 32)
+		btn.Position = UDim2.new(x, 0, 0, 136)
+		btn.BackgroundColor3 = COLOR_ACCENT
+		btn.BackgroundTransparency = 0.85
+		btn.Text = text
+		btn.TextColor3 = COLOR_ACCENT
+		btn.Font = Enum.Font.GothamBold
+		btn.TextSize = 10
+		btn.Parent = CharacterGrid
+		corner(btn, 10)
+		stroke(btn, COLOR_ACCENT, 1, 0.25)
+		btn.MouseButton1Click:Connect(callback)
+		return btn
+	end
+
+	local ApplyWalk = applyButton("APPLY WALK", 0, function()
+		local value = tonumber(WalkBox.Text)
+		if value and value >= 0 and value <= 500 then
+			MOVE_walkSpeed = math.floor(value + 0.5)
+			MOVE_walkOn = true
+			MOVE_apply()
+			ApplyWalk.Text = "✓ APLICADO"
+		else
+			ApplyWalk.Text = "✗ NÚMERO?"
+		end
+		task.delay(1, function()
+			if ApplyWalk and ApplyWalk.Parent then ApplyWalk.Text = "APPLY WALK" end
+		end)
 	end)
 
-	LocalPlayer.CharacterAdded:Connect(function()
-		task.wait(0.4)
-		MOVE_apply()
+	local ApplyJump = applyButton("APPLY JUMP", 0.24, function()
+		local value = tonumber(JumpBox.Text)
+		if value and value >= 0 and value <= 500 then
+			MOVE_jumpPower = math.floor(value + 0.5)
+			MOVE_jumpOn = true
+			MOVE_apply()
+			ApplyJump.Text = "✓ APLICADO"
+		else
+			ApplyJump.Text = "✗ NÚMERO?"
+		end
+		task.delay(1, function()
+			if ApplyJump and ApplyJump.Parent then ApplyJump.Text = "APPLY JUMP" end
+		end)
+	end)
+
+	-- Coluna direita: card com Respawn (executar) e Checkpoint
+	-- (salvar o ponto de spawn — antigo "Definir Spawn")
+	local ActionCard = Instance.new("Frame")
+	ActionCard.Position = UDim2.new(0.52, 0, 0, 0)
+	ActionCard.Size = UDim2.new(0.48, -4, 1, 0)
+	ActionCard.BackgroundColor3 = COLOR_CARD
+	ActionCard.BackgroundTransparency = 0.08
+	ActionCard.BorderSizePixel = 0
+	ActionCard.Parent = CharacterGrid
+	corner(ActionCard, 12)
+	stroke(ActionCard, COLOR_ACCENT, 1, 0.45)
+
+	local function actionRow(y, title, subtitleText, dotColor)
+		local dot = Instance.new("Frame")
+		dot.Size = UDim2.new(0, 6, 0, 6)
+		dot.Position = UDim2.new(0, 14, 0, y + 11)
+		dot.BackgroundColor3 = dotColor
+		dot.BorderSizePixel = 0
+		dot.Parent = ActionCard
+		corner(dot, 3)
+
+		local t = Instance.new("TextLabel")
+		t.Size = UDim2.new(1, -170, 0, 16)
+		t.Position = UDim2.new(0, 28, 0, y + 3)
+		t.BackgroundTransparency = 1
+		t.Text = title
+		t.TextColor3 = COLOR_TEXT
+		t.Font = Enum.Font.GothamBold
+		t.TextSize = 12
+		t.TextXAlignment = Enum.TextXAlignment.Left
+		t.Parent = ActionCard
+
+		local sub = Instance.new("TextLabel")
+		sub.Size = UDim2.new(1, -170, 0, 12)
+		sub.Position = UDim2.new(0, 28, 0, y + 19)
+		sub.BackgroundTransparency = 1
+		sub.Text = subtitleText
+		sub.TextColor3 = COLOR_DIM
+		sub.Font = Enum.Font.GothamMedium
+		sub.TextSize = 9
+		sub.TextXAlignment = Enum.TextXAlignment.Left
+		sub.TextTruncate = Enum.TextTruncate.AtEnd
+		sub.Parent = ActionCard
+
+		local run = Instance.new("TextButton")
+		run.Size = UDim2.new(0, 56, 0, 26)
+		run.Position = UDim2.new(1, -68, 0, y + 7)
+		run.BackgroundColor3 = COLOR_ACCENT
+		run.BackgroundTransparency = 0.85
+		run.Text = "RUN"
+		run.TextColor3 = COLOR_ACCENT
+		run.Font = Enum.Font.GothamBold
+		run.TextSize = 10
+		run.Parent = ActionCard
+		corner(run, 13)
+		stroke(run, COLOR_ACCENT, 1, 0.25)
+
+		return sub, run
+	end
+
+	local RespawnSub, RespawnRun = actionRow(
+		0, "Respawn", "Clique para executar", Color3.fromRGB(255, 90, 90))
+	RespawnRun.MouseButton1Click:Connect(function()
+		local char = LocalPlayer.Character
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			pcall(function() humanoid.Health = 0 end)
+		end
+	end)
+
+	local ActionDivider = Instance.new("Frame")
+	ActionDivider.Size = UDim2.new(1, -24, 0, 1)
+	ActionDivider.Position = UDim2.new(0, 12, 0, 84)
+	ActionDivider.BackgroundColor3 = COLOR_BORDER
+	ActionDivider.BackgroundTransparency = 0.45
+	ActionDivider.BorderSizePixel = 0
+	ActionDivider.Parent = ActionCard
+
+	local CheckpointSub, CheckpointRun = actionRow(
+		84, "Checkpoint", "Clique para salvar", COLOR_ACCENT)
+	CheckpointRun.MouseButton1Click:Connect(function()
+		local char = LocalPlayer.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if root then
+			savedSpawnCFrame = root.CFrame
+			CheckpointSub.Text = "Checkpoint salvo ✓"
+			CheckpointSub.TextColor3 = COLOR_SUCCESS
+		end
+	end)
+
+	-- Mini lixeira: remove o checkpoint salvo (antigo "Remover Spawn")
+	local ClearSpawn = Instance.new("TextButton")
+	ClearSpawn.Size = UDim2.new(0, 26, 0, 26)
+	ClearSpawn.Position = UDim2.new(1, -100, 0, 84 + 7)
+	ClearSpawn.BackgroundTransparency = 1
+	ClearSpawn.Text = "🗑"
+	ClearSpawn.TextColor3 = COLOR_MUTED
+	ClearSpawn.Font = Enum.Font.GothamBold
+	ClearSpawn.TextSize = 12
+	ClearSpawn.Parent = ActionCard
+	ClearSpawn.MouseButton1Click:Connect(function()
+		savedSpawnCFrame = nil
+		CheckpointSub.Text = "Clique para salvar"
+		CheckpointSub.TextColor3 = COLOR_DIM
+	end)
+
+	-- Respawn: reaplica Walk/Jump aplicados e devolve ao checkpoint
+	LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+		task.spawn(function()
+			task.wait(0.4)
+			MOVE_apply()
+		end)
+		if savedSpawnCFrame then
+			task.spawn(function()
+				local root = newCharacter:WaitForChild("HumanoidRootPart", 8)
+				if not root or not savedSpawnCFrame then return end
+				task.wait(0.15)
+				if newCharacter.Parent and savedSpawnCFrame then
+					newCharacter:PivotTo(savedSpawnCFrame)
+				end
+			end)
+		end
 	end)
 	MOVE_apply()
 end)
@@ -3994,6 +4338,9 @@ end)
 if not okJerkoff then
 	warn("[Jogo] erro ao iniciar Jerkoff: " .. tostring(errJerkoff))
 end
+
+-- Linha compartilhada da aba Jogo: Bang e Anti-Invisível lado a lado
+local GameRow4 = createControlRow(GameTab, 5)
 
 -- Bang (portado dos BangScript e BangScript_Atras, R6 recomendado)
 -- Botão desligado: nada acontece. Botão ligado: Z ativa o bang
@@ -4134,7 +4481,6 @@ local okBang, errBang = pcall(function()
 		end
 	end)
 
-	local GameRow4 = createControlRow(GameTab, 5)
 	createToggleButton(GameRow4, "Bang  •  Z frente | C atrás", function(state)
 		bangFeatureOn = state
 		-- Ligar/desligar o botão nunca ativa o bang por si só:
@@ -4169,6 +4515,236 @@ end)
 
 if not okBang then
 	warn("[Jogo] erro ao iniciar Bang: " .. tostring(errBang))
+end
+
+-- =========================================================
+-- ANTI-INVISÍVEL (ao lado do Bang): revela personagens
+-- invisíveis como se estivessem normais — força de volta a
+-- transparência das partes. O CONTORNO roxo + contador de
+-- studs no pé ficam APENAS em quem está invisível.
+-- =========================================================
+local okAntiInvis, errAntiInvis = pcall(function()
+	local AI_enabled = false
+	local AI_forcedLTM = {}    -- partes que o jogo escondeu via LocalTransparencyModifier
+	local AI_forcedTrans = {}  -- partes totalmente transparentes (fora HumanoidRootPart)
+	local AI_highlights = {}   -- [player] = Highlight (contorno, só invisíveis)
+	local AI_labels = {}       -- [player] = {gui, text} contador de studs (só invisíveis)
+	local AI_evidence = {}     -- [player] = {char, marked} invisibilidade total confirmada
+
+	local AI_OUTLINE = Color3.fromRGB(170, 85, 255)
+	local AI_INVISIBLE = 0.99  -- transparência acima disso conta como invisível
+
+	local function AI_removeVisual(plr)
+		local hl = AI_highlights[plr]
+		if hl then pcall(function() hl:Destroy() end) end
+		AI_highlights[plr] = nil
+		local lb = AI_labels[plr]
+		if lb and lb.gui then pcall(function() lb.gui:Destroy() end) end
+		AI_labels[plr] = nil
+	end
+
+	-- Desligar: restaura tudo como o jogo deixou (esconde de novo)
+	local function AI_clear()
+		for part in pairs(AI_forcedLTM) do
+			pcall(function() part.LocalTransparencyModifier = 1 end)
+		end
+		for part in pairs(AI_forcedTrans) do
+			pcall(function() part.Transparency = 1 end)
+		end
+		table.clear(AI_forcedLTM)
+		table.clear(AI_forcedTrans)
+		for plr in pairs(AI_highlights) do
+			AI_removeVisual(plr)
+		end
+		table.clear(AI_evidence)
+	end
+
+	-- Contorno só no invisível (acompanha respawn, some quando ele
+	-- deixa de estar invisível ou sai do server)
+	local function AI_ensureHighlight(plr, char)
+		local hl = AI_highlights[plr]
+		if hl and hl.Parent ~= char then
+			pcall(function() hl:Destroy() end)
+			hl = nil
+		end
+		if not hl then
+			hl = Instance.new("Highlight")
+			hl.FillTransparency = 1
+			hl.OutlineColor = AI_OUTLINE
+			hl.OutlineTransparency = 0
+			hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			hl.Parent = char
+			AI_highlights[plr] = hl
+		end
+	end
+
+	-- Contador de studs ancorado NO PÉ do invisível
+	local function AI_ensureLabel(plr, root)
+		local lb = AI_labels[plr]
+		if lb and (not lb.gui.Parent or lb.gui.Adornee ~= root) then
+			pcall(function() lb.gui:Destroy() end)
+			lb = nil
+		end
+		if not lb then
+			local gui = Instance.new("BillboardGui")
+			gui.Name = "AI_Studs"
+			gui.Adornee = root
+			gui.Size = UDim2.new(0, 90, 0, 18)
+			gui.StudsOffset = Vector3.new(0, -2.8, 0) -- no pé
+			gui.AlwaysOnTop = true
+			gui.MaxDistance = 600
+
+			local text = Instance.new("TextLabel")
+			text.Size = UDim2.new(1, 0, 1, 0)
+			text.BackgroundTransparency = 1
+			text.Font = Enum.Font.GothamBold
+			text.TextSize = 12
+			text.TextColor3 = AI_OUTLINE
+			text.TextStrokeTransparency = 0.35
+			text.Text = "..."
+			text.Parent = gui
+
+			gui.Parent = root
+			lb = { gui = gui, text = text }
+			AI_labels[plr] = lb
+		end
+		return lb
+	end
+
+	-- Parte "do corpo": fora o root (sempre invisível), fora
+	-- acessórios (Handle invisível é normal em roupas) e fora
+	-- ferramentas/itens (Tool)
+	local function AI_isCorePart(part)
+		if part.Name == "HumanoidRootPart" or part.Name == "Handle" then
+			return false
+		end
+		local node = part.Parent
+		while node and node ~= workspace do
+			if node:IsA("Accessory") or node:IsA("Tool") then
+				return false
+			end
+			node = node.Parent
+		end
+		return true
+	end
+
+	local function AI_tick()
+		local myRoot = LocalPlayer.Character
+			and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= LocalPlayer then
+				if not plr.Parent then
+					AI_removeVisual(plr)
+					AI_evidence[plr] = nil
+				else
+					local char = plr.Character
+					if char and char.Parent then
+						-- 1ª passada: SÓ ANALISA, não mexe em nada.
+						-- Conta quantas partes do corpo estão escondidas.
+						local totalCore, hiddenCore = 0, 0
+						local hiddenParts = {}
+						for _, part in ipairs(char:GetDescendants()) do
+							if part:IsA("BasePart") and AI_isCorePart(part) then
+								totalCore += 1
+								local hiddenNow = part.LocalTransparencyModifier
+									>= AI_INVISIBLE
+									or part.Transparency >= AI_INVISIBLE
+								if hiddenNow then
+									hiddenCore += 1
+									hiddenParts[part] = true
+								end
+							end
+						end
+
+						local ev = AI_evidence[plr]
+						if ev and ev.char ~= char then
+							-- respawn/morph: recomeça a análise dele
+							ev = nil
+						end
+
+						-- TOTALMENTE invisível = TODAS as partes do corpo
+						-- escondidas (nada parcial, nada de itens soltos).
+						-- Quem já foi confirmado continua marcado até
+						-- trocar de personagem (senão o contorno piscava
+						-- depois da gente revelar).
+						local totallyInvisible =
+							(totalCore >= 3 and hiddenCore >= totalCore)
+							or (ev and ev.marked == true)
+
+						if totallyInvisible then
+							if ev then
+								ev.marked = true
+							else
+								ev = { char = char, marked = true }
+								AI_evidence[plr] = ev
+							end
+
+							-- Agora sim revela: personagem inteiro visível
+							for part in pairs(hiddenParts) do
+								if part.LocalTransparencyModifier
+									>= AI_INVISIBLE then
+									part.LocalTransparencyModifier = 0
+									AI_forcedLTM[part] = true
+								end
+								if part.Transparency >= AI_INVISIBLE then
+									part.Transparency = 0
+									AI_forcedTrans[part] = true
+								end
+							end
+
+							AI_ensureHighlight(plr, char)
+							local root = char:FindFirstChild("HumanoidRootPart")
+							if root then
+								local lb = AI_ensureLabel(plr, root)
+								if myRoot then
+									local dist = (myRoot.Position
+										- root.Position).Magnitude
+									lb.text.Text = string.format(
+										"%d studs", math.floor(dist + 0.5))
+								else
+									lb.text.Text = "? studs"
+								end
+							end
+						else
+							-- Parcial/invisível só em item: NÃO mexe
+							AI_evidence[plr] = nil
+							AI_removeVisual(plr)
+						end
+					else
+						AI_evidence[plr] = nil
+						AI_removeVisual(plr)
+					end
+				end
+			end
+		end
+	end
+
+	-- Varredura contínua: pega quem ficou invisível depois de ligar
+	-- (spawn, morph, etc). 0.25s é rápido o bastante e leve.
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			if AI_enabled then
+				pcall(AI_tick)
+			end
+		end
+	end)
+
+	local AIToggleCard, AISetState = createToggleButton(GameRow4, "👁 Anti-Invisível", function(state)
+		AI_enabled = state
+		if not state then
+			AI_clear()
+		end
+	end, 2)
+
+	-- Já nasce ATIVO junto com o painel (o botão só serve pra desligar)
+	AI_enabled = true
+	AISetState(true)
+end)
+
+if not okAntiInvis then
+	warn("[Jogo] erro ao iniciar Anti-Invisível: " .. tostring(errAntiInvis))
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -4526,35 +5102,6 @@ rejoinButton.MouseButton1Click:Connect(function()
 	end)
 end)
 
-local savedSpawnCFrame = nil
-createSection(MiscTab, "Spawn", "Defina um ponto para retornar automaticamente depois do reset.", 4)
-local SpawnRow = createControlRow(MiscTab, 5)
-local setSpawnButton = createActionButton(SpawnRow, "📍 Definir Spawn", 1)
-setSpawnButton.MouseButton1Click:Connect(function()
-	local char = LocalPlayer.Character
-	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if root then
-		savedSpawnCFrame = root.CFrame
-		setSpawnButton.Text = "📍 Spawn definido"
-		task.delay(1.2, function()
-			if setSpawnButton and setSpawnButton.Parent then
-				setSpawnButton.Text = "📍 Definir Spawn"
-			end
-		end)
-	end
-end)
-
-local removeSpawnButton = createActionButton(SpawnRow, "🗑 Remover Spawn", 2, true)
-removeSpawnButton.MouseButton1Click:Connect(function()
-	savedSpawnCFrame = nil
-	removeSpawnButton.Text = "🗑 Spawn removido"
-	task.delay(1.2, function()
-		if removeSpawnButton and removeSpawnButton.Parent then
-			removeSpawnButton.Text = "🗑 Remover Spawn"
-		end
-	end)
-end)
-
 -- Shader (Tokyowami)
 -- Credits to Instance Serializer for helping me convert the Tokyowami shrine whatever thing to luau
 local shadersObj = {}
@@ -4731,8 +5278,8 @@ local function disableShader()
 	restoreLighting()
 end
 
-createSection(MiscTab, "Shaders", "shader visual com efeitos de pós-processamento", 6)
-local MiscShaderRow1 = createControlRow(MiscTab, 7)
+createSection(MiscTab, "Shaders", "shader visual com efeitos de pós-processamento", 4)
+local MiscShaderRow1 = createControlRow(MiscTab, 5)
 createToggleButton(MiscShaderRow1, "🎨 Shader  •  Tokyowami", function(state)
 	if state then applyTokyowamiShader() else disableShader() end
 end, 1)
@@ -4746,18 +5293,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
-LocalPlayer.CharacterAdded:Connect(function(newCharacter)
-	if savedSpawnCFrame then
-		task.spawn(function()
-			local root = newCharacter:WaitForChild("HumanoidRootPart", 8)
-			if not root or not savedSpawnCFrame then return end
-			task.wait(0.15)
-			if newCharacter.Parent and savedSpawnCFrame then
-				newCharacter:PivotTo(savedSpawnCFrame)
-			end
-		end)
-	end
-end)
 end -- fim do bloco Diversos/Shaders
 
 --------------------------------------------------------------------------------
