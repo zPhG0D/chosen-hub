@@ -14,19 +14,20 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local COLOR_BG       = Color3.fromRGB(9, 17, 33)
-local COLOR_PANEL    = Color3.fromRGB(15, 28, 52)
-local COLOR_SIDE     = Color3.fromRGB(11, 22, 42)
-local COLOR_CARD     = Color3.fromRGB(21, 42, 74)
-local COLOR_CARD2    = Color3.fromRGB(28, 55, 92)
-local COLOR_BORDER   = Color3.fromRGB(52, 96, 148)
-local COLOR_BORDER2  = Color3.fromRGB(96, 152, 212)
-local COLOR_ACCENT   = Color3.fromRGB(66, 152, 255)
-local COLOR_ACCENT2  = Color3.fromRGB(34, 108, 218)
-local COLOR_TEXT     = Color3.fromRGB(244, 249, 255)
-local COLOR_DIM      = Color3.fromRGB(178, 204, 232)
-local COLOR_MUTED    = Color3.fromRGB(126, 160, 198)
-local COLOR_SUCCESS  = Color3.fromRGB(84, 220, 140)
+-- Tema: grafite frio + um único azul de destaque (mais limpo, menos cor)
+local COLOR_BG       = Color3.fromRGB(9, 12, 18)
+local COLOR_PANEL    = Color3.fromRGB(17, 21, 29)
+local COLOR_SIDE     = Color3.fromRGB(13, 16, 23)
+local COLOR_CARD     = Color3.fromRGB(24, 29, 39)
+local COLOR_CARD2    = Color3.fromRGB(31, 38, 50)
+local COLOR_BORDER   = Color3.fromRGB(42, 50, 64)
+local COLOR_BORDER2  = Color3.fromRGB(62, 74, 92)
+local COLOR_ACCENT   = Color3.fromRGB(108, 162, 255)
+local COLOR_ACCENT2  = Color3.fromRGB(56, 104, 200)
+local COLOR_TEXT     = Color3.fromRGB(237, 242, 250)
+local COLOR_DIM      = Color3.fromRGB(166, 178, 196)
+local COLOR_MUTED    = Color3.fromRGB(116, 128, 146)
+local COLOR_SUCCESS  = Color3.fromRGB(82, 216, 146)
 
 local function corner(obj, radius)
 	local c = Instance.new("UICorner")
@@ -97,14 +98,14 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = false
 MainFrame.Parent = ScreenGui
-corner(MainFrame, 14)
-stroke(MainFrame, COLOR_BORDER, 1, 0.25)
+corner(MainFrame, 16)
+stroke(MainFrame, COLOR_BORDER, 1, 0.55)
 
 local MainFrameGradient = Instance.new("UIGradient")
 MainFrameGradient.Rotation = 90
 MainFrameGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 178, 200))
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 220, 235))
 })
 MainFrameGradient.Parent = MainFrame
 
@@ -112,56 +113,52 @@ MainFrameGradient.Parent = MainFrame
 -- Fica no ScreenGui (fora do MainFrame) para continuar visível quando o painel fecha.
 local PanelToggle = Instance.new("TextButton")
 PanelToggle.Name = "PanelToggle"
-PanelToggle.Size = UDim2.new(0, 34, 0, 34)
+PanelToggle.Size = UDim2.new(0, 32, 0, 32)
 PanelToggle.AnchorPoint = Vector2.new(0, 0.5)
 PanelToggle.Position = UDim2.new(0, 10, 0.5, 0)
-PanelToggle.BackgroundColor3 = COLOR_PANEL
+PanelToggle.BackgroundColor3 = COLOR_CARD
 PanelToggle.AutoButtonColor = false
 PanelToggle.Text = "C"
-PanelToggle.TextColor3 = COLOR_TEXT
+PanelToggle.TextColor3 = COLOR_DIM
 PanelToggle.Font = Enum.Font.GothamBlack
-PanelToggle.TextSize = 16
+PanelToggle.TextSize = 14
 PanelToggle.BorderSizePixel = 0
 PanelToggle.Parent = ScreenGui
-corner(PanelToggle, 17)
-stroke(PanelToggle, COLOR_BORDER, 1, 0.35)
+corner(PanelToggle, 10)
 
 PanelToggle.MouseButton1Click:Connect(function()
 	MainFrame.Visible = not MainFrame.Visible
 end)
 PanelToggle.MouseEnter:Connect(function()
-	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD}, 0.15)
+	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD2, TextColor3 = COLOR_TEXT}, 0.15)
 end)
 PanelToggle.MouseLeave:Connect(function()
-	tween(PanelToggle, {BackgroundColor3 = COLOR_PANEL}, 0.15)
+	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD, TextColor3 = COLOR_DIM}, 0.15)
 end)
 
 
-local AccentLine = Instance.new("Frame")
-AccentLine.Size = UDim2.new(1, -28, 0, 2)
-AccentLine.Position = UDim2.new(0, 14, 0, 1)
-AccentLine.BackgroundColor3 = COLOR_TEXT
-AccentLine.BorderSizePixel = 0
-AccentLine.Parent = MainFrame
-corner(AccentLine, 2)
-
-local AccentLineGradient = Instance.new("UIGradient")
-AccentLineGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, COLOR_ACCENT),
-	ColorSequenceKeypoint.new(0.55, Color3.fromRGB(120, 190, 255)),
-	ColorSequenceKeypoint.new(1, COLOR_PANEL)
-})
-AccentLineGradient.Parent = AccentLine
-
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 58)
-TopBar.BackgroundColor3 = COLOR_PANEL
-TopBar.BackgroundTransparency = 0.2
+TopBar.Size = UDim2.new(1, 0, 0, 60)
+TopBar.BackgroundTransparency = 1
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-corner(TopBar, 14)
-stroke(TopBar, COLOR_BORDER, 1, 0.35)
 TopBar.Active = true
+
+-- Fio de luz no rodapé do cabeçalho (destaque único, sem moldura)
+local HeaderLine = Instance.new("Frame")
+HeaderLine.Size = UDim2.new(1, -28, 0, 1)
+HeaderLine.Position = UDim2.new(0, 14, 1, -1)
+HeaderLine.BackgroundColor3 = COLOR_BORDER2
+HeaderLine.BackgroundTransparency = 0.55
+HeaderLine.BorderSizePixel = 0
+HeaderLine.Parent = TopBar
+local HeaderLineGradient = Instance.new("UIGradient")
+HeaderLineGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+	ColorSequenceKeypoint.new(0.35, Color3.fromRGB(180, 180, 180)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
+})
+HeaderLineGradient.Parent = HeaderLine
 
 do
 	local draggingPanel = false
@@ -199,127 +196,83 @@ do
 	end)
 end
 
-local TopMask = Instance.new("Frame")
-TopMask.Size = UDim2.new(1, 0, 0, 24)
-TopMask.Position = UDim2.new(0, 0, 1, -24)
-TopMask.BackgroundColor3 = COLOR_PANEL
-TopMask.BorderSizePixel = 0
-TopMask.Parent = TopBar
-
 local Brand = Instance.new("TextLabel")
 Brand.Name = "ChosenHub"
-Brand.Size = UDim2.new(0, 262, 0, 36)
-Brand.Position = UDim2.new(0, 18, 0, 10)
+Brand.Size = UDim2.new(0, 300, 0, 30)
+Brand.Position = UDim2.new(0, 20, 0, 15)
 Brand.BackgroundTransparency = 1
-Brand.Text = "◆  CHOSEN HUB"
+Brand.Text = 'CHOSEN <font color="#6CA2FF">HUB</font>'
 Brand.TextColor3 = COLOR_TEXT
 Brand.Font = Enum.Font.GothamBlack
-Brand.TextSize = 17
+Brand.TextSize = 15
 Brand.TextXAlignment = Enum.TextXAlignment.Left
+Brand.RichText = true
 Brand.Parent = TopBar
 
-local BrandTextGradient = Instance.new("UIGradient")
-BrandTextGradient.Rotation = 90
-BrandTextGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, COLOR_TEXT),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 195, 250))
-})
-BrandTextGradient.Parent = Brand
-
-local BrandAccent = Instance.new("Frame")
-BrandAccent.Size = UDim2.new(0, 40, 0, 3)
-BrandAccent.Position = UDim2.new(0, 20, 1, -8)
-BrandAccent.BackgroundColor3 = COLOR_ACCENT
-BrandAccent.BorderSizePixel = 0
-BrandAccent.Parent = TopBar
-corner(BrandAccent, 2)
-
 local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 8, 0, 8)
-StatusDot.Position = UDim2.new(1, -122, 0, 25)
+StatusDot.Size = UDim2.new(0, 6, 0, 6)
+StatusDot.Position = UDim2.new(1, -76, 0, 27)
 StatusDot.BackgroundColor3 = COLOR_SUCCESS
 StatusDot.BorderSizePixel = 0
 StatusDot.Parent = TopBar
-corner(StatusDot, 8)
+corner(StatusDot, 6)
 
 task.spawn(function()
 	while StatusDot.Parent do
-		tween(StatusDot, {BackgroundTransparency = 0.65}, 0.55)
-		task.wait(0.55)
-		tween(StatusDot, {BackgroundTransparency = 0}, 0.55)
-		task.wait(0.55)
+		tween(StatusDot, {BackgroundTransparency = 0.7}, 0.6)
+		task.wait(0.6)
+		tween(StatusDot, {BackgroundTransparency = 0}, 0.6)
+		task.wait(0.6)
 	end
 end)
 
 local StatusText = Instance.new("TextLabel")
-StatusText.Size = UDim2.new(0, 94, 0, 18)
-StatusText.Position = UDim2.new(1, -110, 0, 20)
+StatusText.Size = UDim2.new(0, 60, 0, 14)
+StatusText.Position = UDim2.new(1, -66, 0, 23)
 StatusText.BackgroundTransparency = 1
-StatusText.Text = "SISTEMA ONLINE"
-StatusText.TextColor3 = COLOR_DIM
-StatusText.Font = Enum.Font.GothamMedium
+StatusText.Text = "ONLINE"
+StatusText.TextColor3 = COLOR_MUTED
+StatusText.Font = Enum.Font.GothamBold
 StatusText.TextSize = 9
 StatusText.TextXAlignment = Enum.TextXAlignment.Left
 StatusText.Parent = TopBar
 
 local Body = Instance.new("Frame")
-Body.Size = UDim2.new(1, -20, 1, -70)
-Body.Position = UDim2.new(0, 10, 0, 64)
+Body.Size = UDim2.new(1, -20, 1, -72)
+Body.Position = UDim2.new(0, 10, 0, 66)
 Body.BackgroundTransparency = 1
 Body.Parent = MainFrame
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 168, 1, 0)
 Sidebar.BackgroundColor3 = COLOR_SIDE
+Sidebar.BackgroundTransparency = 0.25
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Body
-corner(Sidebar, 12)
-stroke(Sidebar, COLOR_BORDER, 1, 0.3)
+corner(Sidebar, 14)
 
 local SidebarGradient = Instance.new("UIGradient")
 SidebarGradient.Rotation = 90
 SidebarGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 165, 190))
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(206, 212, 224))
 })
 SidebarGradient.Parent = Sidebar
 
-local SideTitle = Instance.new("TextLabel")
-SideTitle.Size = UDim2.new(1, -28, 0, 18)
-SideTitle.Position = UDim2.new(0, 14, 0, 16)
-SideTitle.BackgroundTransparency = 1
-SideTitle.Text = "◆  CHOSEN HUB"
-SideTitle.TextColor3 = COLOR_MUTED
-SideTitle.Font = Enum.Font.GothamMedium
-SideTitle.TextSize = 9
-SideTitle.TextXAlignment = Enum.TextXAlignment.Left
-SideTitle.Parent = Sidebar
-
-local SideSub = Instance.new("TextLabel")
-SideSub.Size = UDim2.new(1, -28, 0, 20)
-SideSub.Position = UDim2.new(0, 14, 0, 34)
-SideSub.BackgroundTransparency = 1
-SideSub.Text = "Escolha uma área"
-SideSub.TextColor3 = COLOR_TEXT
-SideSub.Font = Enum.Font.GothamBlack
-SideSub.TextSize = 13
-SideSub.TextXAlignment = Enum.TextXAlignment.Left
-SideSub.Parent = Sidebar
-
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, -20, 1, -88)
-TabContainer.Position = UDim2.new(0, 10, 0, 64)
+TabContainer.Size = UDim2.new(1, -16, 1, -50)
+TabContainer.Position = UDim2.new(0, 8, 0, 12)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = Sidebar
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Padding = UDim.new(0, 4)
 TabLayout.Parent = TabContainer
 
 local Version = Instance.new("TextLabel")
 Version.Size = UDim2.new(1, -28, 0, 20)
-Version.Position = UDim2.new(0, 14, 1, -27)
+Version.Position = UDim2.new(0, 16, 1, -26)
 Version.BackgroundTransparency = 1
 Version.Text = "v2.5  •  B ABRE/FECHA"
 Version.TextColor3 = COLOR_MUTED
@@ -331,26 +284,24 @@ Version.Parent = Sidebar
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -180, 1, 0)
 ContentArea.Position = UDim2.new(0, 180, 0, 0)
-ContentArea.BackgroundColor3 = COLOR_PANEL
+ContentArea.BackgroundTransparency = 1
 ContentArea.BorderSizePixel = 0
 ContentArea.Parent = Body
-corner(ContentArea, 12)
-stroke(ContentArea, COLOR_BORDER, 1, 0.15)
 
 local ContentTitle = Instance.new("TextLabel")
-ContentTitle.Size = UDim2.new(1, -30, 0, 28)
-ContentTitle.Position = UDim2.new(0, 16, 0, 12)
+ContentTitle.Size = UDim2.new(1, -30, 0, 26)
+ContentTitle.Position = UDim2.new(0, 18, 0, 8)
 ContentTitle.BackgroundTransparency = 1
 ContentTitle.Text = "Início"
 ContentTitle.TextColor3 = COLOR_TEXT
 ContentTitle.Font = Enum.Font.GothamBlack
-ContentTitle.TextSize = 17
+ContentTitle.TextSize = 18
 ContentTitle.TextXAlignment = Enum.TextXAlignment.Left
 ContentTitle.Parent = ContentArea
 
 local ContentHolder = Instance.new("Frame")
-ContentHolder.Size = UDim2.new(0, 490, 1, -76)
-ContentHolder.Position = UDim2.new(0, 16, 0, 70)
+ContentHolder.Size = UDim2.new(0, 486, 1, -58)
+ContentHolder.Position = UDim2.new(0, 16, 0, 48)
 ContentHolder.BackgroundTransparency = 1
 ContentHolder.ClipsDescendants = true
 ContentHolder.Parent = ContentArea
@@ -371,40 +322,40 @@ local TabIcons = {
 local function createTab(name, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name .. "TabButton"
-	btn.Size = UDim2.new(1, 0, 0, 36)
-	btn.BackgroundColor3 = COLOR_SIDE
+	btn.Size = UDim2.new(1, 0, 0, 34)
+	btn.BackgroundColor3 = COLOR_CARD
+	btn.BackgroundTransparency = 1
 	btn.AutoButtonColor = false
 	btn.Text = ""
 	btn.LayoutOrder = order
 	btn.Parent = TabContainer
-	corner(btn, 19)
-	stroke(btn, COLOR_BORDER, 1, 0.35)
+	corner(btn, 10)
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(0, 26, 0, 26)
-	icon.Position = UDim2.new(0, 8, 0.5, -13)
+	icon.Size = UDim2.new(0, 22, 0, 22)
+	icon.Position = UDim2.new(0, 9, 0.5, -11)
 	icon.BackgroundTransparency = 1
 	icon.Text = TabIcons[name] or "◆"
 	icon.TextColor3 = COLOR_MUTED
 	icon.Font = Enum.Font.GothamBold
-	icon.TextSize = 15
+	icon.TextSize = 14
 	icon.TextXAlignment = Enum.TextXAlignment.Center
 	icon.TextYAlignment = Enum.TextYAlignment.Center
 	icon.Parent = btn
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -50, 1, 0)
-	label.Position = UDim2.new(0, 42, 0, 0)
+	label.Size = UDim2.new(1, -48, 1, 0)
+	label.Position = UDim2.new(0, 38, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextColor3 = COLOR_DIM
 	label.Font = Enum.Font.GothamBold
-	label.TextSize = 13
+	label.TextSize = 12
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = btn
 
 	local activeBar = Instance.new("Frame")
-	activeBar.Size = UDim2.new(0, 3, 0, 18)
+	activeBar.Size = UDim2.new(0, 2, 0, 16)
 	activeBar.AnchorPoint = Vector2.new(0, 0.5)
 	activeBar.Position = UDim2.new(0, 0, 0.5, 0)
 	activeBar.BackgroundColor3 = COLOR_ACCENT
@@ -442,24 +393,27 @@ local function createTab(name, order)
 
 	btn.MouseEnter:Connect(function()
 		if not ContentFrames[name].Visible then
-			tween(btn, {BackgroundColor3 = COLOR_PANEL}, 0.10)
-			local hs = btn:FindFirstChildOfClass("UIStroke")
-			if hs then tween(hs, {Color = COLOR_BORDER2}, 0.10) end
+			tween(btn, {BackgroundTransparency = 0.55}, 0.12)
+			tween(icon, {TextColor3 = COLOR_DIM}, 0.12)
+			tween(label, {TextColor3 = COLOR_TEXT}, 0.12)
 		end
 	end)
 	btn.MouseLeave:Connect(function()
 		if not ContentFrames[name].Visible then
-			tween(btn, {BackgroundColor3 = COLOR_SIDE}, 0.10)
-			local hs = btn:FindFirstChildOfClass("UIStroke")
-			if hs then tween(hs, {Color = COLOR_BORDER}, 0.10) end
+			tween(btn, {BackgroundTransparency = 1}, 0.14)
+			tween(icon, {TextColor3 = COLOR_MUTED}, 0.14)
+			tween(label, {TextColor3 = COLOR_DIM}, 0.14)
 		end
 	end)
 	btn.MouseButton1Click:Connect(function()
 		for tabName, data in pairs(Tabs) do
 			local active = tabName == name
-			tween(data.button, {BackgroundColor3 = active and COLOR_ACCENT2 or COLOR_SIDE, BackgroundTransparency = active and 0.25 or 0}, 0.22)
-			tween(data.icon, {TextColor3 = active and COLOR_TEXT or COLOR_MUTED}, 0.22)
-			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.22)
+			tween(data.button, {
+				BackgroundColor3 = COLOR_CARD,
+				BackgroundTransparency = active and 0.05 or 1
+			}, 0.2)
+			tween(data.icon, {TextColor3 = active and COLOR_ACCENT or COLOR_MUTED}, 0.2)
+			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.2)
 			data.activeBar.Visible = active
 			ContentFrames[tabName].Visible = active
 		end
@@ -476,8 +430,8 @@ local function createSection(parent, title, subtitle, order)
 	section.Parent = parent
 
 	local tick = Instance.new("Frame")
-	tick.Size = UDim2.new(0, 3, 0, 12)
-	tick.Position = UDim2.new(0, -6, 0, 4)
+	tick.Size = UDim2.new(0, 2, 0, 10)
+	tick.Position = UDim2.new(0, -6, 0, 6)
 	tick.BackgroundColor3 = COLOR_ACCENT
 	tick.BorderSizePixel = 0
 	tick.Parent = section
@@ -487,9 +441,9 @@ local function createSection(parent, title, subtitle, order)
 	t.Size = UDim2.new(1, 0, 0, 20)
 	t.BackgroundTransparency = 1
 	t.Text = title
-	t.TextColor3 = COLOR_TEXT
-	t.Font = Enum.Font.GothamBlack
-	t.TextSize = 13
+	t.TextColor3 = COLOR_DIM
+	t.Font = Enum.Font.GothamBold
+	t.TextSize = 12
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.Parent = section
 
@@ -497,7 +451,7 @@ local function createSection(parent, title, subtitle, order)
 	divider.Size = UDim2.new(1, 0, 0, 1)
 	divider.Position = UDim2.new(0, 0, 1, -2)
 	divider.BackgroundColor3 = COLOR_BORDER
-	divider.BackgroundTransparency = 0.45
+	divider.BackgroundTransparency = 0.6
 	divider.BorderSizePixel = 0
 	divider.Parent = section
 	return section
@@ -527,18 +481,211 @@ local function createControlRow(parent, order)
 	return row
 end
 
+-- Divide "Título  •  dica" em duas linhas. O bullet é UTF-8 (3 bytes),
+-- então string.find com plain=true acha a sequência exata.
+local function splitToggleLabel(text)
+	local function trim(s)
+		s = string.gsub(s, "^%s+", "")
+		return (string.gsub(s, "%s+$", ""))
+	end
+
+	local a, b = string.find(text, "•", 1, true)
+	if not a then
+		return trim(text), nil
+	end
+	return trim(string.sub(text, 1, a - 1)), trim(string.sub(text, b + 1))
+end
+
+-- Verde da tinta do card ligado
+local TOGGLE_TINT = Color3.fromRGB(46, 196, 122)
+
+-- Card de toggle: brilho diagonal, tinta verde suave, barra lateral de
+-- destaque e switch capsulado com knob esférico + glow. Tudo estático
+-- (gradientes/estilos), com tween só nos eventos — nada por frame.
 local function createToggleButton(parent, labelText, callback, order)
 	local state = false
 	local inRow = isControlRow(parent)
+	local titleText, hintText = splitToggleLabel(labelText)
+	local hasHint = hintText ~= nil and hintText ~= ""
+
 	local card = Instance.new("Frame")
+	card.Name = "ToggleCard"
 	card.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, 50)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.1
+	card.BackgroundTransparency = 0.05
 	card.BorderSizePixel = 0
+	card.ClipsDescendants = true
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.3)
+	local cardStroke = stroke(card, COLOR_BORDER, 1, 0.28)
+
+	-- Brilho diagonal ("vidro") no canto superior esquerdo
+	local sheen = Instance.new("Frame")
+	sheen.Size = UDim2.new(1, 0, 1, 0)
+	sheen.BackgroundColor3 = Color3.new(1, 1, 1)
+	sheen.BorderSizePixel = 0
+	sheen.ZIndex = 2
+	sheen.Parent = card
+	local sheenGrad = Instance.new("UIGradient")
+	sheenGrad.Rotation = 118
+	sheenGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.92),
+		NumberSequenceKeypoint.new(0.5, 1),
+		NumberSequenceKeypoint.new(1, 1)
+	})
+	sheenGrad.Parent = sheen
+
+	-- Tinta verde suave (aparece só quando ligado)
+	local tint = Instance.new("Frame")
+	tint.Size = UDim2.new(1, 0, 1, 0)
+	tint.BackgroundColor3 = TOGGLE_TINT
+	tint.BackgroundTransparency = 1
+	tint.BorderSizePixel = 0
+	tint.ZIndex = 3
+	tint.Parent = card
+	local tintGrad = Instance.new("UIGradient")
+	tintGrad.Rotation = 90
+	tintGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 0.45)
+	})
+	tintGrad.Parent = tint
+
+	-- Barra de destaque lateral (azul desligado / verde ligado)
+	local accent = Instance.new("Frame")
+	accent.Size = UDim2.new(0, 3, 0, 20)
+	accent.Position = UDim2.new(0, 9, 0.5, -10)
+	accent.BackgroundColor3 = COLOR_ACCENT
+	accent.BorderSizePixel = 0
+	accent.ZIndex = 4
+	accent.Parent = card
+	corner(accent, 2)
+	local accentGrad = Instance.new("UIGradient")
+	accentGrad.Rotation = 90
+	accentGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 150, 150))
+	})
+	accentGrad.Parent = accent
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Titulo"
+	title.Size = hasHint and UDim2.new(1, -78, 0, 15) or UDim2.new(1, -78, 1, 0)
+	title.Position = hasHint and UDim2.new(0, 20, 0.5, -18) or UDim2.new(0, 20, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = titleText
+	title.TextColor3 = COLOR_TEXT
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = hasHint and 11 or 12
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextYAlignment = Enum.TextYAlignment.Center
+	title.TextTruncate = Enum.TextTruncate.AtEnd
+	title.ZIndex = 5
+	title.Parent = card
+
+	-- Dica/atalho em segunda linha, mais discreta
+	local hint
+	if hasHint then
+		hint = Instance.new("TextLabel")
+		hint.Name = "Dica"
+		hint.Size = UDim2.new(1, -78, 0, 12)
+		hint.Position = UDim2.new(0, 20, 0.5, 1)
+		hint.BackgroundTransparency = 1
+		hint.Text = hintText
+		hint.TextColor3 = COLOR_MUTED
+		hint.Font = Enum.Font.GothamMedium
+		hint.TextSize = 9
+		hint.TextXAlignment = Enum.TextXAlignment.Left
+		hint.TextYAlignment = Enum.TextYAlignment.Center
+		hint.TextTruncate = Enum.TextTruncate.AtEnd
+		hint.ZIndex = 5
+		hint.Parent = card
+	end
+
+	-- Glow externo do switch (atrás do trilho)
+	local glow = Instance.new("Frame")
+	glow.Size = UDim2.new(0, 46, 0, 28)
+	glow.Position = UDim2.new(1, -52, 0.5, -14)
+	glow.BackgroundColor3 = COLOR_SUCCESS
+	glow.BackgroundTransparency = 1
+	glow.BorderSizePixel = 0
+	glow.ZIndex = 4
+	glow.Parent = card
+	corner(glow, 14)
+
+	local switchTrack = Instance.new("Frame")
+	switchTrack.Size = UDim2.new(0, 34, 0, 18)
+	switchTrack.Position = UDim2.new(1, -46, 0.5, -9)
+	switchTrack.BackgroundColor3 = COLOR_SIDE
+	switchTrack.BorderSizePixel = 0
+	switchTrack.ZIndex = 5
+	switchTrack.Parent = card
+	corner(switchTrack, 9)
+	local trackStroke = stroke(switchTrack, COLOR_BORDER, 1, 0.35)
+
+	local trackGrad = Instance.new("UIGradient")
+	trackGrad.Rotation = 90
+	trackGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(178, 178, 178))
+	})
+	trackGrad.Parent = switchTrack
+
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.new(0, 14, 0, 14)
+	dot.Position = UDim2.new(0, 2, 0.5, -7)
+	dot.BackgroundColor3 = COLOR_MUTED
+	dot.BorderSizePixel = 0
+	dot.ZIndex = 6
+	dot.Parent = switchTrack
+	corner(dot, 7)
+	local dotGrad = Instance.new("UIGradient")
+	dotGrad.Rotation = 90
+	dotGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(196, 196, 196))
+	})
+	dotGrad.Parent = dot
+
+	local function applyVisuals(time)
+		tween(tint, {BackgroundTransparency = state and 0.84 or 1}, time)
+		tween(accent, {
+			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_ACCENT,
+			Size = state and UDim2.new(0, 3, 0, 26) or UDim2.new(0, 3, 0, 20),
+			Position = state and UDim2.new(0, 9, 0.5, -13) or UDim2.new(0, 9, 0.5, -10)
+		}, time)
+		tween(cardStroke, {
+			Color = state and COLOR_SUCCESS or COLOR_BORDER,
+			Transparency = state and 0.18 or 0.28
+		}, time)
+		tween(switchTrack, {
+			BackgroundColor3 = state and Color3.fromRGB(20, 96, 62) or COLOR_SIDE
+		}, time)
+		tween(trackStroke, {
+			Color = state and COLOR_SUCCESS or COLOR_BORDER,
+			Transparency = state and 0.15 or 0.35
+		}, time)
+		tween(glow, {BackgroundTransparency = state and 0.8 or 1}, time)
+		tween(dot, {
+			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
+		}, time)
+		tween(title, {
+			TextColor3 = state and Color3.fromRGB(224, 255, 236) or COLOR_TEXT
+		}, time)
+		if hint then
+			tween(hint, {
+				TextColor3 = state and Color3.fromRGB(150, 224, 186) or COLOR_MUTED
+			}, time)
+		end
+	end
+
+	local function setState(newState)
+		state = newState and true or false
+		applyVisuals(0.18)
+		if callback then callback(state) end
+	end
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(1, 0, 1, 0)
@@ -546,59 +693,23 @@ local function createToggleButton(parent, labelText, callback, order)
 	hit.BorderSizePixel = 0
 	hit.AutoButtonColor = false
 	hit.Text = ""
+	hit.ZIndex = 8
 	hit.Parent = card
-
-	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -70, 1, 0)
-	title.Position = UDim2.new(0, 12, 0, 0)
-	title.BackgroundTransparency = 1
-	title.Text = labelText
-	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = 12
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextTruncate = Enum.TextTruncate.AtEnd
-	title.Parent = card
-
-	local switchTrack = Instance.new("Frame")
-	switchTrack.Size = UDim2.new(0, 36, 0, 18)
-	switchTrack.Position = UDim2.new(1, -54, 0.5, -9)
-	switchTrack.BackgroundColor3 = COLOR_SIDE
-	switchTrack.BorderSizePixel = 0
-	switchTrack.Parent = card
-	corner(switchTrack, 9)
-	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
-
-	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 12, 0, 12)
-	dot.Position = UDim2.new(0, 3, 0.5, -6)
-	dot.BackgroundColor3 = COLOR_MUTED
-	dot.BorderSizePixel = 0
-	dot.Parent = switchTrack
-	corner(dot, 6)
-
-	local function setState(newState)
-		state = newState
-		tween(dot, {
-			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
-			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
-		}, 0.14)
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
-		local st = card:FindFirstChildOfClass("UIStroke")
-		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
-		if callback then callback(state) end
-	end
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 	hit.MouseEnter:Connect(function()
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(32, 96, 68) or COLOR_CARD2}, 0.10)
-		local st = card:FindFirstChildOfClass("UIStroke")
-		if st and not state then tween(st, {Color = COLOR_BORDER2}, 0.10) end
+		tween(card, {BackgroundColor3 = COLOR_CARD2}, 0.12)
+		tween(cardStroke, {
+			Color = state and COLOR_SUCCESS or COLOR_BORDER2,
+			Transparency = 0.06
+		}, 0.12)
 	end)
 	hit.MouseLeave:Connect(function()
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.10)
-		local st = card:FindFirstChildOfClass("UIStroke")
-		if st and not state then tween(st, {Color = COLOR_BORDER}, 0.10) end
+		tween(card, {BackgroundColor3 = COLOR_CARD}, 0.12)
+		tween(cardStroke, {
+			Color = state and COLOR_SUCCESS or COLOR_BORDER,
+			Transparency = state and 0.18 or 0.28
+		}, 0.12)
 	end)
 	return card, setState
 end
@@ -608,57 +719,54 @@ local function createActionButton(parent, text, order, compact)
 	local btn = Instance.new("TextButton")
 	btn.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, compact and 40 or 46)
 	btn.BackgroundColor3 = COLOR_CARD2
-	btn.BackgroundTransparency = 0.15
+	btn.BackgroundTransparency = 0
 	btn.AutoButtonColor = false
 	btn.Text = text
-	btn.TextColor3 = COLOR_TEXT
+	btn.TextColor3 = COLOR_DIM
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 11
 	btn.TextXAlignment = Enum.TextXAlignment.Left
 	btn.TextTruncate = Enum.TextTruncate.AtEnd
 	btn.LayoutOrder = order or 1
 	btn.Parent = parent
-	corner(btn, 12)
-	stroke(btn, COLOR_BORDER, 1, 0.35)
+	corner(btn, 10)
 
 	padding(btn, 14, 10, 0, 0)
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, {BackgroundColor3 = Color3.fromRGB(56, 102, 158), BackgroundTransparency = 0.05}, 0.12)
-		local st = btn:FindFirstChildOfClass("UIStroke")
-		if st then tween(st, {Color = COLOR_ACCENT}, 0.12) end
+		tween(btn, {
+			BackgroundColor3 = Color3.fromRGB(40, 49, 64),
+			TextColor3 = COLOR_TEXT
+		}, 0.14)
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, {BackgroundColor3 = COLOR_CARD2, BackgroundTransparency = 0.15}, 0.12)
-		local st = btn:FindFirstChildOfClass("UIStroke")
-		if st then tween(st, {Color = COLOR_BORDER}, 0.12) end
+		tween(btn, {BackgroundColor3 = COLOR_CARD2, TextColor3 = COLOR_DIM}, 0.14)
 	end)
 	return btn
 end
 
 local function createInputWithAvatar(parent, placeholder, order)
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -4, 0, 64)
+	card.Size = UDim2.new(1, -4, 0, 62)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.1
+	card.BackgroundTransparency = 0
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local avatar = Instance.new("ImageLabel")
-	avatar.Size = UDim2.new(0, 46, 0, 46)
-	avatar.Position = UDim2.new(0, 11, 0.5, -23)
+	avatar.Size = UDim2.new(0, 44, 0, 44)
+	avatar.Position = UDim2.new(0, 10, 0.5, -22)
 	avatar.BackgroundColor3 = COLOR_SIDE
 	avatar.Image = "rbxassetid://0"
 	avatar.Parent = card
-	corner(avatar, 23)
-	stroke(avatar, COLOR_ACCENT, 1, 0.3)
+	corner(avatar, 22)
+	stroke(avatar, COLOR_BORDER2, 1, 0.55)
 
 	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(1, -74, 1, -12)
-	box.Position = UDim2.new(0, 68, 0, 6)
+	box.Size = UDim2.new(1, -72, 1, -12)
+	box.Position = UDim2.new(0, 66, 0, 6)
 	box.BackgroundTransparency = 1
 	box.PlaceholderText = placeholder
 	box.PlaceholderColor3 = COLOR_MUTED
@@ -677,16 +785,15 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	card.Name = "SliderControl"
 	card.Size = UDim2.new(1, -4, 0, 78)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.1
+	card.BackgroundTransparency = 0
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -90, 0, 22)
-	title.Position = UDim2.new(0, 12, 0, 7)
+	title.Position = UDim2.new(0, 14, 0, 10)
 	title.BackgroundTransparency = 1
 	title.Text = titleText
 	title.TextColor3 = COLOR_TEXT
@@ -696,25 +803,25 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	title.Parent = card
 
 	local valueBox = Instance.new("TextBox")
-	valueBox.Size = UDim2.new(0, 58, 0, 25)
-	valueBox.Position = UDim2.new(1, -70, 0, 5)
-	valueBox.BackgroundColor3 = COLOR_PANEL
+	valueBox.Size = UDim2.new(0, 54, 0, 24)
+	valueBox.Position = UDim2.new(1, -66, 0, 9)
+	valueBox.BackgroundColor3 = COLOR_SIDE
 	valueBox.BorderSizePixel = 0
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
 	valueBox.Text = tostring(defaultValue)
 	valueBox.Font = Enum.Font.GothamMedium
-	valueBox.TextSize = 12
+	valueBox.TextSize = 11
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
-	corner(valueBox, 8)
-	stroke(valueBox, COLOR_BORDER, 1, 0.3)
+	corner(valueBox, 7)
 
 	local track = Instance.new("Frame")
-	track.Size = UDim2.new(1, -24, 0, 7)
-	track.Position = UDim2.new(0, 12, 0, 48)
-	track.BackgroundColor3 = COLOR_BORDER
+	track.Size = UDim2.new(1, -28, 0, 5)
+	track.Position = UDim2.new(0, 14, 0, 50)
+	track.BackgroundColor3 = COLOR_BORDER2
+	track.BackgroundTransparency = 0.45
 	track.BorderSizePixel = 0
 	track.Parent = card
 	corner(track, 3)
@@ -724,25 +831,25 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	fill.BackgroundColor3 = COLOR_ACCENT
 	fill.BorderSizePixel = 0
 	fill.Parent = track
-	corner(fill, 4)
+	corner(fill, 3)
 
 	local FillGradient = Instance.new("UIGradient")
 	FillGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, COLOR_ACCENT2),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 190, 255))
+		ColorSequenceKeypoint.new(1, COLOR_ACCENT)
 	})
 	FillGradient.Parent = fill
 
 	local knob = Instance.new("Frame")
-	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Size = UDim2.new(0, 13, 0, 13)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(0, 0, 0.5, 0)
 	knob.BackgroundColor3 = COLOR_TEXT
 	knob.BorderSizePixel = 0
 	knob.Active = true
 	knob.Parent = track
-	corner(knob, 9)
-	stroke(knob, COLOR_ACCENT, 1, 0)
+	corner(knob, 7)
+	stroke(knob, COLOR_ACCENT, 2, 0.15)
 
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
@@ -821,12 +928,12 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -4, 0, 44)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.1
+	card.BackgroundTransparency = 0
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.3)
+	local cardStroke = stroke(card, COLOR_BORDER, 1, 0.6)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(0.5, -4, 1, 0)
@@ -838,7 +945,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(0.5, -60, 1, 0)
-	title.Position = UDim2.new(0, 12, 0, 0)
+	title.Position = UDim2.new(0, 14, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = labelText
 	title.TextColor3 = COLOR_TEXT
@@ -849,41 +956,50 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	title.Parent = card
 
 	local switchTrack = Instance.new("Frame")
-	switchTrack.Size = UDim2.new(0, 36, 0, 18)
+	switchTrack.Size = UDim2.new(0, 34, 0, 18)
 	switchTrack.Position = UDim2.new(0.5, -44, 0.5, -9)
 	switchTrack.BackgroundColor3 = COLOR_SIDE
 	switchTrack.BorderSizePixel = 0
 	switchTrack.Parent = card
 	corner(switchTrack, 9)
-	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
+	local trackStroke = stroke(switchTrack, COLOR_BORDER2, 1, 0.55)
 
 	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 12, 0, 12)
-	dot.Position = UDim2.new(0, 3, 0.5, -6)
+	dot.Size = UDim2.new(0, 14, 0, 14)
+	dot.Position = UDim2.new(0, 2, 0.5, -7)
 	dot.BackgroundColor3 = COLOR_MUTED
 	dot.BorderSizePixel = 0
 	dot.Parent = switchTrack
-	corner(dot, 6)
+	corner(dot, 7)
 
 	local state = false
 	local function setState(newState)
 		state = newState
 		tween(dot, {
-			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
+			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
 			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
-		}, 0.14)
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
-		local st = card:FindFirstChildOfClass("UIStroke")
-		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
+		}, 0.16)
+		tween(card, {
+			BackgroundColor3 = state and Color3.fromRGB(21, 38, 31) or COLOR_CARD
+		}, 0.16)
+		tween(cardStroke, {
+			Color = state and COLOR_SUCCESS or COLOR_BORDER,
+			Transparency = state and 0.35 or 0.6
+		}, 0.16)
+		tween(switchTrack, {
+			BackgroundColor3 = state and Color3.fromRGB(20, 96, 62) or COLOR_SIDE
+		}, 0.16)
+		tween(trackStroke, {Color = state and COLOR_SUCCESS or COLOR_BORDER2}, 0.16)
 		if onToggled then onToggled(state) end
 	end
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 
 	local track = Instance.new("Frame")
-	track.Size = UDim2.new(0.5, -54, 0, 7)
-	track.Position = UDim2.new(0.5, 4, 0.5, -3)
-	track.BackgroundColor3 = COLOR_BORDER
+	track.Size = UDim2.new(0.5, -58, 0, 5)
+	track.Position = UDim2.new(0.5, 4, 0.5, -2)
+	track.BackgroundColor3 = COLOR_BORDER2
+	track.BackgroundTransparency = 0.45
 	track.BorderSizePixel = 0
 	track.Parent = card
 	corner(track, 3)
@@ -893,30 +1009,30 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	fill.BackgroundColor3 = COLOR_ACCENT
 	fill.BorderSizePixel = 0
 	fill.Parent = track
-	corner(fill, 4)
+	corner(fill, 3)
 
 	local FillGradient = Instance.new("UIGradient")
 	FillGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, COLOR_ACCENT2),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 190, 255))
+		ColorSequenceKeypoint.new(1, COLOR_ACCENT)
 	})
 	FillGradient.Parent = fill
 
 	local knob = Instance.new("Frame")
-	knob.Size = UDim2.new(0, 14, 0, 14)
+	knob.Size = UDim2.new(0, 11, 0, 11)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(0, 0, 0.5, 0)
 	knob.BackgroundColor3 = COLOR_TEXT
 	knob.BorderSizePixel = 0
 	knob.Active = true
 	knob.Parent = track
-	corner(knob, 7)
-	stroke(knob, COLOR_ACCENT, 1, 0)
+	corner(knob, 6)
+	stroke(knob, COLOR_ACCENT, 2, 0.15)
 
 	local valueBox = Instance.new("TextBox")
-	valueBox.Size = UDim2.new(0, 44, 0, 25)
-	valueBox.Position = UDim2.new(1, -50, 0.5, -12)
-	valueBox.BackgroundColor3 = COLOR_PANEL
+	valueBox.Size = UDim2.new(0, 42, 0, 24)
+	valueBox.Position = UDim2.new(1, -48, 0.5, -12)
+	valueBox.BackgroundColor3 = COLOR_SIDE
 	valueBox.BorderSizePixel = 0
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
@@ -926,8 +1042,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
-	corner(valueBox, 8)
-	stroke(valueBox, COLOR_BORDER, 1, 0.3)
+	corner(valueBox, 7)
 
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
@@ -1042,9 +1157,9 @@ local PlayerTab = createTab("Jogador", 5)
 local ESPTab = createTab("ESP", 6)
 local MiscTab = createTab("Diversos", 7)
 
-Tabs["Início"].button.BackgroundColor3 = COLOR_ACCENT2
-Tabs["Início"].button.BackgroundTransparency = 0.25
-Tabs["Início"].icon.TextColor3 = COLOR_TEXT
+Tabs["Início"].button.BackgroundColor3 = COLOR_CARD
+Tabs["Início"].button.BackgroundTransparency = 0.05
+Tabs["Início"].icon.TextColor3 = COLOR_ACCENT
 Tabs["Início"].label.TextColor3 = COLOR_TEXT
 Tabs["Início"].activeBar.Visible = true
 ContentFrames["Início"].Visible = true
@@ -1052,26 +1167,17 @@ ContentFrames["Início"].Visible = true
 createSection(HomeTab, "CHOSEN PANEL", "Visão geral da sua sessão e acesso rápido.", 1)
 
 local WelcomeCard = Instance.new("Frame")
-WelcomeCard.Size = UDim2.new(1, -4, 0, 140)
+WelcomeCard.Size = UDim2.new(1, -4, 0, 138)
 WelcomeCard.BackgroundColor3 = COLOR_CARD
-WelcomeCard.BackgroundTransparency = 0.08
+WelcomeCard.BackgroundTransparency = 0
 WelcomeCard.BorderSizePixel = 0
 WelcomeCard.LayoutOrder = 2
 WelcomeCard.Parent = HomeTab
 corner(WelcomeCard, 14)
-stroke(WelcomeCard, COLOR_BORDER, 1, 0.2)
-
-local WelcomeGradient = Instance.new("UIGradient")
-WelcomeGradient.Rotation = 90
-WelcomeGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 200, 220))
-})
-WelcomeGradient.Parent = WelcomeCard
 
 local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Size = UDim2.new(0, 84, 0, 84)
-AvatarImage.Position = UDim2.new(0, 20, 0.5, -42)
+AvatarImage.Size = UDim2.new(0, 78, 0, 78)
+AvatarImage.Position = UDim2.new(0, 18, 0.5, -39)
 AvatarImage.BackgroundColor3 = COLOR_SIDE
 pcall(function()
 	AvatarImage.Image = Players:GetUserThumbnailAsync(
@@ -1081,56 +1187,48 @@ pcall(function()
 	)
 end)
 AvatarImage.Parent = WelcomeCard
-corner(AvatarImage, 42)
-stroke(AvatarImage, COLOR_ACCENT, 2, 0.1)
+corner(AvatarImage, 39)
+stroke(AvatarImage, COLOR_BORDER2, 1, 0.45)
 
 local AvatarBadge = Instance.new("Frame")
-AvatarBadge.Size = UDim2.new(0, 16, 0, 16)
-AvatarBadge.Position = UDim2.new(1, -7, 1, -7)
+AvatarBadge.Size = UDim2.new(0, 14, 0, 14)
+AvatarBadge.Position = UDim2.new(1, -5, 1, -5)
 AvatarBadge.BackgroundColor3 = COLOR_SUCCESS
 AvatarBadge.BorderSizePixel = 0
 AvatarBadge.Parent = AvatarImage
-corner(AvatarBadge, 8)
-stroke(AvatarBadge, COLOR_CARD, 2, 0.2)
-
-local HeroAccent = Instance.new("Frame")
-HeroAccent.Size = UDim2.new(0, 3, 1, -32)
-HeroAccent.Position = UDim2.new(0, 8, 0, 16)
-HeroAccent.BackgroundColor3 = COLOR_ACCENT
-HeroAccent.BorderSizePixel = 0
-HeroAccent.Parent = WelcomeCard
-corner(HeroAccent, 2)
+corner(AvatarBadge, 7)
+stroke(AvatarBadge, COLOR_CARD, 2, 0)
 
 local WelcomeTitle = Instance.new("TextLabel")
-WelcomeTitle.Size = UDim2.new(1, -140, 0, 30)
-WelcomeTitle.Position = UDim2.new(0, 118, 0, 30)
+WelcomeTitle.Size = UDim2.new(1, -136, 0, 28)
+WelcomeTitle.Position = UDim2.new(0, 112, 0, 28)
 WelcomeTitle.BackgroundTransparency = 1
-WelcomeTitle.Text = "OLÁ, " .. string.upper(LocalPlayer.DisplayName)
+WelcomeTitle.Text = string.upper(LocalPlayer.DisplayName)
 WelcomeTitle.TextColor3 = COLOR_TEXT
 WelcomeTitle.Font = Enum.Font.GothamBlack
-WelcomeTitle.TextSize = 23
+WelcomeTitle.TextSize = 21
 WelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
 WelcomeTitle.TextTruncate = Enum.TextTruncate.AtEnd
 WelcomeTitle.Parent = WelcomeCard
 
 local UserSub = Instance.new("TextLabel")
-UserSub.Size = UDim2.new(1, -140, 0, 20)
-UserSub.Position = UDim2.new(0, 118, 0, 63)
+UserSub.Size = UDim2.new(1, -136, 0, 18)
+UserSub.Position = UDim2.new(0, 112, 0, 58)
 UserSub.BackgroundTransparency = 1
 UserSub.Text = "@" .. LocalPlayer.Name
-UserSub.TextColor3 = COLOR_ACCENT
+UserSub.TextColor3 = COLOR_MUTED
 UserSub.Font = Enum.Font.GothamMedium
-UserSub.TextSize = 13
+UserSub.TextSize = 12
 UserSub.TextXAlignment = Enum.TextXAlignment.Left
 UserSub.TextTruncate = Enum.TextTruncate.AtEnd
 UserSub.Parent = WelcomeCard
 
 local UserStatus = Instance.new("TextLabel")
-UserStatus.Size = UDim2.new(1, -140, 0, 18)
-UserStatus.Position = UDim2.new(0, 118, 0, 101)
+UserStatus.Size = UDim2.new(1, -136, 0, 18)
+UserStatus.Position = UDim2.new(0, 112, 0, 100)
 UserStatus.BackgroundColor3 = COLOR_SUCCESS
-UserStatus.BackgroundTransparency = 0.85
-UserStatus.Text = "USUÁRIO LOCAL  -  SESSÃO ATIVA"
+UserStatus.BackgroundTransparency = 0.86
+UserStatus.Text = "●  SESSÃO ATIVA"
 UserStatus.TextColor3 = COLOR_DIM
 UserStatus.Font = Enum.Font.GothamMedium
 UserStatus.TextSize = 9
@@ -1138,12 +1236,12 @@ UserStatus.TextXAlignment = Enum.TextXAlignment.Left
 UserStatus.TextTruncate = Enum.TextTruncate.AtEnd
 UserStatus.Parent = WelcomeCard
 corner(UserStatus, 9)
-padding(UserStatus, 9, 6, 0, 0)
+padding(UserStatus, 8, 6, 0, 0)
 
 local ChosenPermissionLabel = Instance.new("TextLabel")
 ChosenPermissionLabel.Name = "ChosenPermissions"
-ChosenPermissionLabel.Size = UDim2.new(1, -140, 0, 13)
-ChosenPermissionLabel.Position = UDim2.new(0, 118, 0, 122)
+ChosenPermissionLabel.Size = UDim2.new(1, -136, 0, 13)
+ChosenPermissionLabel.Position = UDim2.new(0, 112, 0, 120)
 ChosenPermissionLabel.BackgroundTransparency = 1
 ChosenPermissionLabel.Text = "PREMIUM: carregando..."
 ChosenPermissionLabel.TextColor3 = COLOR_MUTED
@@ -1169,8 +1267,8 @@ local CHOSEN_API_VERSION = "1.3.0"
 
 local ChosenRoleLabel = Instance.new("TextLabel")
 ChosenRoleLabel.Name = "ChosenRole"
-ChosenRoleLabel.Size = UDim2.new(1, -140, 0, 18)
-ChosenRoleLabel.Position = UDim2.new(0, 118, 0, 83)
+ChosenRoleLabel.Size = UDim2.new(1, -136, 0, 16)
+ChosenRoleLabel.Position = UDim2.new(0, 112, 0, 80)
 ChosenRoleLabel.BackgroundTransparency = 1
 ChosenRoleLabel.Text = "CARGO: carregando..."
 ChosenRoleLabel.TextColor3 = COLOR_DIM
@@ -1548,13 +1646,12 @@ local AnnouncementCard = Instance.new("Frame")
 AnnouncementCard.Name = "ChosenAnnouncement"
 AnnouncementCard.Size = UDim2.new(1, -4, 0, 84)
 AnnouncementCard.BackgroundColor3 = COLOR_CARD
-AnnouncementCard.BackgroundTransparency = 0.08
+AnnouncementCard.BackgroundTransparency = 0
 AnnouncementCard.BorderSizePixel = 0
 AnnouncementCard.LayoutOrder = 9
 AnnouncementCard.Visible = false
 AnnouncementCard.Parent = HomeTab
-corner(AnnouncementCard, 14)
-stroke(AnnouncementCard, COLOR_BORDER, 1, 0.2)
+corner(AnnouncementCard, 12)
 
 local AnnBannerTitle = Instance.new("TextLabel")
 AnnBannerTitle.Size = UDim2.new(1, -28, 0, 18)
@@ -1729,15 +1826,123 @@ local CHOSEN_TAG_BASE = {
     Owner = Color3.fromRGB(255, 70, 70),
     Moderator = Color3.fromRGB(80, 150, 255),
     Premium = Color3.fromRGB(255, 210, 60),
-    Member = Color3.fromRGB(175, 175, 175)
+    Member = Color3.fromRGB(195, 202, 214)
+}
+
+-- Cor do glow (aura) de cada cargo
+local CHOSEN_TAG_GLOW = {
+    Owner = Color3.fromRGB(255, 115, 115),
+    Moderator = Color3.fromRGB(120, 195, 255),
+    Premium = Color3.fromRGB(255, 235, 150),
+    Member = Color3.fromRGB(185, 195, 215)
+}
+
+-- Tamanho do texto por cargo (Membro é menor e mais discreto)
+local CHOSEN_TAG_SIZE = {
+    Owner = 30,
+    Moderator = 30,
+    Premium = 30,
+    Member = 26
 }
 
 local function chosenRoleTagText(role)
-    if role == "Owner" then return "👑 OWNER" end
-    if role == "Moderator" then return "🛡 MODERADOR" end
-    if role == "Premium" then return "⭐ PREMIUM" end
+    if role == "Owner" then return "OWNER" end
+    if role == "Moderator" then return "MODERADOR" end
+    if role == "Premium" then return "PREMIUM" end
     if role == "Member" then return "MEMBRO" end
     return string.upper(role)
+end
+
+-- Pulso do cargo (igual à versão original)
+local function chosenTagPulseColor(role, pulse)
+    if role == "Owner" then
+        return Color3.fromHSV(0, 0.85, 0.72 + 0.28 * pulse),
+            0.25 * (1 - pulse)
+    elseif role == "Moderator" then
+        return Color3.fromHSV(0.58, 0.85, 0.72 + 0.28 * pulse),
+            0.25 * (1 - pulse)
+    elseif role == "Premium" then
+        return Color3.fromHSV(0.13, 1, 0.78 + 0.22 * pulse),
+            0.25 * (1 - pulse)
+    end
+    return CHOSEN_TAG_BASE.Member, 0.35
+end
+
+-- Monta a tag igual à versão ORIGINAL (texto único anexado na
+-- cabeça, sombra projetada, degradê de volume e contorno suave) —
+-- com fonte Bangers (estilo do "VISIONARY") e GLOW por cargo.
+local function chosenBuildTagChars(tag)
+    local billboard = tag.billboard
+    if not billboard then return end
+
+    for _, child in ipairs(billboard:GetChildren()) do
+        if child:IsA("TextLabel") or child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+
+    local text = chosenRoleTagText(tag.role)
+    local size = CHOSEN_TAG_SIZE[tag.role] or 28
+    local glowColor = CHOSEN_TAG_GLOW[tag.role] or CHOSEN_TAG_GLOW.Member
+
+    -- Glow: o mesmo texto desenhado em camadas maiores e bem
+    -- transparentes ATRÁS da letra principal — vira uma aura
+    -- suave na cor do cargo (respira junto com o pulso).
+    local glows = {}
+    local glowBase = { 0.78, 0.87, 0.93 }
+    local glowSizes = { size + 2, size + 6, size + 12 }
+    for gi = 1, 3 do
+        local g = Instance.new("TextLabel")
+        g.Size = UDim2.new(1, 0, 1, 0)
+        g.BackgroundTransparency = 1
+        g.Text = text
+        g.Font = Enum.Font.Bangers
+        g.TextSize = glowSizes[gi]
+        g.TextColor3 = glowColor
+        g.TextTransparency = glowBase[gi]
+        g.TextStrokeTransparency = 1
+        g.ZIndex = 1
+        g.Parent = billboard
+        glows[gi] = g
+    end
+
+    -- Sombra projetada atrás do texto (dá profundidade)
+    local shadow = Instance.new("TextLabel")
+    shadow.Size = UDim2.new(1, 0, 1, 0)
+    shadow.Position = UDim2.new(0, 1, 0, 3)
+    shadow.BackgroundTransparency = 1
+    shadow.Text = text
+    shadow.Font = Enum.Font.Bangers
+    shadow.TextSize = size
+    shadow.TextColor3 = Color3.new(0, 0, 0)
+    shadow.TextTransparency = 0.6
+    shadow.ZIndex = 1
+    shadow.Parent = billboard
+
+    local roleLabel = Instance.new("TextLabel")
+    roleLabel.Size = UDim2.new(1, 0, 1, 0)
+    roleLabel.BackgroundTransparency = 1
+    roleLabel.Text = text
+    roleLabel.Font = Enum.Font.Bangers
+    roleLabel.TextSize = size
+    roleLabel.TextColor3 = CHOSEN_TAG_BASE[tag.role] or CHOSEN_TAG_BASE.Member
+    roleLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    roleLabel.TextStrokeTransparency = 0.4
+    roleLabel.ZIndex = 2
+    roleLabel.Parent = billboard
+
+    -- Sombreado suave no texto (volume, como no original)
+    local labelGradient = Instance.new("UIGradient")
+    labelGradient.Rotation = 90
+    labelGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
+    })
+    labelGradient.Parent = roleLabel
+
+    tag.glows = glows
+    tag.glowBase = glowBase
+    tag.fronts = { roleLabel }
 end
 
 -- Atualiza o cargo exibido na tag de um jogador.
@@ -1746,10 +1951,7 @@ local function chosenSetTagRole(player, role)
     if not tag then return end
 
     tag.role = role
-    tag.roleLabel.Text = chosenRoleTagText(role)
-    if tag.shadow then
-        tag.shadow.Text = chosenRoleTagText(role)
-    end
+    chosenBuildTagChars(tag)
 end
 
 -- Consulta o cargo real de um jogador na API (assíncrono).
@@ -1830,7 +2032,6 @@ local function chosenEnsureRoleTag(player)
         -- Cargo temporário da sessão sobrepõe o cargo real.
         local role = chosenTempRoles[tostring(player.UserId)]
             or tostring(data.profile.role or "Member")
-        local base = CHOSEN_TAG_BASE[role] or CHOSEN_TAG_BASE.Member
 
         -- Guarda anti-duplicação: outra consulta concorrente pode
         -- ter criado a tag enquanto esta esperava a resposta.
@@ -1845,50 +2046,15 @@ local function chosenEnsureRoleTag(player)
         -- Visibilidade inicial já respeita presença + olho
         billboard.Enabled = chosenTagShouldShow(player)
 
-        -- Sombra projetada atrás do texto (dá profundidade)
-        local shadow = Instance.new("TextLabel")
-        shadow.Size = UDim2.new(1, 0, 1, 0)
-        shadow.Position = UDim2.new(0, 1, 0, 3)
-        shadow.BackgroundTransparency = 1
-        shadow.Text = chosenRoleTagText(role)
-        shadow.Font = Enum.Font.FredokaOne
-        shadow.TextSize = 28
-        shadow.TextColor3 = Color3.new(0, 0, 0)
-        shadow.TextTransparency = 0.55
-        shadow.ZIndex = 1
-        shadow.Parent = billboard
-
-        local roleLabel = Instance.new("TextLabel")
-        roleLabel.Size = UDim2.new(1, 0, 1, 0)
-        roleLabel.BackgroundTransparency = 1
-        roleLabel.Text = chosenRoleTagText(role)
-        roleLabel.Font = Enum.Font.FredokaOne
-        roleLabel.TextSize = 28
-        roleLabel.TextColor3 = base
-        roleLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        roleLabel.TextStrokeTransparency = 0.4
-        roleLabel.ZIndex = 2
-        roleLabel.Parent = billboard
-
-        -- Sombreado suave no texto (deixa a fonte com mais volume)
-        local labelGradient = Instance.new("UIGradient")
-        labelGradient.Rotation = 90
-        labelGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
-        })
-        labelGradient.Parent = roleLabel
-
         chosenRoleTags[player] = {
             role = role,
             billboard = billboard,
-            roleLabel = roleLabel,
-            shadow = shadow,
             -- Referência do jogador (a manutenção usa para reanexar)
             player = player,
             -- Fase própria de flutuação (cada tag sobe/desce fora de sync)
             phase = (player.UserId % 314) / 50
         }
+        chosenBuildTagChars(chosenRoleTags[player])
 
         -- Anexa na cabeça atual e reconecta a cada respawn.
         local char = player.Character or player.CharacterAdded:Wait()
@@ -1945,8 +2111,10 @@ task.spawn(function()
                 -- Visibilidade: dono com painel aberto + olho aberto
                 tag.billboard.Enabled = chosenTagShouldShow(tag.player)
 
-                local label = tag.roleLabel
-                if not label or not label.Parent then return end
+                local fronts = tag.fronts
+                if not fronts or not fronts[1] or not fronts[1].Parent then
+                    return
+                end
 
                 -- Flutuação suave: sobe e desce alguns centésimos,
                 -- com fase própria por jogador (não fica em sync)
@@ -1956,25 +2124,25 @@ task.spawn(function()
                     0
                 )
 
-                if tag.role == "Owner" then
-                    -- Vermelho pulsante (brilho + transparência oscilam)
-                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
-                    label.TextColor3 = Color3.fromHSV(0, 0.85, 0.72 + 0.28 * pulse)
-                    label.TextTransparency = 0.25 * (1 - pulse)
-                elseif tag.role == "Moderator" then
-                    -- Azul pulsante (brilho + transparência oscilam)
-                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
-                    label.TextColor3 = Color3.fromHSV(0.58, 0.85, 0.72 + 0.28 * pulse)
-                    label.TextTransparency = 0.25 * (1 - pulse)
-                elseif tag.role == "Premium" then
-                    -- Amarelo pulsante (brilho + transparência oscilam)
-                    local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.5)
-                    label.TextColor3 = Color3.fromHSV(0.13, 1, 0.78 + 0.22 * pulse)
-                    label.TextTransparency = 0.25 * (1 - pulse)
-                else
-                    -- Membro: cinza transparente
-                    label.TextColor3 = CHOSEN_TAG_BASE.Member
-                    label.TextTransparency = 0.35
+                -- Respiração fluida: atualiza a cada tick (0.05s),
+                -- sem saltos — cor e glow pulsam juntos
+                local pulse = 0.5 + 0.5 * math.sin(chosenTagClock * 2.2)
+                local color, trans = chosenTagPulseColor(tag.role, pulse)
+                for i = 1, #fronts do
+                    local lbl = fronts[i]
+                    if lbl.Parent then
+                        lbl.TextColor3 = color
+                        lbl.TextTransparency = trans
+                    end
+                end
+                if tag.glows then
+                    for gi = 1, #tag.glows do
+                        local g = tag.glows[gi]
+                        if g.Parent then
+                            g.TextTransparency = math.clamp(
+                                tag.glowBase[gi] - 0.1 * pulse, 0, 1)
+                        end
+                    end
                 end
             end)
         end
@@ -1993,14 +2161,11 @@ task.spawn(function()
                     local char = player.Character
                     if not char or not player.Parent then return end
 
-                    -- Billboard destruído junto com a cabeça antiga:
-                    -- agendar recriação completa da tag.
                     if not tag.billboard or not tag.billboard.Parent then
                         table.insert(toRecreate, player)
                         return
                     end
 
-                    -- Cabeça trocada mas billboard vivo: só reanexar.
                     local head = char:FindFirstChild("Head")
                     if head and tag.billboard.Parent ~= head then
                         tag.billboard.Parent = head
@@ -2015,8 +2180,6 @@ task.spawn(function()
                         pcall(function() old.billboard:Destroy() end)
                         chosenRoleTags[player] = nil
                     end
-                    -- Cargo temporário da sessão sobrevive: o ensure
-                    -- consulta chosenTempRoles antes do cargo real.
                     chosenTagPending[player] = true
                     chosenEnsureRoleTag(player)
                 end)
@@ -2230,12 +2393,11 @@ chosenBuildModerationTab = function()
         local card = Instance.new("Frame")
         card.Size = UDim2.new(1, -4, 0, 104)
         card.BackgroundColor3 = COLOR_CARD
-        card.BackgroundTransparency = 0.1
+        card.BackgroundTransparency = 0
         card.BorderSizePixel = 0
         card.LayoutOrder = order
         card.Parent = chosenModTab
         corner(card, 12)
-        stroke(card, COLOR_BORDER, 1, 0.3)
 
         local box = Instance.new("TextBox")
         box.Size = UDim2.new(1, -28, 0, 46)
@@ -2282,22 +2444,20 @@ chosenBuildModerationTab = function()
     local StatsRow = Instance.new("Frame")
     StatsRow.Size = UDim2.new(1, -4, 0, 86)
     StatsRow.BackgroundColor3 = COLOR_CARD
-    StatsRow.BackgroundTransparency = 0.08
+    StatsRow.BackgroundTransparency = 0
     StatsRow.BorderSizePixel = 0
     StatsRow.LayoutOrder = nextOrder()
     StatsRow.Parent = chosenModTab
     corner(StatsRow, 14)
-    stroke(StatsRow, COLOR_BORDER, 1, 0.2)
 
     local RegisteredBox = Instance.new("Frame")
     RegisteredBox.Size = UDim2.new(0.5, -14, 1, -20)
     RegisteredBox.Position = UDim2.new(0, 10, 0, 10)
-    RegisteredBox.BackgroundColor3 = COLOR_PANEL
-    RegisteredBox.BackgroundTransparency = 0.25
+    RegisteredBox.BackgroundColor3 = COLOR_SIDE
+    RegisteredBox.BackgroundTransparency = 0
     RegisteredBox.BorderSizePixel = 0
     RegisteredBox.Parent = StatsRow
-    corner(RegisteredBox, 12)
-    stroke(RegisteredBox, COLOR_BORDER, 1, 0.35)
+    corner(RegisteredBox, 10)
 
     local RegisteredCaption = Instance.new("TextLabel")
     RegisteredCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -2324,12 +2484,11 @@ chosenBuildModerationTab = function()
     local OnlineNowBox = Instance.new("Frame")
     OnlineNowBox.Size = UDim2.new(0.5, -14, 1, -20)
     OnlineNowBox.Position = UDim2.new(0.5, 4, 0, 10)
-    OnlineNowBox.BackgroundColor3 = COLOR_PANEL
-    OnlineNowBox.BackgroundTransparency = 0.25
+    OnlineNowBox.BackgroundColor3 = COLOR_SIDE
+    OnlineNowBox.BackgroundTransparency = 0
     OnlineNowBox.BorderSizePixel = 0
     OnlineNowBox.Parent = StatsRow
-    corner(OnlineNowBox, 12)
-    stroke(OnlineNowBox, COLOR_BORDER, 1, 0.35)
+    corner(OnlineNowBox, 10)
 
     local OnlineNowCaption = Instance.new("TextLabel")
     OnlineNowCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -2404,16 +2563,17 @@ chosenBuildModerationTab = function()
 
     local OnlineList = Instance.new("ScrollingFrame")
     OnlineList.Size = UDim2.new(1, -4, 0, 150)
-    OnlineList.BackgroundColor3 = COLOR_CARD
-    OnlineList.BackgroundTransparency = 0.08
+    OnlineList.BackgroundColor3 = COLOR_SIDE
+    OnlineList.BackgroundTransparency = 0.35
     OnlineList.BorderSizePixel = 0
     OnlineList.ScrollBarThickness = 3
+    OnlineList.ScrollBarImageColor3 = COLOR_BORDER2
+    OnlineList.ScrollBarImageTransparency = 0.35
     OnlineList.CanvasSize = UDim2.new(0, 0, 0, 0)
     OnlineList.AutomaticCanvasSize = Enum.AutomaticSize.Y
     OnlineList.LayoutOrder = nextOrder()
     OnlineList.Parent = chosenModTab
     corner(OnlineList, 12)
-    stroke(OnlineList, COLOR_BORDER, 1, 0.3)
 
     local OnlineListLayout = Instance.new("UIListLayout")
     OnlineListLayout.Padding = UDim.new(0, 6)
@@ -2440,13 +2600,12 @@ chosenBuildModerationTab = function()
 
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, -4, 0, 48)
-        row.BackgroundColor3 = COLOR_CARD2
-        row.BackgroundTransparency = 0.12
+        row.BackgroundColor3 = COLOR_CARD
+        row.BackgroundTransparency = 0
         row.BorderSizePixel = 0
         row.LayoutOrder = index
         row.Parent = OnlineList
-        corner(row, 12)
-        stroke(row, COLOR_BORDER, 1, 0.3)
+        corner(row, 10)
 
         local avatar = Instance.new("ImageLabel")
         avatar.Size = UDim2.new(0, 34, 0, 34)
@@ -2455,7 +2614,7 @@ chosenBuildModerationTab = function()
         avatar.Image = "rbxassetid://0"
         avatar.Parent = row
         corner(avatar, 17)
-        stroke(avatar, COLOR_ACCENT, 1, 0.3)
+        stroke(avatar, COLOR_BORDER2, 1, 0.5)
 
         local idNumber = tonumber(userId)
         if idNumber then
@@ -2943,22 +3102,20 @@ end
 local StatsCard = Instance.new("Frame")
 StatsCard.Size = UDim2.new(1, -4, 0, 100)
 StatsCard.BackgroundColor3 = COLOR_CARD
-StatsCard.BackgroundTransparency = 0.08
+StatsCard.BackgroundTransparency = 0
 StatsCard.BorderSizePixel = 0
 StatsCard.LayoutOrder = 3
 StatsCard.Parent = HomeTab
-corner(StatsCard, 14)
-stroke(StatsCard, COLOR_BORDER, 1, 0.2)
+corner(StatsCard, 12)
 
 local PingBox = Instance.new("Frame")
 PingBox.Size = UDim2.new(0.5, -14, 1, -20)
 PingBox.Position = UDim2.new(0, 10, 0, 10)
-PingBox.BackgroundColor3 = COLOR_PANEL
-PingBox.BackgroundTransparency = 0.25
+PingBox.BackgroundColor3 = COLOR_SIDE
+PingBox.BackgroundTransparency = 0
 PingBox.BorderSizePixel = 0
 PingBox.Parent = StatsCard
-corner(PingBox, 12)
-stroke(PingBox, COLOR_BORDER, 1, 0.35)
+corner(PingBox, 10)
 
 local PingCaption = Instance.new("TextLabel")
 PingCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -2985,12 +3142,11 @@ PingLabel.Parent = PingBox
 local FpsBox = Instance.new("Frame")
 FpsBox.Size = UDim2.new(0.5, -14, 1, -20)
 FpsBox.Position = UDim2.new(0.5, 4, 0, 10)
-FpsBox.BackgroundColor3 = COLOR_PANEL
-FpsBox.BackgroundTransparency = 0.25
+FpsBox.BackgroundColor3 = COLOR_SIDE
+FpsBox.BackgroundTransparency = 0
 FpsBox.BorderSizePixel = 0
 FpsBox.Parent = StatsCard
-corner(FpsBox, 12)
-stroke(FpsBox, COLOR_BORDER, 1, 0.35)
+corner(FpsBox, 10)
 
 local FpsCaption = Instance.new("TextLabel")
 FpsCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -3084,16 +3240,17 @@ ServerStatusLabel.Parent = ServerToolbar
 local ServerList = Instance.new("ScrollingFrame")
 ServerList.Name = "ServerList"
 ServerList.Size = UDim2.new(1, -4, 0, 190)
-ServerList.BackgroundColor3 = COLOR_CARD
-ServerList.BackgroundTransparency = 0.08
+ServerList.BackgroundColor3 = COLOR_SIDE
+ServerList.BackgroundTransparency = 0.35
 ServerList.BorderSizePixel = 0
 ServerList.ScrollBarThickness = 3
+ServerList.ScrollBarImageColor3 = COLOR_BORDER2
+ServerList.ScrollBarImageTransparency = 0.35
 ServerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 ServerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ServerList.LayoutOrder = 8
 ServerList.Parent = HomeTab
 corner(ServerList, 12)
-stroke(ServerList, COLOR_BORDER, 1, 0.3)
 
 local ServerListLayout = Instance.new("UIListLayout")
 ServerListLayout.Padding = UDim.new(0, 6)
@@ -3161,13 +3318,13 @@ local function addServerEntry(server, index)
 
 	local row = Instance.new("Frame")
 	row.Size = UDim2.new(1, -4, 0, 46)
-	row.BackgroundColor3 = COLOR_CARD2
-	row.BackgroundTransparency = 0.12
+	row.BackgroundColor3 = COLOR_CARD
+	row.BackgroundTransparency = 0
 	row.BorderSizePixel = 0
 	row.LayoutOrder = index
 	row.Parent = ServerList
-	corner(row, 12)
-	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.3)
+	corner(row, 10)
+	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.7)
 
 	local gameThumb = Instance.new("ImageLabel")
 	gameThumb.Size = UDim2.new(0, 38, 0, 38)
@@ -3441,21 +3598,20 @@ pcall(function()
 	local SearchFriendsBox = Instance.new("TextBox")
 	SearchFriendsBox.Name = "SearchFriendsBox"
 	SearchFriendsBox.Size = UDim2.new(0.5, -12, 1, 0)
-	SearchFriendsBox.BackgroundColor3 = COLOR_CARD
-	SearchFriendsBox.BackgroundTransparency = 0.1
+	SearchFriendsBox.BackgroundColor3 = COLOR_SIDE
+	SearchFriendsBox.BackgroundTransparency = 0
 	SearchFriendsBox.BorderSizePixel = 0
 	SearchFriendsBox.PlaceholderText = "Buscar por nome ou @user"
 	SearchFriendsBox.PlaceholderColor3 = COLOR_MUTED
 	SearchFriendsBox.Text = ""
 	SearchFriendsBox.TextColor3 = COLOR_TEXT
 	SearchFriendsBox.Font = Enum.Font.GothamMedium
-	SearchFriendsBox.TextSize = 12
+	SearchFriendsBox.TextSize = 11
 	SearchFriendsBox.TextXAlignment = Enum.TextXAlignment.Left
 	SearchFriendsBox.ClearTextOnFocus = false
 	SearchFriendsBox.Parent = AmigosToolbar
 	corner(SearchFriendsBox, 10)
-	stroke(SearchFriendsBox, COLOR_BORDER, 1, 0.3)
-	padding(SearchFriendsBox, 10, 8, 0, 0)
+	padding(SearchFriendsBox, 12, 8, 0, 0)
 
 	local RefreshFriendsButton = createActionButton(AmigosToolbar, "🔄 ATUALIZAR", 2)
 	local FriendsStatusLabel = Instance.new("TextLabel")
@@ -3473,16 +3629,17 @@ pcall(function()
 	local FriendsList = Instance.new("ScrollingFrame")
 	FriendsList.Name = "FriendsList"
 	FriendsList.Size = UDim2.new(1, -4, 0, 300)
-	FriendsList.BackgroundColor3 = COLOR_CARD
-	FriendsList.BackgroundTransparency = 0.08
+	FriendsList.BackgroundColor3 = COLOR_SIDE
+	FriendsList.BackgroundTransparency = 0.35
 	FriendsList.BorderSizePixel = 0
 	FriendsList.ScrollBarThickness = 3
+	FriendsList.ScrollBarImageColor3 = COLOR_BORDER2
+	FriendsList.ScrollBarImageTransparency = 0.35
 	FriendsList.CanvasSize = UDim2.new(0, 0, 0, 0)
 	FriendsList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	FriendsList.LayoutOrder = 4
 	FriendsList.Parent = AmigosTab
 	corner(FriendsList, 12)
-	stroke(FriendsList, COLOR_BORDER, 1, 0.3)
 
 	local FriendsListLayout = Instance.new("UIListLayout")
 	FriendsListLayout.Padding = UDim.new(0, 6)
@@ -3507,7 +3664,7 @@ pcall(function()
 			pcall(function()
 				local hum = item.player.Character and item.player.Character:FindFirstChildOfClass("Humanoid")
 				local active = isSpectating and hum ~= nil and Camera.CameraSubject == hum
-				tween(item.btn, {BackgroundColor3 = active and Color3.fromRGB(26, 86, 60) or COLOR_CARD2}, 0.12)
+				tween(item.btn, {BackgroundColor3 = active and Color3.fromRGB(22, 54, 41) or COLOR_CARD2}, 0.12)
 				local st = item.btn:FindFirstChildOfClass("UIStroke")
 				if st then tween(st, {Color = active and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
 			end)
@@ -3551,13 +3708,13 @@ pcall(function()
 	local function addFriendEntry(player, index)
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, -4, 0, 64)
-		row.BackgroundColor3 = COLOR_CARD2
-		row.BackgroundTransparency = 0.12
+		row.BackgroundColor3 = COLOR_CARD
+		row.BackgroundTransparency = 0
 		row.BorderSizePixel = 0
 		row.LayoutOrder = index
 		row.Parent = FriendsList
-		corner(row, 12)
-		stroke(row, COLOR_BORDER, 1, 0.3)
+		corner(row, 10)
+		stroke(row, COLOR_BORDER, 1, 0.7)
 
 		local avatar = Instance.new("ImageLabel")
 		avatar.Size = UDim2.new(0, 44, 0, 44)
@@ -3572,7 +3729,7 @@ pcall(function()
 		end)
 		avatar.Parent = row
 		corner(avatar, 22)
-		stroke(avatar, COLOR_ACCENT, 1, 0.3)
+		stroke(avatar, COLOR_BORDER2, 1, 0.5)
 
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Size = UDim2.new(0, 190, 0, 18)
@@ -3641,7 +3798,7 @@ pcall(function()
 			pcall(function()
 				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if isSpectating and hum and Camera.CameraSubject == hum then
-					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(32, 96, 68)}, 0.12)
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(28, 66, 50)}, 0.12)
 				end
 			end)
 		end)
@@ -3649,7 +3806,7 @@ pcall(function()
 			pcall(function()
 				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if isSpectating and hum and Camera.CameraSubject == hum then
-					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(26, 86, 60)}, 0.12)
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(22, 54, 41)}, 0.12)
 					local st = obsBtn:FindFirstChildOfClass("UIStroke")
 					if st then tween(st, {Color = COLOR_SUCCESS}, 0.12) end
 				end
@@ -3986,11 +4143,10 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	local MoveCard = Instance.new("Frame")
 	MoveCard.Size = UDim2.new(0.48, -4, 0, 128)
 	MoveCard.BackgroundColor3 = COLOR_CARD
-	MoveCard.BackgroundTransparency = 0.08
+	MoveCard.BackgroundTransparency = 0
 	MoveCard.BorderSizePixel = 0
 	MoveCard.Parent = CharacterGrid
 	corner(MoveCard, 12)
-	stroke(MoveCard, COLOR_BORDER, 1, 0.3)
 
 	local function moveCaption(text, y)
 		local cap = Instance.new("TextLabel")
@@ -4010,7 +4166,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		box.Size = UDim2.new(1, -24, 0, 36)
 		box.Position = UDim2.new(0, 12, 0, y)
 		box.BackgroundColor3 = COLOR_SIDE
-		box.BackgroundTransparency = 0.15
+		box.BackgroundTransparency = 0
 		box.Text = ""
 		box.PlaceholderColor3 = COLOR_MUTED
 		box.TextColor3 = COLOR_TEXT
@@ -4021,7 +4177,6 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		box.ClearTextOnFocus = false
 		box.Parent = MoveCard
 		corner(box, 10)
-		stroke(box, COLOR_ACCENT, 1, 0.55)
 		return box
 	end
 
@@ -4037,15 +4192,21 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		local btn = Instance.new("TextButton")
 		btn.Size = UDim2.new(0.24, -5, 0, 32)
 		btn.Position = UDim2.new(x, 0, 0, 136)
-		btn.BackgroundColor3 = COLOR_ACCENT
-		btn.BackgroundTransparency = 0.85
+		btn.BackgroundColor3 = COLOR_ACCENT2
+		btn.BackgroundTransparency = 0.72
+		btn.AutoButtonColor = false
 		btn.Text = text
 		btn.TextColor3 = COLOR_ACCENT
 		btn.Font = Enum.Font.GothamBold
 		btn.TextSize = 10
 		btn.Parent = CharacterGrid
 		corner(btn, 10)
-		stroke(btn, COLOR_ACCENT, 1, 0.25)
+		btn.MouseEnter:Connect(function()
+			tween(btn, {BackgroundTransparency = 0.45, TextColor3 = COLOR_TEXT}, 0.14)
+		end)
+		btn.MouseLeave:Connect(function()
+			tween(btn, {BackgroundTransparency = 0.72, TextColor3 = COLOR_ACCENT}, 0.14)
+		end)
 		btn.MouseButton1Click:Connect(callback)
 		return btn
 	end
@@ -4086,11 +4247,10 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	ActionCard.Position = UDim2.new(0.52, 0, 0, 0)
 	ActionCard.Size = UDim2.new(0.48, -4, 1, 0)
 	ActionCard.BackgroundColor3 = COLOR_CARD
-	ActionCard.BackgroundTransparency = 0.08
+	ActionCard.BackgroundTransparency = 0
 	ActionCard.BorderSizePixel = 0
 	ActionCard.Parent = CharacterGrid
 	corner(ActionCard, 12)
-	stroke(ActionCard, COLOR_ACCENT, 1, 0.45)
 
 	local function actionRow(y, title, subtitleText, dotColor)
 		local dot = Instance.new("Frame")
@@ -4532,7 +4692,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 	-- ao normal e a marca cai na hora. Desligar restaura o
 	-- original apenas nas partes que o jogo NÃO já tornou visíveis.
 	local AI_PROBE = 0.03125
-	local AI_revealed = {}   -- [part] = {plr, origT, origLTM}
+	local AI_revealed = {}   -- [part] = {plr, origT, origLTM, conns}
 	local AI_highlights = {} -- [player] = Highlight (contorno + preenchimento)
 	local AI_labels = {}     -- [player] = {gui, text} contador de studs
 	local AI_marked = {}     -- [player] = {char} invisibilidade total confirmada
@@ -4557,14 +4717,49 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		return true
 	end
 
-	-- Revela uma parte escondida: guarda o original UMA VEZ e
+	-- Re-escreve a assinatura SÓ quando o jogo escondeu a parte
+	-- (chamado pelos sinais abaixo — zero custo por frame).
+	local function AI_forcePart(part, entry)
+		if AI_revealed[part] ~= entry then return end
+		local t = part.Transparency
+		if t >= AI_INVISIBLE then
+			part.Transparency = AI_PROBE
+		end
+		local ltm = part.LocalTransparencyModifier
+		if ltm >= AI_INVISIBLE then
+			part.LocalTransparencyModifier = AI_PROBE
+		end
+	end
+
+	local function AI_disconnect(entry)
+		if entry.conns then
+			for _, c in ipairs(entry.conns) do
+				pcall(function() c:Disconnect() end)
+			end
+			entry.conns = nil
+		end
+	end
+
+	-- Revela uma parte escondida: guarda o original UMA VEZ,
 	-- escreve o valor-assinatura (nunca 0 — senão o servidor
-	-- escreveria 0 por cima sem a gente conseguir distinguir).
+	-- escreveria 0 por cima sem a gente conseguir distinguir) e
+	-- fica ESCUTANDO a parte: se o jogo re-esconder, o sinal
+	-- devolve a assinatura na hora (sem varredura por frame).
 	local function AI_revealPart(part, plr)
 		local entry = AI_revealed[part]
 		if not entry then
 			entry = { plr = plr }
 			AI_revealed[part] = entry
+			pcall(function()
+				entry.conns = {
+					part:GetPropertyChangedSignal("Transparency"):Connect(function()
+						AI_forcePart(part, entry)
+					end),
+					part:GetPropertyChangedSignal("LocalTransparencyModifier"):Connect(function()
+						AI_forcePart(part, entry)
+					end),
+				}
+			end)
 		end
 		pcall(function()
 			local t = part.Transparency
@@ -4621,6 +4816,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 				if restore then
 					AI_restorePart(part, entry)
 				end
+				AI_disconnect(entry)
 				AI_revealed[part] = nil
 			end
 		end
@@ -4636,6 +4832,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		-- sobras de players que já saíram do server
 		for part, entry in pairs(AI_revealed) do
 			AI_restorePart(part, entry)
+			AI_disconnect(entry)
 		end
 		table.clear(AI_revealed)
 		table.clear(AI_marked)
@@ -4701,85 +4898,139 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		return lb
 	end
 
-	-- Parte "do corpo": fora o root (sempre invisível), fora
-	-- acessórios (Handle invisível é normal em roupas) e fora
-	-- ferramentas/itens (Tool)
-	local function AI_isCorePart(part)
-		if part.Name == "HumanoidRootPart" or part.Name == "Handle" then
-			return false
-		end
-		local node = part.Parent
-		while node and node ~= workspace do
-			if node:IsA("Accessory") or node:IsA("Tool") then
-				return false
+	-- Partes do corpo com CAMINHO RÁPIDO: em rigs normais o corpo
+	-- é filho DIRETO do modelo — GetChildren é ~20 itens (barato)
+	-- e já exclui acessórios/ferramentas naturalmente. Só cai no
+	-- GetDescendants (caro, em jogo pesado) se o rig for fora do
+	-- padrão (corpo dentro de pasta), o que é raro.
+	local AI_partBuf = {}
+	local function AI_collectCoreParts(char)
+		local list = AI_partBuf
+		table.clear(list)
+		for _, part in ipairs(char:GetChildren()) do
+			if part:IsA("BasePart")
+				and part.Name ~= "HumanoidRootPart"
+				and part.Name ~= "Handle" then
+				list[#list + 1] = part
 			end
-			node = node.Parent
 		end
-		return true
+		if #list >= 3 then
+			return list
+		end
+		table.clear(list)
+		for _, part in ipairs(char:GetDescendants()) do
+			if part:IsA("BasePart") and AI_isCorePart(part) then
+				list[#list + 1] = part
+			end
+		end
+		return list
 	end
+
+	local AI_tickCount = 0
 
 	local function AI_tick()
 		local myRoot = LocalPlayer.Character
 			and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
+		AI_tickCount += 1
+		-- A cada ~2s: limpeza de partes destruídas/trocadas e
+		-- re-varredura de quem está marcado (caso o jogo recrie
+		-- partes no meio do personagem).
+		local deepScan = (AI_tickCount % 8) == 0
+
+		-- Uma passada só em todas as partes reveladas: quem teve
+		-- valor VISÍVEL diferente da assinatura devolvida pelo
+		-- jogo entra aqui (evita o custo O(jogadores × partes)).
+		local returnedFor = {}
+		for part, entry in pairs(AI_revealed) do
+			local t = part.Transparency
+			if t < AI_INVISIBLE and t ~= AI_PROBE then
+				returnedFor[entry.plr] = true
+			end
+		end
+
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr ~= LocalPlayer then
-				if not plr.Parent then
-					AI_release(plr, false)
+				local char = plr.Character
+				local ev = AI_marked[plr]
+
+				if not plr.Parent or not char or not char.Parent then
+					-- Saiu / sem personagem no momento
+					if ev or AI_highlights[plr] or AI_labels[plr] then
+						AI_release(plr, false)
+					end
 				else
-					local char = plr.Character
-					if char and char.Parent then
-						-- Análise: leitura pura de todas as partes do corpo
-						local totalCore, hiddenCore = 0, 0
-						local hiddenParts = {}
-						for _, part in ipairs(char:GetDescendants()) do
-							if part:IsA("BasePart") and AI_isCorePart(part) then
-								totalCore += 1
-								if part.LocalTransparencyModifier >= AI_INVISIBLE
-									or part.Transparency >= AI_INVISIBLE then
-									hiddenCore += 1
-									hiddenParts[part] = true
-								end
-							end
-						end
+					if ev and ev.char ~= char then
+						-- respawn/morph: solta e re-avalia
+						AI_release(plr, false)
+						ev = nil
+					end
 
-						local ev = AI_marked[plr]
-						if ev and ev.char ~= char then
-							-- respawn/morph: solta e re-avalia no mesmo tick
+					if ev then
+						if returnedFor[plr] then
+							-- O JOGO devolveu a visibilidade: solta
+							-- SEM restaurar — os valores dele mandam
 							AI_release(plr, false)
-							ev = nil
-						end
+						else
+							-- Segue invisível pro jogo: mantém o
+							-- contorno e atualiza o contador. O
+							-- re-esconder já é tratado pelo sinal de
+							-- cada parte (sem varredura por frame).
+							AI_ensureHighlight(plr, char)
+							local root = char:FindFirstChild("HumanoidRootPart")
+							if root then
+								local lb = AI_ensureLabel(plr, root)
+								local newText = "? studs"
+								if myRoot then
+									local dist = (myRoot.Position
+										- root.Position).Magnitude
+									newText = string.format(
+										"%d studs", math.floor(dist + 0.5))
+								end
+								if lb.text.Text ~= newText then
+									lb.text.Text = newText
+								end
+							end
 
-						-- O JOGO devolveu a visibilidade? Uma parte
-						-- revelada mostrando valor VISÍVEL diferente
-						-- da nossa assinatura (0.03125) só pode ter
-						-- sido escrita por ELE — a gente nunca
-						-- escreve 0, e o servidor manda o valor dele
-						-- por cima do nosso quando a pessoa volta.
-						local gameReturned = false
-						for part, entry in pairs(AI_revealed) do
-							if entry.plr == plr then
-								local t = part.Transparency
-								if t < AI_INVISIBLE and t ~= AI_PROBE then
-									gameReturned = true
-									break
+							if deepScan then
+								for part, entry in pairs(AI_revealed) do
+									if entry.plr == plr
+										and (not part.Parent
+											or not part:IsDescendantOf(char)) then
+										AI_disconnect(entry)
+										AI_revealed[part] = nil
+									end
+								end
+								for _, part in ipairs(AI_collectCoreParts(char)) do
+									if part.LocalTransparencyModifier >= AI_INVISIBLE
+										or part.Transparency >= AI_INVISIBLE then
+										AI_revealPart(part, plr)
+									end
 								end
 							end
 						end
-
-						local totallyNow = totalCore >= 3
-							and hiddenCore >= totalCore
-
-						if totallyNow or (ev and not gameReturned) then
-							-- Marcado e o jogo ainda não devolveu:
-							-- mantém o contorno e revela qualquer
-							-- parte do corpo que esteja escondida
-							if not ev then
-								ev = { char = char }
-								AI_marked[plr] = ev
-							else
-								ev.char = char
+					else
+						-- Não marcado: varre SÓ ele em busca de
+						-- invisibilidade total (caminho rápido por
+						-- filhos diretos — custo baixo até em jogo
+						-- pesado como Mushyo)
+						local coreParts = AI_collectCoreParts(char)
+						local totalCore = #coreParts
+						local hiddenCore = 0
+						local hiddenParts
+						for _, part in ipairs(coreParts) do
+							if part.LocalTransparencyModifier >= AI_INVISIBLE
+								or part.Transparency >= AI_INVISIBLE then
+								hiddenCore += 1
+								if not hiddenParts then
+									hiddenParts = {}
+								end
+								hiddenParts[part] = true
 							end
+						end
+
+						if totalCore >= 3 and hiddenCore >= totalCore then
+							AI_marked[plr] = { char = char }
 							for part in pairs(hiddenParts) do
 								AI_revealPart(part, plr)
 							end
@@ -4796,42 +5047,23 @@ local okAntiInvis, errAntiInvis = pcall(function()
 									lb.text.Text = "? studs"
 								end
 							end
-						elseif ev then
-							-- O JOGO devolveu a visibilidade: solta
-							-- SEM restaurar — os valores dele já
-							-- estão corretos na parte
-							AI_release(plr, false)
 						end
-					else
-						AI_release(plr, false)
 					end
 				end
 			end
 		end
 	end
 
-	-- Força por FRAME: re-escreve a assinatura nas partes que o
-	-- jogo re-escondeu (RenderStepped roda ANTES de desenhar o
-	-- frame, então nunca chega a aparecer escondido na tela).
-	RunService.RenderStepped:Connect(function()
-		if not AI_enabled then return end
-		for part in pairs(AI_revealed) do
-			pcall(function()
-				if part.Transparency >= AI_INVISIBLE then
-					part.Transparency = AI_PROBE
-				end
-				if part.LocalTransparencyModifier >= AI_INVISIBLE then
-					part.LocalTransparencyModifier = AI_PROBE
-				end
-			end)
-		end
-	end)
+	-- O re-esconder de cada parte é tratado pelo SINAL da própria
+	-- parte (AI_forcePart) — não existe mais varredura por frame,
+	-- o que elimina o lag em jogos pesados.
 
 	-- Varredura contínua: pega quem ficou invisível depois de ligar
-	-- (spawn, morph, etc). 0.25s é rápido o bastante e leve.
+	-- (spawn, morph, etc). 0.3s é rápido o bastante e, com o
+	-- caminho rápido por filhos diretos, barato até em jogo pesado.
 	task.spawn(function()
 		while true do
-			task.wait(0.25)
+			task.wait(0.3)
 			if AI_enabled then
 				pcall(AI_tick)
 			end
