@@ -4519,20 +4519,70 @@ end
 
 -- =========================================================
 -- ANTI-INVISÍVEL (ao lado do Bang): revela personagens
--- invisíveis como se estivessem normais — força de volta a
--- transparência das partes. O CONTORNO roxo + contador de
--- studs no pé ficam APENAS em quem está invisível.
+-- TOTALMENTE invisíveis. Contorno roxo + contador de studs
+-- no pé, apenas em quem está invisível.
 -- =========================================================
 local okAntiInvis, errAntiInvis = pcall(function()
 	local AI_enabled = false
-	local AI_forcedLTM = {}    -- partes que o jogo escondeu via LocalTransparencyModifier
-	local AI_forcedTrans = {}  -- partes totalmente transparentes (fora HumanoidRootPart)
-	local AI_highlights = {}   -- [player] = Highlight (contorno, só invisíveis)
-	local AI_labels = {}       -- [player] = {gui, text} contador de studs (só invisíveis)
-	local AI_evidence = {}     -- [player] = {char, marked} invisibilidade total confirmada
+	-- Revelação com VALOR-ASSINATURA: a gente nunca escreve 0 nem
+	-- 1 — escreve 0.03125 (2^-5, exato em float32 e visualmente
+	-- IDÊNTICO a visível). Esse valor é a nossa assinatura: se uma
+	-- parte revelada mostra um valor visível DIFERENTE dele, só
+	-- pode ter sido o JOGO escrevendo — ou seja, a pessoa voltou
+	-- ao normal e a marca cai na hora. Desligar restaura o
+	-- original apenas nas partes que o jogo NÃO já tornou visíveis.
+	local AI_PROBE = 0.03125
+	local AI_revealed = {}   -- [part] = {plr, origT, origLTM}
+	local AI_highlights = {} -- [player] = Highlight (contorno + preenchimento)
+	local AI_labels = {}     -- [player] = {gui, text} contador de studs
+	local AI_marked = {}     -- [player] = {char} invisibilidade total confirmada
 
 	local AI_OUTLINE = Color3.fromRGB(170, 85, 255)
-	local AI_INVISIBLE = 0.99  -- transparência acima disso conta como invisível
+	local AI_INVISIBLE = 0.99 -- transparência acima disso conta como invisível
+
+	-- Parte "do corpo": fora o root (sempre invisível), fora
+	-- acessórios (Handle invisível é normal em roupas) e fora
+	-- ferramentas/itens (Tool)
+	local function AI_isCorePart(part)
+		if part.Name == "HumanoidRootPart" or part.Name == "Handle" then
+			return false
+		end
+		local node = part.Parent
+		while node and node ~= workspace do
+			if node:IsA("Accessory") or node:IsA("Tool") then
+				return false
+			end
+			node = node.Parent
+		end
+		return true
+	end
+
+	-- Revela uma parte escondida: guarda o original UMA VEZ e
+	-- escreve o valor-assinatura (nunca 0 — senão o servidor
+	-- escreveria 0 por cima sem a gente conseguir distinguir).
+	local function AI_revealPart(part, plr)
+		local entry = AI_revealed[part]
+		if not entry then
+			entry = { plr = plr }
+			AI_revealed[part] = entry
+		end
+		pcall(function()
+			local t = part.Transparency
+			if t >= AI_INVISIBLE then
+				if entry.origT == nil then
+					entry.origT = t
+				end
+				part.Transparency = AI_PROBE
+			end
+			local ltm = part.LocalTransparencyModifier
+			if ltm >= AI_INVISIBLE then
+				if entry.origLTM == nil then
+					entry.origLTM = ltm
+				end
+				part.LocalTransparencyModifier = AI_PROBE
+			end
+		end)
+	end
 
 	local function AI_removeVisual(plr)
 		local hl = AI_highlights[plr]
@@ -4543,24 +4593,63 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		AI_labels[plr] = nil
 	end
 
-	-- Desligar: restaura tudo como o jogo deixou (esconde de novo)
-	local function AI_clear()
-		for part in pairs(AI_forcedLTM) do
-			pcall(function() part.LocalTransparencyModifier = 1 end)
-		end
-		for part in pairs(AI_forcedTrans) do
-			pcall(function() part.Transparency = 1 end)
-		end
-		table.clear(AI_forcedLTM)
-		table.clear(AI_forcedTrans)
-		for plr in pairs(AI_highlights) do
-			AI_removeVisual(plr)
-		end
-		table.clear(AI_evidence)
+	-- Devolve o original de uma parte APENAS se ela ainda está
+	-- escondida ou carrega a nossa assinatura — quem o JOGO já
+	-- tornou visível fica exatamente como está (é isso que
+	-- impede de esconder de novo quem voltou ao normal).
+	local function AI_restorePart(part, entry)
+		pcall(function()
+			local t = part.Transparency
+			if entry.origT ~= nil
+				and (t >= AI_INVISIBLE or t == AI_PROBE) then
+				part.Transparency = entry.origT
+			end
+			local ltm = part.LocalTransparencyModifier
+			if entry.origLTM ~= nil
+				and (ltm >= AI_INVISIBLE or ltm == AI_PROBE) then
+				part.LocalTransparencyModifier = entry.origLTM
+			end
+		end)
 	end
 
-	-- Contorno só no invisível (acompanha respawn, some quando ele
-	-- deixa de estar invisível ou sai do server)
+	-- Largar um player. restore=true (desligar o recurso) devolve
+	-- os originais; restore=false (voltou ao normal / saiu /
+	-- respawn) confia nos valores que o jogo deixou.
+	local function AI_release(plr, restore)
+		for part, entry in pairs(AI_revealed) do
+			if entry.plr == plr then
+				if restore then
+					AI_restorePart(part, entry)
+				end
+				AI_revealed[part] = nil
+			end
+		end
+		AI_removeVisual(plr)
+		AI_marked[plr] = nil
+	end
+
+	-- Desligar: larga todo mundo devolvendo os originais
+	local function AI_clear()
+		for _, plr in ipairs(Players:GetPlayers()) do
+			AI_release(plr, true)
+		end
+		-- sobras de players que já saíram do server
+		for part, entry in pairs(AI_revealed) do
+			AI_restorePart(part, entry)
+		end
+		table.clear(AI_revealed)
+		table.clear(AI_marked)
+		for _, hl in pairs(AI_highlights) do
+			pcall(function() hl:Destroy() end)
+		end
+		table.clear(AI_highlights)
+		for _, lb in pairs(AI_labels) do
+			if lb and lb.gui then pcall(function() lb.gui:Destroy() end) end
+		end
+		table.clear(AI_labels)
+	end
+
+	-- Contorno + preenchimento só no invisível
 	local function AI_ensureHighlight(plr, char)
 		local hl = AI_highlights[plr]
 		if hl and hl.Parent ~= char then
@@ -4569,7 +4658,8 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		end
 		if not hl then
 			hl = Instance.new("Highlight")
-			hl.FillTransparency = 1
+			hl.FillColor = AI_OUTLINE
+			hl.FillTransparency = 0.7
 			hl.OutlineColor = AI_OUTLINE
 			hl.OutlineTransparency = 0
 			hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -4635,64 +4725,64 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr ~= LocalPlayer then
 				if not plr.Parent then
-					AI_removeVisual(plr)
-					AI_evidence[plr] = nil
+					AI_release(plr, false)
 				else
 					local char = plr.Character
 					if char and char.Parent then
-						-- 1ª passada: SÓ ANALISA, não mexe em nada.
-						-- Conta quantas partes do corpo estão escondidas.
+						-- Análise: leitura pura de todas as partes do corpo
 						local totalCore, hiddenCore = 0, 0
 						local hiddenParts = {}
 						for _, part in ipairs(char:GetDescendants()) do
 							if part:IsA("BasePart") and AI_isCorePart(part) then
 								totalCore += 1
-								local hiddenNow = part.LocalTransparencyModifier
-									>= AI_INVISIBLE
-									or part.Transparency >= AI_INVISIBLE
-								if hiddenNow then
+								if part.LocalTransparencyModifier >= AI_INVISIBLE
+									or part.Transparency >= AI_INVISIBLE then
 									hiddenCore += 1
 									hiddenParts[part] = true
 								end
 							end
 						end
 
-						local ev = AI_evidence[plr]
+						local ev = AI_marked[plr]
 						if ev and ev.char ~= char then
-							-- respawn/morph: recomeça a análise dele
+							-- respawn/morph: solta e re-avalia no mesmo tick
+							AI_release(plr, false)
 							ev = nil
 						end
 
-						-- TOTALMENTE invisível = TODAS as partes do corpo
-						-- escondidas (nada parcial, nada de itens soltos).
-						-- Quem já foi confirmado continua marcado até
-						-- trocar de personagem (senão o contorno piscava
-						-- depois da gente revelar).
-						local totallyInvisible =
-							(totalCore >= 3 and hiddenCore >= totalCore)
-							or (ev and ev.marked == true)
+						-- O JOGO devolveu a visibilidade? Uma parte
+						-- revelada mostrando valor VISÍVEL diferente
+						-- da nossa assinatura (0.03125) só pode ter
+						-- sido escrita por ELE — a gente nunca
+						-- escreve 0, e o servidor manda o valor dele
+						-- por cima do nosso quando a pessoa volta.
+						local gameReturned = false
+						for part, entry in pairs(AI_revealed) do
+							if entry.plr == plr then
+								local t = part.Transparency
+								if t < AI_INVISIBLE and t ~= AI_PROBE then
+									gameReturned = true
+									break
+								end
+							end
+						end
 
-						if totallyInvisible then
-							if ev then
-								ev.marked = true
+						local totallyNow = totalCore >= 3
+							and hiddenCore >= totalCore
+
+						if totallyNow or (ev and not gameReturned) then
+							-- Marcado e o jogo ainda não devolveu:
+							-- mantém o contorno e revela qualquer
+							-- parte do corpo que esteja escondida
+							if not ev then
+								ev = { char = char }
+								AI_marked[plr] = ev
 							else
-								ev = { char = char, marked = true }
-								AI_evidence[plr] = ev
+								ev.char = char
 							end
-
-							-- Agora sim revela: personagem inteiro visível
 							for part in pairs(hiddenParts) do
-								if part.LocalTransparencyModifier
-									>= AI_INVISIBLE then
-									part.LocalTransparencyModifier = 0
-									AI_forcedLTM[part] = true
-								end
-								if part.Transparency >= AI_INVISIBLE then
-									part.Transparency = 0
-									AI_forcedTrans[part] = true
-								end
+								AI_revealPart(part, plr)
 							end
-
 							AI_ensureHighlight(plr, char)
 							local root = char:FindFirstChild("HumanoidRootPart")
 							if root then
@@ -4706,19 +4796,36 @@ local okAntiInvis, errAntiInvis = pcall(function()
 									lb.text.Text = "? studs"
 								end
 							end
-						else
-							-- Parcial/invisível só em item: NÃO mexe
-							AI_evidence[plr] = nil
-							AI_removeVisual(plr)
+						elseif ev then
+							-- O JOGO devolveu a visibilidade: solta
+							-- SEM restaurar — os valores dele já
+							-- estão corretos na parte
+							AI_release(plr, false)
 						end
 					else
-						AI_evidence[plr] = nil
-						AI_removeVisual(plr)
+						AI_release(plr, false)
 					end
 				end
 			end
 		end
 	end
+
+	-- Força por FRAME: re-escreve a assinatura nas partes que o
+	-- jogo re-escondeu (RenderStepped roda ANTES de desenhar o
+	-- frame, então nunca chega a aparecer escondido na tela).
+	RunService.RenderStepped:Connect(function()
+		if not AI_enabled then return end
+		for part in pairs(AI_revealed) do
+			pcall(function()
+				if part.Transparency >= AI_INVISIBLE then
+					part.Transparency = AI_PROBE
+				end
+				if part.LocalTransparencyModifier >= AI_INVISIBLE then
+					part.LocalTransparencyModifier = AI_PROBE
+				end
+			end)
+		end
+	end)
 
 	-- Varredura contínua: pega quem ficou invisível depois de ligar
 	-- (spawn, morph, etc). 0.25s é rápido o bastante e leve.
@@ -4741,6 +4848,125 @@ local okAntiInvis, errAntiInvis = pcall(function()
 	-- Já nasce ATIVO junto com o painel (o botão só serve pra desligar)
 	AI_enabled = true
 	AISetState(true)
+
+	-- Toast de inicialização (mesmo estilo do Aviso): entra
+	-- deslizando no canto, fica 10s, tem o X pra fechar e um
+	-- botão que DESATIVA a função na hora.
+	local function AIShowStartupToast()
+		local old = ScreenGui:FindFirstChild("ChosenAIStartupToast")
+		if old then
+			old:Destroy()
+		end
+
+		local toast = Instance.new("Frame")
+		toast.Name = "ChosenAIStartupToast"
+		toast.AnchorPoint = Vector2.new(1, 0)
+		toast.Position = UDim2.new(1, 340, 0, 18) -- fora da tela; entra deslizando
+		toast.Size = UDim2.new(0, 316, 0, 104)
+		toast.BackgroundColor3 = COLOR_PANEL
+		toast.BackgroundTransparency = 0.03
+		toast.BorderSizePixel = 0
+		toast.ZIndex = 60
+		toast.Parent = ScreenGui
+		corner(toast, 14)
+		stroke(toast, AI_OUTLINE, 1.2, 0.35)
+
+		-- Barra lateral de destaque (roxo)
+		local toastBar = Instance.new("Frame")
+		toastBar.Size = UDim2.new(0, 4, 1, 0)
+		toastBar.BackgroundColor3 = AI_OUTLINE
+		toastBar.BorderSizePixel = 0
+		toastBar.ZIndex = 61
+		toastBar.Parent = toast
+		corner(toastBar, 2)
+
+		local toastTitle = Instance.new("TextLabel")
+		toastTitle.Size = UDim2.new(1, -64, 0, 16)
+		toastTitle.Position = UDim2.new(0, 18, 0, 10)
+		toastTitle.BackgroundTransparency = 1
+		toastTitle.Text = "👁  ANTI-INVISÍVEL"
+		toastTitle.TextColor3 = AI_OUTLINE
+		toastTitle.Font = Enum.Font.GothamBlack
+		toastTitle.TextSize = 11
+		toastTitle.TextXAlignment = Enum.TextXAlignment.Left
+		toastTitle.ZIndex = 60
+		toastTitle.Parent = toast
+
+		local toastText = Instance.new("TextLabel")
+		toastText.Size = UDim2.new(1, -36, 0, 30)
+		toastText.Position = UDim2.new(0, 18, 0, 30)
+		toastText.BackgroundTransparency = 1
+		toastText.Text = "A função está ATIVA — revelando jogadores invisíveis do servidor."
+		toastText.TextColor3 = COLOR_TEXT
+		toastText.Font = Enum.Font.GothamMedium
+		toastText.TextSize = 12
+		toastText.TextXAlignment = Enum.TextXAlignment.Left
+		toastText.TextYAlignment = Enum.TextYAlignment.Top
+		toastText.TextWrapped = true
+		toastText.ZIndex = 60
+		toastText.Parent = toast
+
+		-- Botão que desativa a função direto do toast
+		local toastOff = Instance.new("TextButton")
+		toastOff.Size = UDim2.new(0, 148, 0, 26)
+		toastOff.Position = UDim2.new(0, 18, 1, -34)
+		toastOff.BackgroundColor3 = COLOR_CARD2
+		toastOff.BackgroundTransparency = 0.15
+		toastOff.Text = "Desativar"
+		toastOff.TextColor3 = COLOR_TEXT
+		toastOff.Font = Enum.Font.GothamBold
+		toastOff.TextSize = 13
+		toastOff.ZIndex = 61
+		toastOff.Parent = toast
+		corner(toastOff, 13)
+
+		local toastClose = Instance.new("TextButton")
+		toastClose.Size = UDim2.new(0, 24, 0, 24)
+		toastClose.Position = UDim2.new(1, -32, 0, 9)
+		toastClose.BackgroundColor3 = COLOR_CARD2
+		toastClose.BackgroundTransparency = 0.2
+		toastClose.Text = "X"
+		toastClose.TextColor3 = COLOR_TEXT
+		toastClose.Font = Enum.Font.GothamBold
+		toastClose.TextSize = 12
+		toastClose.ZIndex = 61
+		toastClose.Parent = toast
+		corner(toastClose, 12)
+
+		-- Barra de contagem: o tempo restante (10s) esvazia da direita
+		local toastTimer = Instance.new("Frame")
+		toastTimer.AnchorPoint = Vector2.new(1, 0.5)
+		toastTimer.Position = UDim2.new(1, -8, 1, -7)
+		toastTimer.Size = UDim2.new(1, -16, 0, 3)
+		toastTimer.BackgroundColor3 = AI_OUTLINE
+		toastTimer.BackgroundTransparency = 0.3
+		toastTimer.BorderSizePixel = 0
+		toastTimer.ZIndex = 61
+		toastTimer.Parent = toast
+		corner(toastTimer, 2)
+
+		tween(toast, {Position = UDim2.new(1, -16, 0, 18)}, 0.35)
+		tween(toastTimer, {Size = UDim2.new(0, 0, 0, 3)}, 10)
+
+		local function dismiss()
+			if not toast.Parent then return end
+			tween(toast, {Position = UDim2.new(1, 340, 0, 18)}, 0.35)
+			task.delay(0.4, function()
+				pcall(function() toast:Destroy() end)
+			end)
+		end
+
+		toastOff.MouseButton1Click:Connect(function()
+			AISetState(false) -- desliga a função (estado + visual do botão)
+			dismiss()
+		end)
+
+		toastClose.MouseButton1Click:Connect(dismiss)
+
+		task.delay(10, dismiss)
+	end
+
+	AIShowStartupToast()
 end)
 
 if not okAntiInvis then
