@@ -14,20 +14,19 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
--- Tema: grafite frio + um único azul de destaque (mais limpo, menos cor)
-local COLOR_BG       = Color3.fromRGB(9, 12, 18)
-local COLOR_PANEL    = Color3.fromRGB(17, 21, 29)
-local COLOR_SIDE     = Color3.fromRGB(13, 16, 23)
-local COLOR_CARD     = Color3.fromRGB(24, 29, 39)
-local COLOR_CARD2    = Color3.fromRGB(31, 38, 50)
-local COLOR_BORDER   = Color3.fromRGB(42, 50, 64)
-local COLOR_BORDER2  = Color3.fromRGB(62, 74, 92)
-local COLOR_ACCENT   = Color3.fromRGB(108, 162, 255)
-local COLOR_ACCENT2  = Color3.fromRGB(56, 104, 200)
-local COLOR_TEXT     = Color3.fromRGB(237, 242, 250)
-local COLOR_DIM      = Color3.fromRGB(166, 178, 196)
-local COLOR_MUTED    = Color3.fromRGB(116, 128, 146)
-local COLOR_SUCCESS  = Color3.fromRGB(82, 216, 146)
+local COLOR_BG       = Color3.fromRGB(9, 17, 33)
+local COLOR_PANEL    = Color3.fromRGB(15, 28, 52)
+local COLOR_SIDE     = Color3.fromRGB(11, 22, 42)
+local COLOR_CARD     = Color3.fromRGB(21, 42, 74)
+local COLOR_CARD2    = Color3.fromRGB(28, 55, 92)
+local COLOR_BORDER   = Color3.fromRGB(52, 96, 148)
+local COLOR_BORDER2  = Color3.fromRGB(96, 152, 212)
+local COLOR_ACCENT   = Color3.fromRGB(66, 152, 255)
+local COLOR_ACCENT2  = Color3.fromRGB(34, 108, 218)
+local COLOR_TEXT     = Color3.fromRGB(244, 249, 255)
+local COLOR_DIM      = Color3.fromRGB(178, 204, 232)
+local COLOR_MUTED    = Color3.fromRGB(126, 160, 198)
+local COLOR_SUCCESS  = Color3.fromRGB(84, 220, 140)
 
 local function corner(obj, radius)
 	local c = Instance.new("UICorner")
@@ -98,14 +97,14 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = false
 MainFrame.Parent = ScreenGui
-corner(MainFrame, 16)
-stroke(MainFrame, COLOR_BORDER, 1, 0.55)
+corner(MainFrame, 14)
+stroke(MainFrame, COLOR_BORDER, 1, 0.25)
 
 local MainFrameGradient = Instance.new("UIGradient")
 MainFrameGradient.Rotation = 90
 MainFrameGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 220, 235))
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 178, 200))
 })
 MainFrameGradient.Parent = MainFrame
 
@@ -113,52 +112,56 @@ MainFrameGradient.Parent = MainFrame
 -- Fica no ScreenGui (fora do MainFrame) para continuar visível quando o painel fecha.
 local PanelToggle = Instance.new("TextButton")
 PanelToggle.Name = "PanelToggle"
-PanelToggle.Size = UDim2.new(0, 32, 0, 32)
+PanelToggle.Size = UDim2.new(0, 34, 0, 34)
 PanelToggle.AnchorPoint = Vector2.new(0, 0.5)
 PanelToggle.Position = UDim2.new(0, 10, 0.5, 0)
-PanelToggle.BackgroundColor3 = COLOR_CARD
+PanelToggle.BackgroundColor3 = COLOR_PANEL
 PanelToggle.AutoButtonColor = false
 PanelToggle.Text = "C"
-PanelToggle.TextColor3 = COLOR_DIM
-PanelToggle.Font = Enum.Font.GothamBlack
-PanelToggle.TextSize = 14
+PanelToggle.TextColor3 = COLOR_TEXT
+PanelToggle.Font = Enum.Font.LuckiestGuy
+PanelToggle.TextSize = 16
 PanelToggle.BorderSizePixel = 0
 PanelToggle.Parent = ScreenGui
-corner(PanelToggle, 10)
+corner(PanelToggle, 17)
+stroke(PanelToggle, COLOR_BORDER, 1, 0.35)
 
 PanelToggle.MouseButton1Click:Connect(function()
 	MainFrame.Visible = not MainFrame.Visible
 end)
 PanelToggle.MouseEnter:Connect(function()
-	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD2, TextColor3 = COLOR_TEXT}, 0.15)
+	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD}, 0.15)
 end)
 PanelToggle.MouseLeave:Connect(function()
-	tween(PanelToggle, {BackgroundColor3 = COLOR_CARD, TextColor3 = COLOR_DIM}, 0.15)
+	tween(PanelToggle, {BackgroundColor3 = COLOR_PANEL}, 0.15)
 end)
 
 
+local AccentLine = Instance.new("Frame")
+AccentLine.Size = UDim2.new(1, -28, 0, 2)
+AccentLine.Position = UDim2.new(0, 14, 0, 1)
+AccentLine.BackgroundColor3 = COLOR_TEXT
+AccentLine.BorderSizePixel = 0
+AccentLine.Parent = MainFrame
+corner(AccentLine, 2)
+
+local AccentLineGradient = Instance.new("UIGradient")
+AccentLineGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, COLOR_ACCENT),
+	ColorSequenceKeypoint.new(0.55, Color3.fromRGB(120, 190, 255)),
+	ColorSequenceKeypoint.new(1, COLOR_PANEL)
+})
+AccentLineGradient.Parent = AccentLine
+
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 60)
-TopBar.BackgroundTransparency = 1
+TopBar.Size = UDim2.new(1, 0, 0, 58)
+TopBar.BackgroundColor3 = COLOR_PANEL
+TopBar.BackgroundTransparency = 0.2
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
+corner(TopBar, 14)
+stroke(TopBar, COLOR_BORDER, 1, 0.35)
 TopBar.Active = true
-
--- Fio de luz no rodapé do cabeçalho (destaque único, sem moldura)
-local HeaderLine = Instance.new("Frame")
-HeaderLine.Size = UDim2.new(1, -28, 0, 1)
-HeaderLine.Position = UDim2.new(0, 14, 1, -1)
-HeaderLine.BackgroundColor3 = COLOR_BORDER2
-HeaderLine.BackgroundTransparency = 0.55
-HeaderLine.BorderSizePixel = 0
-HeaderLine.Parent = TopBar
-local HeaderLineGradient = Instance.new("UIGradient")
-HeaderLineGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-	ColorSequenceKeypoint.new(0.35, Color3.fromRGB(180, 180, 180)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
-})
-HeaderLineGradient.Parent = HeaderLine
 
 do
 	local draggingPanel = false
@@ -196,87 +199,131 @@ do
 	end)
 end
 
+local TopMask = Instance.new("Frame")
+TopMask.Size = UDim2.new(1, 0, 0, 24)
+TopMask.Position = UDim2.new(0, 0, 1, -24)
+TopMask.BackgroundColor3 = COLOR_PANEL
+TopMask.BorderSizePixel = 0
+TopMask.Parent = TopBar
+
 local Brand = Instance.new("TextLabel")
 Brand.Name = "ChosenHub"
-Brand.Size = UDim2.new(0, 300, 0, 30)
-Brand.Position = UDim2.new(0, 20, 0, 15)
+Brand.Size = UDim2.new(0, 262, 0, 36)
+Brand.Position = UDim2.new(0, 18, 0, 10)
 Brand.BackgroundTransparency = 1
-Brand.Text = 'CHOSEN <font color="#6CA2FF">HUB</font>'
+Brand.Text = "◆  CHOSEN HUB"
 Brand.TextColor3 = COLOR_TEXT
-Brand.Font = Enum.Font.GothamBlack
-Brand.TextSize = 15
+Brand.Font = Enum.Font.LuckiestGuy
+Brand.TextSize = 17
 Brand.TextXAlignment = Enum.TextXAlignment.Left
-Brand.RichText = true
 Brand.Parent = TopBar
 
+local BrandTextGradient = Instance.new("UIGradient")
+BrandTextGradient.Rotation = 90
+BrandTextGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, COLOR_TEXT),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 195, 250))
+})
+BrandTextGradient.Parent = Brand
+
+local BrandAccent = Instance.new("Frame")
+BrandAccent.Size = UDim2.new(0, 40, 0, 3)
+BrandAccent.Position = UDim2.new(0, 20, 1, -8)
+BrandAccent.BackgroundColor3 = COLOR_ACCENT
+BrandAccent.BorderSizePixel = 0
+BrandAccent.Parent = TopBar
+corner(BrandAccent, 2)
+
 local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 6, 0, 6)
-StatusDot.Position = UDim2.new(1, -76, 0, 27)
+StatusDot.Size = UDim2.new(0, 8, 0, 8)
+StatusDot.Position = UDim2.new(1, -122, 0, 25)
 StatusDot.BackgroundColor3 = COLOR_SUCCESS
 StatusDot.BorderSizePixel = 0
 StatusDot.Parent = TopBar
-corner(StatusDot, 6)
+corner(StatusDot, 8)
 
 task.spawn(function()
 	while StatusDot.Parent do
-		tween(StatusDot, {BackgroundTransparency = 0.7}, 0.6)
-		task.wait(0.6)
-		tween(StatusDot, {BackgroundTransparency = 0}, 0.6)
-		task.wait(0.6)
+		tween(StatusDot, {BackgroundTransparency = 0.65}, 0.55)
+		task.wait(0.55)
+		tween(StatusDot, {BackgroundTransparency = 0}, 0.55)
+		task.wait(0.55)
 	end
 end)
 
 local StatusText = Instance.new("TextLabel")
-StatusText.Size = UDim2.new(0, 60, 0, 14)
-StatusText.Position = UDim2.new(1, -66, 0, 23)
+StatusText.Size = UDim2.new(0, 94, 0, 18)
+StatusText.Position = UDim2.new(1, -110, 0, 20)
 StatusText.BackgroundTransparency = 1
-StatusText.Text = "ONLINE"
-StatusText.TextColor3 = COLOR_MUTED
-StatusText.Font = Enum.Font.GothamBold
+StatusText.Text = "SISTEMA ONLINE"
+StatusText.TextColor3 = COLOR_DIM
+StatusText.Font = Enum.Font.FredokaOne
 StatusText.TextSize = 9
 StatusText.TextXAlignment = Enum.TextXAlignment.Left
 StatusText.Parent = TopBar
 
 local Body = Instance.new("Frame")
-Body.Size = UDim2.new(1, -20, 1, -72)
-Body.Position = UDim2.new(0, 10, 0, 66)
+Body.Size = UDim2.new(1, -20, 1, -70)
+Body.Position = UDim2.new(0, 10, 0, 64)
 Body.BackgroundTransparency = 1
 Body.Parent = MainFrame
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 168, 1, 0)
 Sidebar.BackgroundColor3 = COLOR_SIDE
-Sidebar.BackgroundTransparency = 0.25
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Body
-corner(Sidebar, 14)
+corner(Sidebar, 12)
+stroke(Sidebar, COLOR_BORDER, 1, 0.3)
 
 local SidebarGradient = Instance.new("UIGradient")
 SidebarGradient.Rotation = 90
 SidebarGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(206, 212, 224))
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 165, 190))
 })
 SidebarGradient.Parent = Sidebar
 
+local SideTitle = Instance.new("TextLabel")
+SideTitle.Size = UDim2.new(1, -28, 0, 18)
+SideTitle.Position = UDim2.new(0, 14, 0, 16)
+SideTitle.BackgroundTransparency = 1
+SideTitle.Text = "◆  CHOSEN HUB"
+SideTitle.TextColor3 = COLOR_MUTED
+SideTitle.Font = Enum.Font.FredokaOne
+SideTitle.TextSize = 9
+SideTitle.TextXAlignment = Enum.TextXAlignment.Left
+SideTitle.Parent = Sidebar
+
+local SideSub = Instance.new("TextLabel")
+SideSub.Size = UDim2.new(1, -28, 0, 20)
+SideSub.Position = UDim2.new(0, 14, 0, 34)
+SideSub.BackgroundTransparency = 1
+SideSub.Text = "Escolha uma área"
+SideSub.TextColor3 = COLOR_TEXT
+SideSub.Font = Enum.Font.LuckiestGuy
+SideSub.TextSize = 13
+SideSub.TextXAlignment = Enum.TextXAlignment.Left
+SideSub.Parent = Sidebar
+
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, -16, 1, -50)
-TabContainer.Position = UDim2.new(0, 8, 0, 12)
+TabContainer.Size = UDim2.new(1, -20, 1, -88)
+TabContainer.Position = UDim2.new(0, 10, 0, 64)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = Sidebar
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 4)
+TabLayout.Padding = UDim.new(0, 6)
 TabLayout.Parent = TabContainer
 
 local Version = Instance.new("TextLabel")
 Version.Size = UDim2.new(1, -28, 0, 20)
-Version.Position = UDim2.new(0, 16, 1, -26)
+Version.Position = UDim2.new(0, 14, 1, -27)
 Version.BackgroundTransparency = 1
 Version.Text = "v2.5  •  B ABRE/FECHA"
 Version.TextColor3 = COLOR_MUTED
-Version.Font = Enum.Font.GothamMedium
+Version.Font = Enum.Font.FredokaOne
 Version.TextSize = 9
 Version.TextXAlignment = Enum.TextXAlignment.Left
 Version.Parent = Sidebar
@@ -284,24 +331,26 @@ Version.Parent = Sidebar
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -180, 1, 0)
 ContentArea.Position = UDim2.new(0, 180, 0, 0)
-ContentArea.BackgroundTransparency = 1
+ContentArea.BackgroundColor3 = COLOR_PANEL
 ContentArea.BorderSizePixel = 0
 ContentArea.Parent = Body
+corner(ContentArea, 12)
+stroke(ContentArea, COLOR_BORDER, 1, 0.15)
 
 local ContentTitle = Instance.new("TextLabel")
-ContentTitle.Size = UDim2.new(1, -30, 0, 26)
-ContentTitle.Position = UDim2.new(0, 18, 0, 8)
+ContentTitle.Size = UDim2.new(1, -30, 0, 28)
+ContentTitle.Position = UDim2.new(0, 16, 0, 12)
 ContentTitle.BackgroundTransparency = 1
 ContentTitle.Text = "Início"
 ContentTitle.TextColor3 = COLOR_TEXT
-ContentTitle.Font = Enum.Font.GothamBlack
-ContentTitle.TextSize = 18
+ContentTitle.Font = Enum.Font.LuckiestGuy
+ContentTitle.TextSize = 17
 ContentTitle.TextXAlignment = Enum.TextXAlignment.Left
 ContentTitle.Parent = ContentArea
 
 local ContentHolder = Instance.new("Frame")
-ContentHolder.Size = UDim2.new(0, 486, 1, -58)
-ContentHolder.Position = UDim2.new(0, 16, 0, 48)
+ContentHolder.Size = UDim2.new(0, 490, 1, -76)
+ContentHolder.Position = UDim2.new(0, 16, 0, 70)
 ContentHolder.BackgroundTransparency = 1
 ContentHolder.ClipsDescendants = true
 ContentHolder.Parent = ContentArea
@@ -322,40 +371,40 @@ local TabIcons = {
 local function createTab(name, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name .. "TabButton"
-	btn.Size = UDim2.new(1, 0, 0, 34)
-	btn.BackgroundColor3 = COLOR_CARD
-	btn.BackgroundTransparency = 1
+	btn.Size = UDim2.new(1, 0, 0, 36)
+	btn.BackgroundColor3 = COLOR_SIDE
 	btn.AutoButtonColor = false
 	btn.Text = ""
 	btn.LayoutOrder = order
 	btn.Parent = TabContainer
-	corner(btn, 10)
+	corner(btn, 19)
+	stroke(btn, COLOR_BORDER, 1, 0.35)
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(0, 22, 0, 22)
-	icon.Position = UDim2.new(0, 9, 0.5, -11)
+	icon.Size = UDim2.new(0, 26, 0, 26)
+	icon.Position = UDim2.new(0, 8, 0.5, -13)
 	icon.BackgroundTransparency = 1
 	icon.Text = TabIcons[name] or "◆"
 	icon.TextColor3 = COLOR_MUTED
-	icon.Font = Enum.Font.GothamBold
-	icon.TextSize = 14
+	icon.Font = Enum.Font.FredokaOne
+	icon.TextSize = 15
 	icon.TextXAlignment = Enum.TextXAlignment.Center
 	icon.TextYAlignment = Enum.TextYAlignment.Center
 	icon.Parent = btn
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -48, 1, 0)
-	label.Position = UDim2.new(0, 38, 0, 0)
+	label.Size = UDim2.new(1, -50, 1, 0)
+	label.Position = UDim2.new(0, 42, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextColor3 = COLOR_DIM
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 12
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 13
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = btn
 
 	local activeBar = Instance.new("Frame")
-	activeBar.Size = UDim2.new(0, 2, 0, 16)
+	activeBar.Size = UDim2.new(0, 3, 0, 18)
 	activeBar.AnchorPoint = Vector2.new(0, 0.5)
 	activeBar.Position = UDim2.new(0, 0, 0.5, 0)
 	activeBar.BackgroundColor3 = COLOR_ACCENT
@@ -393,27 +442,24 @@ local function createTab(name, order)
 
 	btn.MouseEnter:Connect(function()
 		if not ContentFrames[name].Visible then
-			tween(btn, {BackgroundTransparency = 0.55}, 0.12)
-			tween(icon, {TextColor3 = COLOR_DIM}, 0.12)
-			tween(label, {TextColor3 = COLOR_TEXT}, 0.12)
+			tween(btn, {BackgroundColor3 = COLOR_PANEL}, 0.10)
+			local hs = btn:FindFirstChildOfClass("UIStroke")
+			if hs then tween(hs, {Color = COLOR_BORDER2}, 0.10) end
 		end
 	end)
 	btn.MouseLeave:Connect(function()
 		if not ContentFrames[name].Visible then
-			tween(btn, {BackgroundTransparency = 1}, 0.14)
-			tween(icon, {TextColor3 = COLOR_MUTED}, 0.14)
-			tween(label, {TextColor3 = COLOR_DIM}, 0.14)
+			tween(btn, {BackgroundColor3 = COLOR_SIDE}, 0.10)
+			local hs = btn:FindFirstChildOfClass("UIStroke")
+			if hs then tween(hs, {Color = COLOR_BORDER}, 0.10) end
 		end
 	end)
 	btn.MouseButton1Click:Connect(function()
 		for tabName, data in pairs(Tabs) do
 			local active = tabName == name
-			tween(data.button, {
-				BackgroundColor3 = COLOR_CARD,
-				BackgroundTransparency = active and 0.05 or 1
-			}, 0.2)
-			tween(data.icon, {TextColor3 = active and COLOR_ACCENT or COLOR_MUTED}, 0.2)
-			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.2)
+			tween(data.button, {BackgroundColor3 = active and COLOR_ACCENT2 or COLOR_SIDE, BackgroundTransparency = active and 0.25 or 0}, 0.22)
+			tween(data.icon, {TextColor3 = active and COLOR_TEXT or COLOR_MUTED}, 0.22)
+			tween(data.label, {TextColor3 = active and COLOR_TEXT or COLOR_DIM}, 0.22)
 			data.activeBar.Visible = active
 			ContentFrames[tabName].Visible = active
 		end
@@ -430,8 +476,8 @@ local function createSection(parent, title, subtitle, order)
 	section.Parent = parent
 
 	local tick = Instance.new("Frame")
-	tick.Size = UDim2.new(0, 2, 0, 10)
-	tick.Position = UDim2.new(0, -6, 0, 6)
+	tick.Size = UDim2.new(0, 3, 0, 12)
+	tick.Position = UDim2.new(0, -6, 0, 4)
 	tick.BackgroundColor3 = COLOR_ACCENT
 	tick.BorderSizePixel = 0
 	tick.Parent = section
@@ -441,9 +487,9 @@ local function createSection(parent, title, subtitle, order)
 	t.Size = UDim2.new(1, 0, 0, 20)
 	t.BackgroundTransparency = 1
 	t.Text = title
-	t.TextColor3 = COLOR_DIM
-	t.Font = Enum.Font.GothamBold
-	t.TextSize = 12
+	t.TextColor3 = COLOR_TEXT
+	t.Font = Enum.Font.LuckiestGuy
+	t.TextSize = 13
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.Parent = section
 
@@ -451,7 +497,7 @@ local function createSection(parent, title, subtitle, order)
 	divider.Size = UDim2.new(1, 0, 0, 1)
 	divider.Position = UDim2.new(0, 0, 1, -2)
 	divider.BackgroundColor3 = COLOR_BORDER
-	divider.BackgroundTransparency = 0.6
+	divider.BackgroundTransparency = 0.45
 	divider.BorderSizePixel = 0
 	divider.Parent = section
 	return section
@@ -481,211 +527,18 @@ local function createControlRow(parent, order)
 	return row
 end
 
--- Divide "Título  •  dica" em duas linhas. O bullet é UTF-8 (3 bytes),
--- então string.find com plain=true acha a sequência exata.
-local function splitToggleLabel(text)
-	local function trim(s)
-		s = string.gsub(s, "^%s+", "")
-		return (string.gsub(s, "%s+$", ""))
-	end
-
-	local a, b = string.find(text, "•", 1, true)
-	if not a then
-		return trim(text), nil
-	end
-	return trim(string.sub(text, 1, a - 1)), trim(string.sub(text, b + 1))
-end
-
--- Verde da tinta do card ligado
-local TOGGLE_TINT = Color3.fromRGB(46, 196, 122)
-
--- Card de toggle: brilho diagonal, tinta verde suave, barra lateral de
--- destaque e switch capsulado com knob esférico + glow. Tudo estático
--- (gradientes/estilos), com tween só nos eventos — nada por frame.
 local function createToggleButton(parent, labelText, callback, order)
 	local state = false
 	local inRow = isControlRow(parent)
-	local titleText, hintText = splitToggleLabel(labelText)
-	local hasHint = hintText ~= nil and hintText ~= ""
-
 	local card = Instance.new("Frame")
-	card.Name = "ToggleCard"
 	card.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, 50)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.05
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
-	card.ClipsDescendants = true
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	local cardStroke = stroke(card, COLOR_BORDER, 1, 0.28)
-
-	-- Brilho diagonal ("vidro") no canto superior esquerdo
-	local sheen = Instance.new("Frame")
-	sheen.Size = UDim2.new(1, 0, 1, 0)
-	sheen.BackgroundColor3 = Color3.new(1, 1, 1)
-	sheen.BorderSizePixel = 0
-	sheen.ZIndex = 2
-	sheen.Parent = card
-	local sheenGrad = Instance.new("UIGradient")
-	sheenGrad.Rotation = 118
-	sheenGrad.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.92),
-		NumberSequenceKeypoint.new(0.5, 1),
-		NumberSequenceKeypoint.new(1, 1)
-	})
-	sheenGrad.Parent = sheen
-
-	-- Tinta verde suave (aparece só quando ligado)
-	local tint = Instance.new("Frame")
-	tint.Size = UDim2.new(1, 0, 1, 0)
-	tint.BackgroundColor3 = TOGGLE_TINT
-	tint.BackgroundTransparency = 1
-	tint.BorderSizePixel = 0
-	tint.ZIndex = 3
-	tint.Parent = card
-	local tintGrad = Instance.new("UIGradient")
-	tintGrad.Rotation = 90
-	tintGrad.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0),
-		NumberSequenceKeypoint.new(1, 0.45)
-	})
-	tintGrad.Parent = tint
-
-	-- Barra de destaque lateral (azul desligado / verde ligado)
-	local accent = Instance.new("Frame")
-	accent.Size = UDim2.new(0, 3, 0, 20)
-	accent.Position = UDim2.new(0, 9, 0.5, -10)
-	accent.BackgroundColor3 = COLOR_ACCENT
-	accent.BorderSizePixel = 0
-	accent.ZIndex = 4
-	accent.Parent = card
-	corner(accent, 2)
-	local accentGrad = Instance.new("UIGradient")
-	accentGrad.Rotation = 90
-	accentGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 150, 150))
-	})
-	accentGrad.Parent = accent
-
-	local title = Instance.new("TextLabel")
-	title.Name = "Titulo"
-	title.Size = hasHint and UDim2.new(1, -78, 0, 15) or UDim2.new(1, -78, 1, 0)
-	title.Position = hasHint and UDim2.new(0, 20, 0.5, -18) or UDim2.new(0, 20, 0, 0)
-	title.BackgroundTransparency = 1
-	title.Text = titleText
-	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = hasHint and 11 or 12
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextYAlignment = Enum.TextYAlignment.Center
-	title.TextTruncate = Enum.TextTruncate.AtEnd
-	title.ZIndex = 5
-	title.Parent = card
-
-	-- Dica/atalho em segunda linha, mais discreta
-	local hint
-	if hasHint then
-		hint = Instance.new("TextLabel")
-		hint.Name = "Dica"
-		hint.Size = UDim2.new(1, -78, 0, 12)
-		hint.Position = UDim2.new(0, 20, 0.5, 1)
-		hint.BackgroundTransparency = 1
-		hint.Text = hintText
-		hint.TextColor3 = COLOR_MUTED
-		hint.Font = Enum.Font.GothamMedium
-		hint.TextSize = 9
-		hint.TextXAlignment = Enum.TextXAlignment.Left
-		hint.TextYAlignment = Enum.TextYAlignment.Center
-		hint.TextTruncate = Enum.TextTruncate.AtEnd
-		hint.ZIndex = 5
-		hint.Parent = card
-	end
-
-	-- Glow externo do switch (atrás do trilho)
-	local glow = Instance.new("Frame")
-	glow.Size = UDim2.new(0, 46, 0, 28)
-	glow.Position = UDim2.new(1, -52, 0.5, -14)
-	glow.BackgroundColor3 = COLOR_SUCCESS
-	glow.BackgroundTransparency = 1
-	glow.BorderSizePixel = 0
-	glow.ZIndex = 4
-	glow.Parent = card
-	corner(glow, 14)
-
-	local switchTrack = Instance.new("Frame")
-	switchTrack.Size = UDim2.new(0, 34, 0, 18)
-	switchTrack.Position = UDim2.new(1, -46, 0.5, -9)
-	switchTrack.BackgroundColor3 = COLOR_SIDE
-	switchTrack.BorderSizePixel = 0
-	switchTrack.ZIndex = 5
-	switchTrack.Parent = card
-	corner(switchTrack, 9)
-	local trackStroke = stroke(switchTrack, COLOR_BORDER, 1, 0.35)
-
-	local trackGrad = Instance.new("UIGradient")
-	trackGrad.Rotation = 90
-	trackGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(178, 178, 178))
-	})
-	trackGrad.Parent = switchTrack
-
-	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 14, 0, 14)
-	dot.Position = UDim2.new(0, 2, 0.5, -7)
-	dot.BackgroundColor3 = COLOR_MUTED
-	dot.BorderSizePixel = 0
-	dot.ZIndex = 6
-	dot.Parent = switchTrack
-	corner(dot, 7)
-	local dotGrad = Instance.new("UIGradient")
-	dotGrad.Rotation = 90
-	dotGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(196, 196, 196))
-	})
-	dotGrad.Parent = dot
-
-	local function applyVisuals(time)
-		tween(tint, {BackgroundTransparency = state and 0.84 or 1}, time)
-		tween(accent, {
-			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_ACCENT,
-			Size = state and UDim2.new(0, 3, 0, 26) or UDim2.new(0, 3, 0, 20),
-			Position = state and UDim2.new(0, 9, 0.5, -13) or UDim2.new(0, 9, 0.5, -10)
-		}, time)
-		tween(cardStroke, {
-			Color = state and COLOR_SUCCESS or COLOR_BORDER,
-			Transparency = state and 0.18 or 0.28
-		}, time)
-		tween(switchTrack, {
-			BackgroundColor3 = state and Color3.fromRGB(20, 96, 62) or COLOR_SIDE
-		}, time)
-		tween(trackStroke, {
-			Color = state and COLOR_SUCCESS or COLOR_BORDER,
-			Transparency = state and 0.15 or 0.35
-		}, time)
-		tween(glow, {BackgroundTransparency = state and 0.8 or 1}, time)
-		tween(dot, {
-			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
-			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
-		}, time)
-		tween(title, {
-			TextColor3 = state and Color3.fromRGB(224, 255, 236) or COLOR_TEXT
-		}, time)
-		if hint then
-			tween(hint, {
-				TextColor3 = state and Color3.fromRGB(150, 224, 186) or COLOR_MUTED
-			}, time)
-		end
-	end
-
-	local function setState(newState)
-		state = newState and true or false
-		applyVisuals(0.18)
-		if callback then callback(state) end
-	end
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(1, 0, 1, 0)
@@ -693,23 +546,59 @@ local function createToggleButton(parent, labelText, callback, order)
 	hit.BorderSizePixel = 0
 	hit.AutoButtonColor = false
 	hit.Text = ""
-	hit.ZIndex = 8
 	hit.Parent = card
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -70, 1, 0)
+	title.Position = UDim2.new(0, 12, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = labelText
+	title.TextColor3 = COLOR_TEXT
+	title.Font = Enum.Font.FredokaOne
+	title.TextSize = 12
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextTruncate = Enum.TextTruncate.AtEnd
+	title.Parent = card
+
+	local switchTrack = Instance.new("Frame")
+	switchTrack.Size = UDim2.new(0, 36, 0, 18)
+	switchTrack.Position = UDim2.new(1, -54, 0.5, -9)
+	switchTrack.BackgroundColor3 = COLOR_SIDE
+	switchTrack.BorderSizePixel = 0
+	switchTrack.Parent = card
+	corner(switchTrack, 9)
+	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
+
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.new(0, 12, 0, 12)
+	dot.Position = UDim2.new(0, 3, 0.5, -6)
+	dot.BackgroundColor3 = COLOR_MUTED
+	dot.BorderSizePixel = 0
+	dot.Parent = switchTrack
+	corner(dot, 6)
+
+	local function setState(newState)
+		state = newState
+		tween(dot, {
+			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
+			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
+		}, 0.14)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
+		local st = card:FindFirstChildOfClass("UIStroke")
+		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
+		if callback then callback(state) end
+	end
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 	hit.MouseEnter:Connect(function()
-		tween(card, {BackgroundColor3 = COLOR_CARD2}, 0.12)
-		tween(cardStroke, {
-			Color = state and COLOR_SUCCESS or COLOR_BORDER2,
-			Transparency = 0.06
-		}, 0.12)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(32, 96, 68) or COLOR_CARD2}, 0.10)
+		local st = card:FindFirstChildOfClass("UIStroke")
+		if st and not state then tween(st, {Color = COLOR_BORDER2}, 0.10) end
 	end)
 	hit.MouseLeave:Connect(function()
-		tween(card, {BackgroundColor3 = COLOR_CARD}, 0.12)
-		tween(cardStroke, {
-			Color = state and COLOR_SUCCESS or COLOR_BORDER,
-			Transparency = state and 0.18 or 0.28
-		}, 0.12)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.10)
+		local st = card:FindFirstChildOfClass("UIStroke")
+		if st and not state then tween(st, {Color = COLOR_BORDER}, 0.10) end
 	end)
 	return card, setState
 end
@@ -719,60 +608,63 @@ local function createActionButton(parent, text, order, compact)
 	local btn = Instance.new("TextButton")
 	btn.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, compact and 40 or 46)
 	btn.BackgroundColor3 = COLOR_CARD2
-	btn.BackgroundTransparency = 0
+	btn.BackgroundTransparency = 0.15
 	btn.AutoButtonColor = false
 	btn.Text = text
-	btn.TextColor3 = COLOR_DIM
-	btn.Font = Enum.Font.GothamBold
+	btn.TextColor3 = COLOR_TEXT
+	btn.Font = Enum.Font.FredokaOne
 	btn.TextSize = 11
 	btn.TextXAlignment = Enum.TextXAlignment.Left
 	btn.TextTruncate = Enum.TextTruncate.AtEnd
 	btn.LayoutOrder = order or 1
 	btn.Parent = parent
-	corner(btn, 10)
+	corner(btn, 12)
+	stroke(btn, COLOR_BORDER, 1, 0.35)
 
 	padding(btn, 14, 10, 0, 0)
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, {
-			BackgroundColor3 = Color3.fromRGB(40, 49, 64),
-			TextColor3 = COLOR_TEXT
-		}, 0.14)
+		tween(btn, {BackgroundColor3 = Color3.fromRGB(56, 102, 158), BackgroundTransparency = 0.05}, 0.12)
+		local st = btn:FindFirstChildOfClass("UIStroke")
+		if st then tween(st, {Color = COLOR_ACCENT}, 0.12) end
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, {BackgroundColor3 = COLOR_CARD2, TextColor3 = COLOR_DIM}, 0.14)
+		tween(btn, {BackgroundColor3 = COLOR_CARD2, BackgroundTransparency = 0.15}, 0.12)
+		local st = btn:FindFirstChildOfClass("UIStroke")
+		if st then tween(st, {Color = COLOR_BORDER}, 0.12) end
 	end)
 	return btn
 end
 
 local function createInputWithAvatar(parent, placeholder, order)
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -4, 0, 62)
+	card.Size = UDim2.new(1, -4, 0, 64)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local avatar = Instance.new("ImageLabel")
-	avatar.Size = UDim2.new(0, 44, 0, 44)
-	avatar.Position = UDim2.new(0, 10, 0.5, -22)
+	avatar.Size = UDim2.new(0, 46, 0, 46)
+	avatar.Position = UDim2.new(0, 11, 0.5, -23)
 	avatar.BackgroundColor3 = COLOR_SIDE
 	avatar.Image = "rbxassetid://0"
 	avatar.Parent = card
-	corner(avatar, 22)
-	stroke(avatar, COLOR_BORDER2, 1, 0.55)
+	corner(avatar, 23)
+	stroke(avatar, COLOR_ACCENT, 1, 0.3)
 
 	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(1, -72, 1, -12)
-	box.Position = UDim2.new(0, 66, 0, 6)
+	box.Size = UDim2.new(1, -74, 1, -12)
+	box.Position = UDim2.new(0, 68, 0, 6)
 	box.BackgroundTransparency = 1
 	box.PlaceholderText = placeholder
 	box.PlaceholderColor3 = COLOR_MUTED
 	box.Text = ""
 	box.TextColor3 = COLOR_TEXT
-	box.Font = Enum.Font.GothamMedium
+	box.Font = Enum.Font.FredokaOne
 	box.TextSize = 12
 	box.TextXAlignment = Enum.TextXAlignment.Left
 	box.ClearTextOnFocus = false
@@ -785,43 +677,44 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	card.Name = "SliderControl"
 	card.Size = UDim2.new(1, -4, 0, 78)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -90, 0, 22)
-	title.Position = UDim2.new(0, 14, 0, 10)
+	title.Position = UDim2.new(0, 12, 0, 7)
 	title.BackgroundTransparency = 1
 	title.Text = titleText
 	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamBold
+	title.Font = Enum.Font.FredokaOne
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = card
 
 	local valueBox = Instance.new("TextBox")
-	valueBox.Size = UDim2.new(0, 54, 0, 24)
-	valueBox.Position = UDim2.new(1, -66, 0, 9)
-	valueBox.BackgroundColor3 = COLOR_SIDE
+	valueBox.Size = UDim2.new(0, 58, 0, 25)
+	valueBox.Position = UDim2.new(1, -70, 0, 5)
+	valueBox.BackgroundColor3 = COLOR_PANEL
 	valueBox.BorderSizePixel = 0
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
 	valueBox.Text = tostring(defaultValue)
-	valueBox.Font = Enum.Font.GothamMedium
-	valueBox.TextSize = 11
+	valueBox.Font = Enum.Font.FredokaOne
+	valueBox.TextSize = 12
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
-	corner(valueBox, 7)
+	corner(valueBox, 8)
+	stroke(valueBox, COLOR_BORDER, 1, 0.3)
 
 	local track = Instance.new("Frame")
-	track.Size = UDim2.new(1, -28, 0, 5)
-	track.Position = UDim2.new(0, 14, 0, 50)
-	track.BackgroundColor3 = COLOR_BORDER2
-	track.BackgroundTransparency = 0.45
+	track.Size = UDim2.new(1, -24, 0, 7)
+	track.Position = UDim2.new(0, 12, 0, 48)
+	track.BackgroundColor3 = COLOR_BORDER
 	track.BorderSizePixel = 0
 	track.Parent = card
 	corner(track, 3)
@@ -831,25 +724,25 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	fill.BackgroundColor3 = COLOR_ACCENT
 	fill.BorderSizePixel = 0
 	fill.Parent = track
-	corner(fill, 3)
+	corner(fill, 4)
 
 	local FillGradient = Instance.new("UIGradient")
 	FillGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, COLOR_ACCENT2),
-		ColorSequenceKeypoint.new(1, COLOR_ACCENT)
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 190, 255))
 	})
 	FillGradient.Parent = fill
 
 	local knob = Instance.new("Frame")
-	knob.Size = UDim2.new(0, 13, 0, 13)
+	knob.Size = UDim2.new(0, 18, 0, 18)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(0, 0, 0.5, 0)
 	knob.BackgroundColor3 = COLOR_TEXT
 	knob.BorderSizePixel = 0
 	knob.Active = true
 	knob.Parent = track
-	corner(knob, 7)
-	stroke(knob, COLOR_ACCENT, 2, 0.15)
+	corner(knob, 9)
+	stroke(knob, COLOR_ACCENT, 1, 0)
 
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
@@ -928,12 +821,12 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -4, 0, 44)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0
+	card.BackgroundTransparency = 0.1
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
 	corner(card, 12)
-	local cardStroke = stroke(card, COLOR_BORDER, 1, 0.6)
+	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(0.5, -4, 1, 0)
@@ -945,61 +838,52 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(0.5, -60, 1, 0)
-	title.Position = UDim2.new(0, 14, 0, 0)
+	title.Position = UDim2.new(0, 12, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = labelText
 	title.TextColor3 = COLOR_TEXT
-	title.Font = Enum.Font.GothamBold
+	title.Font = Enum.Font.FredokaOne
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextTruncate = Enum.TextTruncate.AtEnd
 	title.Parent = card
 
 	local switchTrack = Instance.new("Frame")
-	switchTrack.Size = UDim2.new(0, 34, 0, 18)
+	switchTrack.Size = UDim2.new(0, 36, 0, 18)
 	switchTrack.Position = UDim2.new(0.5, -44, 0.5, -9)
 	switchTrack.BackgroundColor3 = COLOR_SIDE
 	switchTrack.BorderSizePixel = 0
 	switchTrack.Parent = card
 	corner(switchTrack, 9)
-	local trackStroke = stroke(switchTrack, COLOR_BORDER2, 1, 0.55)
+	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
 
 	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 14, 0, 14)
-	dot.Position = UDim2.new(0, 2, 0.5, -7)
+	dot.Size = UDim2.new(0, 12, 0, 12)
+	dot.Position = UDim2.new(0, 3, 0.5, -6)
 	dot.BackgroundColor3 = COLOR_MUTED
 	dot.BorderSizePixel = 0
 	dot.Parent = switchTrack
-	corner(dot, 7)
+	corner(dot, 6)
 
 	local state = false
 	local function setState(newState)
 		state = newState
 		tween(dot, {
-			Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
 			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
-		}, 0.16)
-		tween(card, {
-			BackgroundColor3 = state and Color3.fromRGB(21, 38, 31) or COLOR_CARD
-		}, 0.16)
-		tween(cardStroke, {
-			Color = state and COLOR_SUCCESS or COLOR_BORDER,
-			Transparency = state and 0.35 or 0.6
-		}, 0.16)
-		tween(switchTrack, {
-			BackgroundColor3 = state and Color3.fromRGB(20, 96, 62) or COLOR_SIDE
-		}, 0.16)
-		tween(trackStroke, {Color = state and COLOR_SUCCESS or COLOR_BORDER2}, 0.16)
+		}, 0.14)
+		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
+		local st = card:FindFirstChildOfClass("UIStroke")
+		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
 		if onToggled then onToggled(state) end
 	end
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 
 	local track = Instance.new("Frame")
-	track.Size = UDim2.new(0.5, -58, 0, 5)
-	track.Position = UDim2.new(0.5, 4, 0.5, -2)
-	track.BackgroundColor3 = COLOR_BORDER2
-	track.BackgroundTransparency = 0.45
+	track.Size = UDim2.new(0.5, -54, 0, 7)
+	track.Position = UDim2.new(0.5, 4, 0.5, -3)
+	track.BackgroundColor3 = COLOR_BORDER
 	track.BorderSizePixel = 0
 	track.Parent = card
 	corner(track, 3)
@@ -1009,40 +893,41 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	fill.BackgroundColor3 = COLOR_ACCENT
 	fill.BorderSizePixel = 0
 	fill.Parent = track
-	corner(fill, 3)
+	corner(fill, 4)
 
 	local FillGradient = Instance.new("UIGradient")
 	FillGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, COLOR_ACCENT2),
-		ColorSequenceKeypoint.new(1, COLOR_ACCENT)
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 190, 255))
 	})
 	FillGradient.Parent = fill
 
 	local knob = Instance.new("Frame")
-	knob.Size = UDim2.new(0, 11, 0, 11)
+	knob.Size = UDim2.new(0, 14, 0, 14)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(0, 0, 0.5, 0)
 	knob.BackgroundColor3 = COLOR_TEXT
 	knob.BorderSizePixel = 0
 	knob.Active = true
 	knob.Parent = track
-	corner(knob, 6)
-	stroke(knob, COLOR_ACCENT, 2, 0.15)
+	corner(knob, 7)
+	stroke(knob, COLOR_ACCENT, 1, 0)
 
 	local valueBox = Instance.new("TextBox")
-	valueBox.Size = UDim2.new(0, 42, 0, 24)
-	valueBox.Position = UDim2.new(1, -48, 0.5, -12)
-	valueBox.BackgroundColor3 = COLOR_SIDE
+	valueBox.Size = UDim2.new(0, 44, 0, 25)
+	valueBox.Position = UDim2.new(1, -50, 0.5, -12)
+	valueBox.BackgroundColor3 = COLOR_PANEL
 	valueBox.BorderSizePixel = 0
 	valueBox.TextColor3 = COLOR_TEXT
 	valueBox.PlaceholderColor3 = COLOR_MUTED
 	valueBox.Text = tostring(math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue))
-	valueBox.Font = Enum.Font.GothamMedium
+	valueBox.Font = Enum.Font.FredokaOne
 	valueBox.TextSize = 11
 	valueBox.ClearTextOnFocus = false
 	valueBox.TextXAlignment = Enum.TextXAlignment.Center
 	valueBox.Parent = card
-	corner(valueBox, 7)
+	corner(valueBox, 8)
+	stroke(valueBox, COLOR_BORDER, 1, 0.3)
 
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
@@ -1157,9 +1042,9 @@ local PlayerTab = createTab("Jogador", 5)
 local ESPTab = createTab("ESP", 6)
 local MiscTab = createTab("Diversos", 7)
 
-Tabs["Início"].button.BackgroundColor3 = COLOR_CARD
-Tabs["Início"].button.BackgroundTransparency = 0.05
-Tabs["Início"].icon.TextColor3 = COLOR_ACCENT
+Tabs["Início"].button.BackgroundColor3 = COLOR_ACCENT2
+Tabs["Início"].button.BackgroundTransparency = 0.25
+Tabs["Início"].icon.TextColor3 = COLOR_TEXT
 Tabs["Início"].label.TextColor3 = COLOR_TEXT
 Tabs["Início"].activeBar.Visible = true
 ContentFrames["Início"].Visible = true
@@ -1167,17 +1052,26 @@ ContentFrames["Início"].Visible = true
 createSection(HomeTab, "CHOSEN PANEL", "Visão geral da sua sessão e acesso rápido.", 1)
 
 local WelcomeCard = Instance.new("Frame")
-WelcomeCard.Size = UDim2.new(1, -4, 0, 138)
+WelcomeCard.Size = UDim2.new(1, -4, 0, 140)
 WelcomeCard.BackgroundColor3 = COLOR_CARD
-WelcomeCard.BackgroundTransparency = 0
+WelcomeCard.BackgroundTransparency = 0.08
 WelcomeCard.BorderSizePixel = 0
 WelcomeCard.LayoutOrder = 2
 WelcomeCard.Parent = HomeTab
 corner(WelcomeCard, 14)
+stroke(WelcomeCard, COLOR_BORDER, 1, 0.2)
+
+local WelcomeGradient = Instance.new("UIGradient")
+WelcomeGradient.Rotation = 90
+WelcomeGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 200, 220))
+})
+WelcomeGradient.Parent = WelcomeCard
 
 local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Size = UDim2.new(0, 78, 0, 78)
-AvatarImage.Position = UDim2.new(0, 18, 0.5, -39)
+AvatarImage.Size = UDim2.new(0, 84, 0, 84)
+AvatarImage.Position = UDim2.new(0, 20, 0.5, -42)
 AvatarImage.BackgroundColor3 = COLOR_SIDE
 pcall(function()
 	AvatarImage.Image = Players:GetUserThumbnailAsync(
@@ -1187,70 +1081,79 @@ pcall(function()
 	)
 end)
 AvatarImage.Parent = WelcomeCard
-corner(AvatarImage, 39)
-stroke(AvatarImage, COLOR_BORDER2, 1, 0.45)
+corner(AvatarImage, 42)
+stroke(AvatarImage, COLOR_ACCENT, 2, 0.1)
 
 local AvatarBadge = Instance.new("Frame")
-AvatarBadge.Size = UDim2.new(0, 14, 0, 14)
-AvatarBadge.Position = UDim2.new(1, -5, 1, -5)
+AvatarBadge.Size = UDim2.new(0, 16, 0, 16)
+AvatarBadge.Position = UDim2.new(1, -7, 1, -7)
 AvatarBadge.BackgroundColor3 = COLOR_SUCCESS
 AvatarBadge.BorderSizePixel = 0
 AvatarBadge.Parent = AvatarImage
-corner(AvatarBadge, 7)
-stroke(AvatarBadge, COLOR_CARD, 2, 0)
+corner(AvatarBadge, 8)
+stroke(AvatarBadge, COLOR_CARD, 2, 0.2)
+
+local HeroAccent = Instance.new("Frame")
+HeroAccent.Size = UDim2.new(0, 3, 1, -32)
+HeroAccent.Position = UDim2.new(0, 8, 0, 16)
+HeroAccent.BackgroundColor3 = COLOR_ACCENT
+HeroAccent.BorderSizePixel = 0
+HeroAccent.Parent = WelcomeCard
+corner(HeroAccent, 2)
 
 local WelcomeTitle = Instance.new("TextLabel")
-WelcomeTitle.Size = UDim2.new(1, -136, 0, 28)
-WelcomeTitle.Position = UDim2.new(0, 112, 0, 28)
+WelcomeTitle.Size = UDim2.new(1, -140, 0, 30)
+WelcomeTitle.Position = UDim2.new(0, 118, 0, 30)
 WelcomeTitle.BackgroundTransparency = 1
-WelcomeTitle.Text = string.upper(LocalPlayer.DisplayName)
+WelcomeTitle.Text = "OLÁ, " .. string.upper(LocalPlayer.DisplayName)
 WelcomeTitle.TextColor3 = COLOR_TEXT
-WelcomeTitle.Font = Enum.Font.GothamBlack
-WelcomeTitle.TextSize = 21
+WelcomeTitle.Font = Enum.Font.LuckiestGuy
+WelcomeTitle.TextSize = 23
 WelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
 WelcomeTitle.TextTruncate = Enum.TextTruncate.AtEnd
 WelcomeTitle.Parent = WelcomeCard
 
 local UserSub = Instance.new("TextLabel")
-UserSub.Size = UDim2.new(1, -136, 0, 18)
-UserSub.Position = UDim2.new(0, 112, 0, 58)
+UserSub.Size = UDim2.new(1, -140, 0, 20)
+UserSub.Position = UDim2.new(0, 118, 0, 63)
 UserSub.BackgroundTransparency = 1
 UserSub.Text = "@" .. LocalPlayer.Name
-UserSub.TextColor3 = COLOR_MUTED
-UserSub.Font = Enum.Font.GothamMedium
-UserSub.TextSize = 12
+UserSub.TextColor3 = COLOR_ACCENT
+UserSub.Font = Enum.Font.FredokaOne
+UserSub.TextSize = 13
 UserSub.TextXAlignment = Enum.TextXAlignment.Left
 UserSub.TextTruncate = Enum.TextTruncate.AtEnd
 UserSub.Parent = WelcomeCard
 
 local UserStatus = Instance.new("TextLabel")
-UserStatus.Size = UDim2.new(1, -136, 0, 18)
-UserStatus.Position = UDim2.new(0, 112, 0, 100)
+UserStatus.Size = UDim2.new(1, -260, 0, 18)
+UserStatus.Position = UDim2.new(0, 118, 0, 101)
 UserStatus.BackgroundColor3 = COLOR_SUCCESS
-UserStatus.BackgroundTransparency = 0.86
-UserStatus.Text = "●  SESSÃO ATIVA"
+UserStatus.BackgroundTransparency = 0.78
+UserStatus.Text = "USUÁRIO LOCAL  -  SESSÃO ATIVA"
 UserStatus.TextColor3 = COLOR_DIM
-UserStatus.Font = Enum.Font.GothamMedium
+UserStatus.Font = Enum.Font.FredokaOne
 UserStatus.TextSize = 9
 UserStatus.TextXAlignment = Enum.TextXAlignment.Left
 UserStatus.TextTruncate = Enum.TextTruncate.AtEnd
 UserStatus.Parent = WelcomeCard
 corner(UserStatus, 9)
-padding(UserStatus, 8, 6, 0, 0)
+padding(UserStatus, 9, 6, 0, 0)
 
 local ChosenPermissionLabel = Instance.new("TextLabel")
 ChosenPermissionLabel.Name = "ChosenPermissions"
-ChosenPermissionLabel.Size = UDim2.new(1, -136, 0, 13)
-ChosenPermissionLabel.Position = UDim2.new(0, 112, 0, 120)
+ChosenPermissionLabel.Size = UDim2.new(1, -140, 0, 13)
+ChosenPermissionLabel.Position = UDim2.new(0, 118, 0, 122)
 ChosenPermissionLabel.BackgroundTransparency = 1
 ChosenPermissionLabel.Text = "PREMIUM: carregando..."
 ChosenPermissionLabel.TextColor3 = COLOR_MUTED
-ChosenPermissionLabel.Font = Enum.Font.GothamMedium
+ChosenPermissionLabel.Font = Enum.Font.FredokaOne
 ChosenPermissionLabel.TextSize = 8
 ChosenPermissionLabel.TextXAlignment = Enum.TextXAlignment.Left
 ChosenPermissionLabel.TextTruncate = Enum.TextTruncate.AtEnd
 ChosenPermissionLabel.Parent = WelcomeCard
 
+-- TIPOGRAFIA VISUAL: LuckiestGuy para titulos; FredokaOne para textos menores. Cargos continuam em Creepster.
 -- CHOSEN HUB API isolada em um bloco local para evitar conflito de sintaxe e escopo.
 -- Ponte para o botão 👁 (fora do bloco): alterna a visibilidade
 -- das tags na tela local e devolve o novo estado (true = oculto).
@@ -1267,12 +1170,12 @@ local CHOSEN_API_VERSION = "1.3.0"
 
 local ChosenRoleLabel = Instance.new("TextLabel")
 ChosenRoleLabel.Name = "ChosenRole"
-ChosenRoleLabel.Size = UDim2.new(1, -136, 0, 16)
-ChosenRoleLabel.Position = UDim2.new(0, 112, 0, 80)
+ChosenRoleLabel.Size = UDim2.new(1, -140, 0, 18)
+ChosenRoleLabel.Position = UDim2.new(0, 118, 0, 83)
 ChosenRoleLabel.BackgroundTransparency = 1
 ChosenRoleLabel.Text = "CARGO: carregando..."
 ChosenRoleLabel.TextColor3 = COLOR_DIM
-ChosenRoleLabel.Font = Enum.Font.GothamBold
+ChosenRoleLabel.Font = Enum.Font.FredokaOne
 ChosenRoleLabel.TextSize = 10
 ChosenRoleLabel.TextXAlignment = Enum.TextXAlignment.Left
 ChosenRoleLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1501,7 +1404,7 @@ local function chosenShowLiveToast(message, author)
     toastTitle.BackgroundTransparency = 1
     toastTitle.Text = "💬  AVISO"
     toastTitle.TextColor3 = COLOR_SUCCESS
-    toastTitle.Font = Enum.Font.GothamBlack
+    toastTitle.Font = Enum.Font.LuckiestGuy
     toastTitle.TextSize = 11
     toastTitle.TextXAlignment = Enum.TextXAlignment.Left
     toastTitle.ZIndex = 60
@@ -1514,7 +1417,7 @@ local function chosenShowLiveToast(message, author)
     toastAuthor.Text = (type(author) == "string" and author ~= "")
         and ("por " .. author) or ""
     toastAuthor.TextColor3 = COLOR_MUTED
-    toastAuthor.Font = Enum.Font.GothamMedium
+    toastAuthor.Font = Enum.Font.FredokaOne
     toastAuthor.TextSize = 9
     toastAuthor.TextXAlignment = Enum.TextXAlignment.Left
     toastAuthor.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1527,7 +1430,7 @@ local function chosenShowLiveToast(message, author)
     toastText.BackgroundTransparency = 1
     toastText.Text = message
     toastText.TextColor3 = COLOR_TEXT
-    toastText.Font = Enum.Font.GothamMedium
+    toastText.Font = Enum.Font.FredokaOne
     toastText.TextSize = 12
     toastText.TextXAlignment = Enum.TextXAlignment.Left
     toastText.TextYAlignment = Enum.TextYAlignment.Top
@@ -1543,7 +1446,7 @@ local function chosenShowLiveToast(message, author)
     toastClose.BackgroundTransparency = 0.2
     toastClose.Text = "X"
     toastClose.TextColor3 = COLOR_TEXT
-    toastClose.Font = Enum.Font.GothamBold
+    toastClose.Font = Enum.Font.FredokaOne
     toastClose.TextSize = 12
     toastClose.ZIndex = 61
     toastClose.Parent = toast
@@ -1646,12 +1549,13 @@ local AnnouncementCard = Instance.new("Frame")
 AnnouncementCard.Name = "ChosenAnnouncement"
 AnnouncementCard.Size = UDim2.new(1, -4, 0, 84)
 AnnouncementCard.BackgroundColor3 = COLOR_CARD
-AnnouncementCard.BackgroundTransparency = 0
+AnnouncementCard.BackgroundTransparency = 0.08
 AnnouncementCard.BorderSizePixel = 0
 AnnouncementCard.LayoutOrder = 9
 AnnouncementCard.Visible = false
 AnnouncementCard.Parent = HomeTab
-corner(AnnouncementCard, 12)
+corner(AnnouncementCard, 14)
+stroke(AnnouncementCard, COLOR_BORDER, 1, 0.2)
 
 local AnnBannerTitle = Instance.new("TextLabel")
 AnnBannerTitle.Size = UDim2.new(1, -28, 0, 18)
@@ -1659,7 +1563,7 @@ AnnBannerTitle.Position = UDim2.new(0, 14, 0, 8)
 AnnBannerTitle.BackgroundTransparency = 1
 AnnBannerTitle.Text = "📣  ANÚNCIO"
 AnnBannerTitle.TextColor3 = COLOR_ACCENT
-AnnBannerTitle.Font = Enum.Font.GothamBlack
+AnnBannerTitle.Font = Enum.Font.LuckiestGuy
 AnnBannerTitle.TextSize = 11
 AnnBannerTitle.TextXAlignment = Enum.TextXAlignment.Left
 AnnBannerTitle.Parent = AnnouncementCard
@@ -1670,7 +1574,7 @@ AnnBannerAuthor.Position = UDim2.new(0, 14, 0, 27)
 AnnBannerAuthor.BackgroundTransparency = 1
 AnnBannerAuthor.Text = ""
 AnnBannerAuthor.TextColor3 = COLOR_MUTED
-AnnBannerAuthor.Font = Enum.Font.GothamMedium
+AnnBannerAuthor.Font = Enum.Font.FredokaOne
 AnnBannerAuthor.TextSize = 9
 AnnBannerAuthor.TextXAlignment = Enum.TextXAlignment.Left
 AnnBannerAuthor.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1682,7 +1586,7 @@ AnnBannerText.Position = UDim2.new(0, 14, 0, 43)
 AnnBannerText.BackgroundTransparency = 1
 AnnBannerText.Text = ""
 AnnBannerText.TextColor3 = COLOR_TEXT
-AnnBannerText.Font = Enum.Font.GothamMedium
+AnnBannerText.Font = Enum.Font.FredokaOne
 AnnBannerText.TextSize = 12
 AnnBannerText.TextXAlignment = Enum.TextXAlignment.Left
 AnnBannerText.TextYAlignment = Enum.TextYAlignment.Top
@@ -1870,7 +1774,7 @@ end
 
 -- Monta a tag igual à versão ORIGINAL (texto único anexado na
 -- cabeça, sombra projetada, degradê de volume e contorno suave) —
--- com fonte Bangers (estilo do "VISIONARY") e GLOW por cargo.
+-- com fonte nativa Creepster e GLOW por cargo.
 local function chosenBuildTagChars(tag)
     local billboard = tag.billboard
     if not billboard then return end
@@ -1896,7 +1800,7 @@ local function chosenBuildTagChars(tag)
         g.Size = UDim2.new(1, 0, 1, 0)
         g.BackgroundTransparency = 1
         g.Text = text
-        g.Font = Enum.Font.Bangers
+        g.Font = Enum.Font.Creepster
         g.TextSize = glowSizes[gi]
         g.TextColor3 = glowColor
         g.TextTransparency = glowBase[gi]
@@ -1912,7 +1816,7 @@ local function chosenBuildTagChars(tag)
     shadow.Position = UDim2.new(0, 1, 0, 3)
     shadow.BackgroundTransparency = 1
     shadow.Text = text
-    shadow.Font = Enum.Font.Bangers
+    shadow.Font = Enum.Font.Creepster
     shadow.TextSize = size
     shadow.TextColor3 = Color3.new(0, 0, 0)
     shadow.TextTransparency = 0.6
@@ -1923,7 +1827,7 @@ local function chosenBuildTagChars(tag)
     roleLabel.Size = UDim2.new(1, 0, 1, 0)
     roleLabel.BackgroundTransparency = 1
     roleLabel.Text = text
-    roleLabel.Font = Enum.Font.Bangers
+    roleLabel.Font = Enum.Font.Creepster
     roleLabel.TextSize = size
     roleLabel.TextColor3 = CHOSEN_TAG_BASE[tag.role] or CHOSEN_TAG_BASE.Member
     roleLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -2362,7 +2266,7 @@ chosenBuildModerationTab = function()
         label.BackgroundTransparency = 1
         label.Text = "—"
         label.TextColor3 = COLOR_DIM
-        label.Font = Enum.Font.GothamMedium
+        label.Font = Enum.Font.FredokaOne
         label.TextSize = 10
         label.TextXAlignment = Enum.TextXAlignment.Right
         label.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2377,7 +2281,7 @@ chosenBuildModerationTab = function()
         label.BackgroundTransparency = 1
         label.Text = "—"
         label.TextColor3 = COLOR_DIM
-        label.Font = Enum.Font.GothamMedium
+        label.Font = Enum.Font.FredokaOne
         label.TextSize = 9
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2393,11 +2297,12 @@ chosenBuildModerationTab = function()
         local card = Instance.new("Frame")
         card.Size = UDim2.new(1, -4, 0, 104)
         card.BackgroundColor3 = COLOR_CARD
-        card.BackgroundTransparency = 0
+        card.BackgroundTransparency = 0.1
         card.BorderSizePixel = 0
         card.LayoutOrder = order
         card.Parent = chosenModTab
         corner(card, 12)
+        stroke(card, COLOR_BORDER, 1, 0.3)
 
         local box = Instance.new("TextBox")
         box.Size = UDim2.new(1, -28, 0, 46)
@@ -2407,7 +2312,7 @@ chosenBuildModerationTab = function()
         box.PlaceholderColor3 = COLOR_MUTED
         box.Text = ""
         box.TextColor3 = COLOR_TEXT
-        box.Font = Enum.Font.GothamMedium
+        box.Font = Enum.Font.FredokaOne
         box.TextSize = 12
         box.TextXAlignment = Enum.TextXAlignment.Left
         box.TextYAlignment = Enum.TextYAlignment.Center
@@ -2426,7 +2331,7 @@ chosenBuildModerationTab = function()
         status.BackgroundTransparency = 1
         status.Text = "—"
         status.TextColor3 = COLOR_DIM
-        status.Font = Enum.Font.GothamMedium
+        status.Font = Enum.Font.FredokaOne
         status.TextSize = 10
         status.TextXAlignment = Enum.TextXAlignment.Left
         status.TextYAlignment = Enum.TextYAlignment.Center
@@ -2444,20 +2349,22 @@ chosenBuildModerationTab = function()
     local StatsRow = Instance.new("Frame")
     StatsRow.Size = UDim2.new(1, -4, 0, 86)
     StatsRow.BackgroundColor3 = COLOR_CARD
-    StatsRow.BackgroundTransparency = 0
+    StatsRow.BackgroundTransparency = 0.08
     StatsRow.BorderSizePixel = 0
     StatsRow.LayoutOrder = nextOrder()
     StatsRow.Parent = chosenModTab
     corner(StatsRow, 14)
+    stroke(StatsRow, COLOR_BORDER, 1, 0.2)
 
     local RegisteredBox = Instance.new("Frame")
     RegisteredBox.Size = UDim2.new(0.5, -14, 1, -20)
     RegisteredBox.Position = UDim2.new(0, 10, 0, 10)
-    RegisteredBox.BackgroundColor3 = COLOR_SIDE
-    RegisteredBox.BackgroundTransparency = 0
+    RegisteredBox.BackgroundColor3 = COLOR_PANEL
+    RegisteredBox.BackgroundTransparency = 0.25
     RegisteredBox.BorderSizePixel = 0
     RegisteredBox.Parent = StatsRow
-    corner(RegisteredBox, 10)
+    corner(RegisteredBox, 12)
+    stroke(RegisteredBox, COLOR_BORDER, 1, 0.35)
 
     local RegisteredCaption = Instance.new("TextLabel")
     RegisteredCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -2465,7 +2372,7 @@ chosenBuildModerationTab = function()
     RegisteredCaption.BackgroundTransparency = 1
     RegisteredCaption.Text = "👥 CADASTRO"
     RegisteredCaption.TextColor3 = COLOR_MUTED
-    RegisteredCaption.Font = Enum.Font.GothamBold
+    RegisteredCaption.Font = Enum.Font.FredokaOne
     RegisteredCaption.TextSize = 10
     RegisteredCaption.TextXAlignment = Enum.TextXAlignment.Left
     RegisteredCaption.Parent = RegisteredBox
@@ -2476,7 +2383,7 @@ chosenBuildModerationTab = function()
     RegisteredLabel.BackgroundTransparency = 1
     RegisteredLabel.Text = "👥 Carregando..."
     RegisteredLabel.TextColor3 = COLOR_DIM
-    RegisteredLabel.Font = Enum.Font.GothamBold
+    RegisteredLabel.Font = Enum.Font.FredokaOne
     RegisteredLabel.TextSize = 17
     RegisteredLabel.TextXAlignment = Enum.TextXAlignment.Left
     RegisteredLabel.Parent = RegisteredBox
@@ -2484,11 +2391,12 @@ chosenBuildModerationTab = function()
     local OnlineNowBox = Instance.new("Frame")
     OnlineNowBox.Size = UDim2.new(0.5, -14, 1, -20)
     OnlineNowBox.Position = UDim2.new(0.5, 4, 0, 10)
-    OnlineNowBox.BackgroundColor3 = COLOR_SIDE
-    OnlineNowBox.BackgroundTransparency = 0
+    OnlineNowBox.BackgroundColor3 = COLOR_PANEL
+    OnlineNowBox.BackgroundTransparency = 0.25
     OnlineNowBox.BorderSizePixel = 0
     OnlineNowBox.Parent = StatsRow
-    corner(OnlineNowBox, 10)
+    corner(OnlineNowBox, 12)
+    stroke(OnlineNowBox, COLOR_BORDER, 1, 0.35)
 
     local OnlineNowCaption = Instance.new("TextLabel")
     OnlineNowCaption.Size = UDim2.new(1, -20, 0, 16)
@@ -2496,7 +2404,7 @@ chosenBuildModerationTab = function()
     OnlineNowCaption.BackgroundTransparency = 1
     OnlineNowCaption.Text = "🟢 PRESENÇA"
     OnlineNowCaption.TextColor3 = COLOR_MUTED
-    OnlineNowCaption.Font = Enum.Font.GothamBold
+    OnlineNowCaption.Font = Enum.Font.FredokaOne
     OnlineNowCaption.TextSize = 10
     OnlineNowCaption.TextXAlignment = Enum.TextXAlignment.Left
     OnlineNowCaption.Parent = OnlineNowBox
@@ -2507,7 +2415,7 @@ chosenBuildModerationTab = function()
     OnlineNowLabel.BackgroundTransparency = 1
     OnlineNowLabel.Text = "🟢 Carregando..."
     OnlineNowLabel.TextColor3 = COLOR_SUCCESS
-    OnlineNowLabel.Font = Enum.Font.GothamBold
+    OnlineNowLabel.Font = Enum.Font.FredokaOne
     OnlineNowLabel.TextSize = 17
     OnlineNowLabel.TextXAlignment = Enum.TextXAlignment.Left
     OnlineNowLabel.Parent = OnlineNowBox
@@ -2563,17 +2471,16 @@ chosenBuildModerationTab = function()
 
     local OnlineList = Instance.new("ScrollingFrame")
     OnlineList.Size = UDim2.new(1, -4, 0, 150)
-    OnlineList.BackgroundColor3 = COLOR_SIDE
-    OnlineList.BackgroundTransparency = 0.35
+    OnlineList.BackgroundColor3 = COLOR_CARD
+    OnlineList.BackgroundTransparency = 0.08
     OnlineList.BorderSizePixel = 0
     OnlineList.ScrollBarThickness = 3
-    OnlineList.ScrollBarImageColor3 = COLOR_BORDER2
-    OnlineList.ScrollBarImageTransparency = 0.35
     OnlineList.CanvasSize = UDim2.new(0, 0, 0, 0)
     OnlineList.AutomaticCanvasSize = Enum.AutomaticSize.Y
     OnlineList.LayoutOrder = nextOrder()
     OnlineList.Parent = chosenModTab
     corner(OnlineList, 12)
+    stroke(OnlineList, COLOR_BORDER, 1, 0.3)
 
     local OnlineListLayout = Instance.new("UIListLayout")
     OnlineListLayout.Padding = UDim.new(0, 6)
@@ -2600,12 +2507,13 @@ chosenBuildModerationTab = function()
 
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, -4, 0, 48)
-        row.BackgroundColor3 = COLOR_CARD
-        row.BackgroundTransparency = 0
+        row.BackgroundColor3 = COLOR_CARD2
+        row.BackgroundTransparency = 0.12
         row.BorderSizePixel = 0
         row.LayoutOrder = index
         row.Parent = OnlineList
-        corner(row, 10)
+        corner(row, 12)
+        stroke(row, COLOR_BORDER, 1, 0.3)
 
         local avatar = Instance.new("ImageLabel")
         avatar.Size = UDim2.new(0, 34, 0, 34)
@@ -2614,7 +2522,7 @@ chosenBuildModerationTab = function()
         avatar.Image = "rbxassetid://0"
         avatar.Parent = row
         corner(avatar, 17)
-        stroke(avatar, COLOR_BORDER2, 1, 0.5)
+        stroke(avatar, COLOR_ACCENT, 1, 0.3)
 
         local idNumber = tonumber(userId)
         if idNumber then
@@ -2633,7 +2541,7 @@ chosenBuildModerationTab = function()
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = username
         nameLabel.TextColor3 = COLOR_TEXT
-        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.Font = Enum.Font.FredokaOne
         nameLabel.TextSize = 12
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
         nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2645,7 +2553,7 @@ chosenBuildModerationTab = function()
         idLabel.BackgroundTransparency = 1
         idLabel.Text = "UserID " .. userId
         idLabel.TextColor3 = COLOR_MUTED
-        idLabel.Font = Enum.Font.GothamMedium
+        idLabel.Font = Enum.Font.FredokaOne
         idLabel.TextSize = 9
         idLabel.TextXAlignment = Enum.TextXAlignment.Left
         idLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2658,7 +2566,7 @@ chosenBuildModerationTab = function()
         roleLabel.BackgroundTransparency = 0.25
         roleLabel.Text = string.upper(role)
         roleLabel.TextColor3 = CHOSEN_ROLE_COLORS[role] or COLOR_DIM
-        roleLabel.Font = Enum.Font.GothamBold
+        roleLabel.Font = Enum.Font.FredokaOne
         roleLabel.TextSize = 10
         roleLabel.TextXAlignment = Enum.TextXAlignment.Center
         roleLabel.Parent = row
@@ -3100,73 +3008,77 @@ end)
 end
 
 local StatsCard = Instance.new("Frame")
-StatsCard.Size = UDim2.new(1, -4, 0, 100)
+StatsCard.Size = UDim2.new(0, 112, 0, 94)
 StatsCard.BackgroundColor3 = COLOR_CARD
-StatsCard.BackgroundTransparency = 0
+StatsCard.BackgroundTransparency = 0.08
 StatsCard.BorderSizePixel = 0
-StatsCard.LayoutOrder = 3
-StatsCard.Parent = HomeTab
-corner(StatsCard, 12)
+StatsCard.LayoutOrder = 0
+StatsCard.Position = UDim2.new(1, -124, 0.5, -47)
+StatsCard.Parent = WelcomeCard
+corner(StatsCard, 14)
+stroke(StatsCard, COLOR_BORDER, 1, 0.2)
 
 local PingBox = Instance.new("Frame")
-PingBox.Size = UDim2.new(0.5, -14, 1, -20)
-PingBox.Position = UDim2.new(0, 10, 0, 10)
-PingBox.BackgroundColor3 = COLOR_SIDE
-PingBox.BackgroundTransparency = 0
+PingBox.Size = UDim2.new(1, -12, 0.5, -6)
+PingBox.Position = UDim2.new(0, 6, 0, 4)
+PingBox.BackgroundColor3 = COLOR_PANEL
+PingBox.BackgroundTransparency = 0.25
 PingBox.BorderSizePixel = 0
 PingBox.Parent = StatsCard
-corner(PingBox, 10)
+corner(PingBox, 12)
+stroke(PingBox, COLOR_BORDER, 1, 0.35)
 
 local PingCaption = Instance.new("TextLabel")
-PingCaption.Size = UDim2.new(1, -20, 0, 16)
-PingCaption.Position = UDim2.new(0, 10, 0, 10)
+PingCaption.Size = UDim2.new(1, -12, 0, 11)
+PingCaption.Position = UDim2.new(0, 7, 0, 5)
 PingCaption.BackgroundTransparency = 1
-PingCaption.Text = "📶 CONEXÃO"
+PingCaption.Text = "PING"
 PingCaption.TextColor3 = COLOR_MUTED
-PingCaption.Font = Enum.Font.GothamBold
-PingCaption.TextSize = 10
+PingCaption.Font = Enum.Font.FredokaOne
+PingCaption.TextSize = 8
 PingCaption.TextXAlignment = Enum.TextXAlignment.Left
 PingCaption.Parent = PingBox
 
 local PingLabel = Instance.new("TextLabel")
-PingLabel.Size = UDim2.new(1, -20, 0, 28)
-PingLabel.Position = UDim2.new(0, 10, 0, 36)
+PingLabel.Size = UDim2.new(1, -12, 0, 18)
+PingLabel.Position = UDim2.new(0, 7, 0, 17)
 PingLabel.BackgroundTransparency = 1
-PingLabel.Text = "📶 PING  •  ..."
+PingLabel.Text = "..."
 PingLabel.TextColor3 = COLOR_SUCCESS
-PingLabel.Font = Enum.Font.GothamBold
-PingLabel.TextSize = 17
+PingLabel.Font = Enum.Font.FredokaOne
+PingLabel.TextSize = 15
 PingLabel.TextXAlignment = Enum.TextXAlignment.Left
 PingLabel.Parent = PingBox
 
 local FpsBox = Instance.new("Frame")
-FpsBox.Size = UDim2.new(0.5, -14, 1, -20)
-FpsBox.Position = UDim2.new(0.5, 4, 0, 10)
-FpsBox.BackgroundColor3 = COLOR_SIDE
-FpsBox.BackgroundTransparency = 0
+FpsBox.Size = UDim2.new(1, -12, 0.5, -6)
+FpsBox.Position = UDim2.new(0, 6, 0.5, 2)
+FpsBox.BackgroundColor3 = COLOR_PANEL
+FpsBox.BackgroundTransparency = 0.25
 FpsBox.BorderSizePixel = 0
 FpsBox.Parent = StatsCard
-corner(FpsBox, 10)
+corner(FpsBox, 12)
+stroke(FpsBox, COLOR_BORDER, 1, 0.35)
 
 local FpsCaption = Instance.new("TextLabel")
-FpsCaption.Size = UDim2.new(1, -20, 0, 16)
-FpsCaption.Position = UDim2.new(0, 10, 0, 10)
+FpsCaption.Size = UDim2.new(1, -12, 0, 11)
+FpsCaption.Position = UDim2.new(0, 7, 0, 5)
 FpsCaption.BackgroundTransparency = 1
-FpsCaption.Text = "⚡ DESEMPENHO"
+FpsCaption.Text = "FPS"
 FpsCaption.TextColor3 = COLOR_MUTED
-FpsCaption.Font = Enum.Font.GothamBold
-FpsCaption.TextSize = 10
+FpsCaption.Font = Enum.Font.FredokaOne
+FpsCaption.TextSize = 8
 FpsCaption.TextXAlignment = Enum.TextXAlignment.Left
 FpsCaption.Parent = FpsBox
 
 local FpsLabel = Instance.new("TextLabel")
-FpsLabel.Size = UDim2.new(1, -20, 0, 28)
-FpsLabel.Position = UDim2.new(0, 10, 0, 36)
+FpsLabel.Size = UDim2.new(1, -12, 0, 18)
+FpsLabel.Position = UDim2.new(0, 7, 0, 17)
 FpsLabel.BackgroundTransparency = 1
-FpsLabel.Text = "⚡ FPS  •  ..."
+FpsLabel.Text = "..."
 FpsLabel.TextColor3 = COLOR_ACCENT
-FpsLabel.Font = Enum.Font.GothamBold
-FpsLabel.TextSize = 17
+FpsLabel.Font = Enum.Font.FredokaOne
+FpsLabel.TextSize = 15
 FpsLabel.TextXAlignment = Enum.TextXAlignment.Left
 FpsLabel.Parent = FpsBox
 
@@ -3179,7 +3091,7 @@ RunService.RenderStepped:Connect(function()
 	frameCount += 1
 	local now = safeClock()
 	if now - lastTime >= 1 then
-		FpsLabel.Text = "⚡ FPS  •  " .. frameCount
+		FpsLabel.Text = tostring(frameCount)
 		frameCount = 0
 		lastTime = now
 	end
@@ -3189,7 +3101,7 @@ task.spawn(function()
 	while task.wait(1) do
 		pcall(function()
 			local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-			PingLabel.Text = "📶 PING  •  " .. math.floor(ping) .. " ms"
+			PingLabel.Text = math.floor(ping) .. " ms"
 		end)
 	end
 end)
@@ -3198,7 +3110,7 @@ createSection(HomeTab, "Acesso rápido", "Comandos principais da interface.", 4)
 local HomeActions = createControlRow(HomeTab, 5)
 local HomeRejoinButton = createActionButton(HomeActions, "🔁 REJOIN", 1)
 HomeRejoinButton.TextSize = 14
-HomeRejoinButton.Font = Enum.Font.GothamBlack
+HomeRejoinButton.Font = Enum.Font.LuckiestGuy
 HomeRejoinButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
@@ -3206,7 +3118,7 @@ HomeRejoinButton.MouseButton1Click:Connect(function()
 end)
 local HomeTagsButton = createActionButton(HomeActions, "👁  OCULTAR CARGOS", 2)
 HomeTagsButton.TextSize = 11
-HomeTagsButton.Font = Enum.Font.GothamBold
+HomeTagsButton.Font = Enum.Font.FredokaOne
 HomeTagsButton.MouseButton1Click:Connect(function()
 	local nowHidden = false
 	if type(chosenToggleTagsVisibility) == "function" then
@@ -3224,7 +3136,7 @@ local RefreshServersButton = createActionButton(ServerToolbar, "🔄 Atualizar",
 RefreshServersButton.Size = UDim2.new(0, 96, 0, 26)
 RefreshServersButton.Position = UDim2.new(0, 0, 0.5, -13)
 RefreshServersButton.TextSize = 10
-RefreshServersButton.Font = Enum.Font.GothamBold
+RefreshServersButton.Font = Enum.Font.FredokaOne
 
 local ServerStatusLabel = Instance.new("TextLabel")
 ServerStatusLabel.Size = UDim2.new(0.5, -10, 1, 0)
@@ -3232,7 +3144,7 @@ ServerStatusLabel.Position = UDim2.new(0.5, 5, 0, 0)
 ServerStatusLabel.BackgroundTransparency = 1
 ServerStatusLabel.Text = "Nenhuma lista carregada"
 ServerStatusLabel.TextColor3 = COLOR_DIM
-ServerStatusLabel.Font = Enum.Font.GothamMedium
+ServerStatusLabel.Font = Enum.Font.FredokaOne
 ServerStatusLabel.TextSize = 10
 ServerStatusLabel.TextXAlignment = Enum.TextXAlignment.Right
 ServerStatusLabel.Parent = ServerToolbar
@@ -3240,17 +3152,16 @@ ServerStatusLabel.Parent = ServerToolbar
 local ServerList = Instance.new("ScrollingFrame")
 ServerList.Name = "ServerList"
 ServerList.Size = UDim2.new(1, -4, 0, 190)
-ServerList.BackgroundColor3 = COLOR_SIDE
-ServerList.BackgroundTransparency = 0.35
+ServerList.BackgroundColor3 = COLOR_CARD
+ServerList.BackgroundTransparency = 0.08
 ServerList.BorderSizePixel = 0
 ServerList.ScrollBarThickness = 3
-ServerList.ScrollBarImageColor3 = COLOR_BORDER2
-ServerList.ScrollBarImageTransparency = 0.35
 ServerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 ServerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ServerList.LayoutOrder = 8
 ServerList.Parent = HomeTab
 corner(ServerList, 12)
+stroke(ServerList, COLOR_BORDER, 1, 0.3)
 
 local ServerListLayout = Instance.new("UIListLayout")
 ServerListLayout.Padding = UDim.new(0, 6)
@@ -3318,13 +3229,13 @@ local function addServerEntry(server, index)
 
 	local row = Instance.new("Frame")
 	row.Size = UDim2.new(1, -4, 0, 46)
-	row.BackgroundColor3 = COLOR_CARD
-	row.BackgroundTransparency = 0
+	row.BackgroundColor3 = COLOR_CARD2
+	row.BackgroundTransparency = 0.12
 	row.BorderSizePixel = 0
 	row.LayoutOrder = index
 	row.Parent = ServerList
-	corner(row, 10)
-	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.7)
+	corner(row, 12)
+	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.3)
 
 	local gameThumb = Instance.new("ImageLabel")
 	gameThumb.Size = UDim2.new(0, 38, 0, 38)
@@ -3341,7 +3252,7 @@ local function addServerEntry(server, index)
 	playersLabel.BackgroundTransparency = 1
 	playersLabel.Text = string.format("👥 %d / %d jogadores", playing, maxPlayers)
 	playersLabel.TextColor3 = COLOR_DIM
-	playersLabel.Font = Enum.Font.GothamMedium
+	playersLabel.Font = Enum.Font.FredokaOne
 	playersLabel.TextSize = 10
 	playersLabel.TextXAlignment = Enum.TextXAlignment.Left
 	playersLabel.Parent = row
@@ -3352,7 +3263,7 @@ local function addServerEntry(server, index)
 	pingLabel.BackgroundTransparency = 1
 	pingLabel.Text = string.format("📶 %s ms", ping and math.floor(ping) or "?")
 	pingLabel.TextColor3 = COLOR_SUCCESS
-	pingLabel.Font = Enum.Font.GothamMedium
+	pingLabel.Font = Enum.Font.FredokaOne
 	pingLabel.TextSize = 10
 	pingLabel.TextXAlignment = Enum.TextXAlignment.Left
 	pingLabel.Parent = row
@@ -3388,7 +3299,7 @@ local function addServerEntry(server, index)
 			extra.BackgroundTransparency = 1
 			extra.Text = "+" .. (#friends - shown)
 			extra.TextColor3 = COLOR_DIM
-			extra.Font = Enum.Font.GothamBold
+			extra.Font = Enum.Font.FredokaOne
 			extra.TextSize = 9
 			extra.TextXAlignment = Enum.TextXAlignment.Left
 			extra.Parent = row
@@ -3448,7 +3359,7 @@ TargetStatus.Size = UDim2.new(1, -4, 0, 24)
 TargetStatus.BackgroundTransparency = 1
 TargetStatus.Text = "●  NENHUM ALVO SELECIONADO"
 TargetStatus.TextColor3 = COLOR_MUTED
-TargetStatus.Font = Enum.Font.GothamMedium
+TargetStatus.Font = Enum.Font.FredokaOne
 TargetStatus.TextSize = 9
 TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
 TargetStatus.LayoutOrder = 3
@@ -3598,20 +3509,21 @@ pcall(function()
 	local SearchFriendsBox = Instance.new("TextBox")
 	SearchFriendsBox.Name = "SearchFriendsBox"
 	SearchFriendsBox.Size = UDim2.new(0.5, -12, 1, 0)
-	SearchFriendsBox.BackgroundColor3 = COLOR_SIDE
-	SearchFriendsBox.BackgroundTransparency = 0
+	SearchFriendsBox.BackgroundColor3 = COLOR_CARD
+	SearchFriendsBox.BackgroundTransparency = 0.1
 	SearchFriendsBox.BorderSizePixel = 0
 	SearchFriendsBox.PlaceholderText = "Buscar por nome ou @user"
 	SearchFriendsBox.PlaceholderColor3 = COLOR_MUTED
 	SearchFriendsBox.Text = ""
 	SearchFriendsBox.TextColor3 = COLOR_TEXT
-	SearchFriendsBox.Font = Enum.Font.GothamMedium
-	SearchFriendsBox.TextSize = 11
+	SearchFriendsBox.Font = Enum.Font.FredokaOne
+	SearchFriendsBox.TextSize = 12
 	SearchFriendsBox.TextXAlignment = Enum.TextXAlignment.Left
 	SearchFriendsBox.ClearTextOnFocus = false
 	SearchFriendsBox.Parent = AmigosToolbar
 	corner(SearchFriendsBox, 10)
-	padding(SearchFriendsBox, 12, 8, 0, 0)
+	stroke(SearchFriendsBox, COLOR_BORDER, 1, 0.3)
+	padding(SearchFriendsBox, 10, 8, 0, 0)
 
 	local RefreshFriendsButton = createActionButton(AmigosToolbar, "🔄 ATUALIZAR", 2)
 	local FriendsStatusLabel = Instance.new("TextLabel")
@@ -3620,7 +3532,7 @@ pcall(function()
 	FriendsStatusLabel.BackgroundTransparency = 1
 	FriendsStatusLabel.Text = "Nenhuma busca feita ainda"
 	FriendsStatusLabel.TextColor3 = COLOR_MUTED
-	FriendsStatusLabel.Font = Enum.Font.GothamMedium
+	FriendsStatusLabel.Font = Enum.Font.FredokaOne
 	FriendsStatusLabel.TextSize = 9
 	FriendsStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 	FriendsStatusLabel.LayoutOrder = 3
@@ -3629,17 +3541,16 @@ pcall(function()
 	local FriendsList = Instance.new("ScrollingFrame")
 	FriendsList.Name = "FriendsList"
 	FriendsList.Size = UDim2.new(1, -4, 0, 300)
-	FriendsList.BackgroundColor3 = COLOR_SIDE
-	FriendsList.BackgroundTransparency = 0.35
+	FriendsList.BackgroundColor3 = COLOR_CARD
+	FriendsList.BackgroundTransparency = 0.08
 	FriendsList.BorderSizePixel = 0
 	FriendsList.ScrollBarThickness = 3
-	FriendsList.ScrollBarImageColor3 = COLOR_BORDER2
-	FriendsList.ScrollBarImageTransparency = 0.35
 	FriendsList.CanvasSize = UDim2.new(0, 0, 0, 0)
 	FriendsList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	FriendsList.LayoutOrder = 4
 	FriendsList.Parent = AmigosTab
 	corner(FriendsList, 12)
+	stroke(FriendsList, COLOR_BORDER, 1, 0.3)
 
 	local FriendsListLayout = Instance.new("UIListLayout")
 	FriendsListLayout.Padding = UDim.new(0, 6)
@@ -3664,7 +3575,7 @@ pcall(function()
 			pcall(function()
 				local hum = item.player.Character and item.player.Character:FindFirstChildOfClass("Humanoid")
 				local active = isSpectating and hum ~= nil and Camera.CameraSubject == hum
-				tween(item.btn, {BackgroundColor3 = active and Color3.fromRGB(22, 54, 41) or COLOR_CARD2}, 0.12)
+				tween(item.btn, {BackgroundColor3 = active and Color3.fromRGB(26, 86, 60) or COLOR_CARD2}, 0.12)
 				local st = item.btn:FindFirstChildOfClass("UIStroke")
 				if st then tween(st, {Color = active and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
 			end)
@@ -3708,13 +3619,13 @@ pcall(function()
 	local function addFriendEntry(player, index)
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, -4, 0, 64)
-		row.BackgroundColor3 = COLOR_CARD
-		row.BackgroundTransparency = 0
+		row.BackgroundColor3 = COLOR_CARD2
+		row.BackgroundTransparency = 0.12
 		row.BorderSizePixel = 0
 		row.LayoutOrder = index
 		row.Parent = FriendsList
-		corner(row, 10)
-		stroke(row, COLOR_BORDER, 1, 0.7)
+		corner(row, 12)
+		stroke(row, COLOR_BORDER, 1, 0.3)
 
 		local avatar = Instance.new("ImageLabel")
 		avatar.Size = UDim2.new(0, 44, 0, 44)
@@ -3729,7 +3640,7 @@ pcall(function()
 		end)
 		avatar.Parent = row
 		corner(avatar, 22)
-		stroke(avatar, COLOR_BORDER2, 1, 0.5)
+		stroke(avatar, COLOR_ACCENT, 1, 0.3)
 
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Size = UDim2.new(0, 190, 0, 18)
@@ -3737,7 +3648,7 @@ pcall(function()
 		nameLabel.BackgroundTransparency = 1
 		nameLabel.Text = player.DisplayName
 		nameLabel.TextColor3 = COLOR_TEXT
-		nameLabel.Font = Enum.Font.GothamBold
+		nameLabel.Font = Enum.Font.FredokaOne
 		nameLabel.TextSize = 13
 		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -3749,7 +3660,7 @@ pcall(function()
 		userLabel.BackgroundTransparency = 1
 		userLabel.Text = "@" .. player.Name
 		userLabel.TextColor3 = COLOR_MUTED
-		userLabel.Font = Enum.Font.GothamMedium
+		userLabel.Font = Enum.Font.FredokaOne
 		userLabel.TextSize = 10
 		userLabel.TextXAlignment = Enum.TextXAlignment.Left
 		userLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -3761,7 +3672,7 @@ pcall(function()
 		onlineLabel.BackgroundTransparency = 1
 		onlineLabel.Text = "Neste servidor"
 		onlineLabel.TextColor3 = COLOR_SUCCESS
-		onlineLabel.Font = Enum.Font.GothamMedium
+		onlineLabel.Font = Enum.Font.FredokaOne
 		onlineLabel.TextSize = 9
 		onlineLabel.TextXAlignment = Enum.TextXAlignment.Left
 		onlineLabel.Parent = row
@@ -3798,7 +3709,7 @@ pcall(function()
 			pcall(function()
 				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if isSpectating and hum and Camera.CameraSubject == hum then
-					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(28, 66, 50)}, 0.12)
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(32, 96, 68)}, 0.12)
 				end
 			end)
 		end)
@@ -3806,7 +3717,7 @@ pcall(function()
 			pcall(function()
 				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if isSpectating and hum and Camera.CameraSubject == hum then
-					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(22, 54, 41)}, 0.12)
+					tween(obsBtn, {BackgroundColor3 = Color3.fromRGB(26, 86, 60)}, 0.12)
 					local st = obsBtn:FindFirstChildOfClass("UIStroke")
 					if st then tween(st, {Color = COLOR_SUCCESS}, 0.12) end
 				end
@@ -4143,10 +4054,11 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	local MoveCard = Instance.new("Frame")
 	MoveCard.Size = UDim2.new(0.48, -4, 0, 128)
 	MoveCard.BackgroundColor3 = COLOR_CARD
-	MoveCard.BackgroundTransparency = 0
+	MoveCard.BackgroundTransparency = 0.08
 	MoveCard.BorderSizePixel = 0
 	MoveCard.Parent = CharacterGrid
 	corner(MoveCard, 12)
+	stroke(MoveCard, COLOR_BORDER, 1, 0.3)
 
 	local function moveCaption(text, y)
 		local cap = Instance.new("TextLabel")
@@ -4155,7 +4067,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		cap.BackgroundTransparency = 1
 		cap.Text = text
 		cap.TextColor3 = COLOR_MUTED
-		cap.Font = Enum.Font.GothamBold
+		cap.Font = Enum.Font.FredokaOne
 		cap.TextSize = 9
 		cap.TextXAlignment = Enum.TextXAlignment.Left
 		cap.Parent = MoveCard
@@ -4166,17 +4078,18 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		box.Size = UDim2.new(1, -24, 0, 36)
 		box.Position = UDim2.new(0, 12, 0, y)
 		box.BackgroundColor3 = COLOR_SIDE
-		box.BackgroundTransparency = 0
+		box.BackgroundTransparency = 0.15
 		box.Text = ""
 		box.PlaceholderColor3 = COLOR_MUTED
 		box.TextColor3 = COLOR_TEXT
-		box.Font = Enum.Font.GothamBold
+		box.Font = Enum.Font.FredokaOne
 		box.TextSize = 14
 		box.TextXAlignment = Enum.TextXAlignment.Center
 		box.TextYAlignment = Enum.TextYAlignment.Center
 		box.ClearTextOnFocus = false
 		box.Parent = MoveCard
 		corner(box, 10)
+		stroke(box, COLOR_ACCENT, 1, 0.55)
 		return box
 	end
 
@@ -4192,21 +4105,15 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		local btn = Instance.new("TextButton")
 		btn.Size = UDim2.new(0.24, -5, 0, 32)
 		btn.Position = UDim2.new(x, 0, 0, 136)
-		btn.BackgroundColor3 = COLOR_ACCENT2
-		btn.BackgroundTransparency = 0.72
-		btn.AutoButtonColor = false
+		btn.BackgroundColor3 = COLOR_ACCENT
+		btn.BackgroundTransparency = 0.85
 		btn.Text = text
 		btn.TextColor3 = COLOR_ACCENT
-		btn.Font = Enum.Font.GothamBold
+		btn.Font = Enum.Font.FredokaOne
 		btn.TextSize = 10
 		btn.Parent = CharacterGrid
 		corner(btn, 10)
-		btn.MouseEnter:Connect(function()
-			tween(btn, {BackgroundTransparency = 0.45, TextColor3 = COLOR_TEXT}, 0.14)
-		end)
-		btn.MouseLeave:Connect(function()
-			tween(btn, {BackgroundTransparency = 0.72, TextColor3 = COLOR_ACCENT}, 0.14)
-		end)
+		stroke(btn, COLOR_ACCENT, 1, 0.25)
 		btn.MouseButton1Click:Connect(callback)
 		return btn
 	end
@@ -4247,10 +4154,11 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	ActionCard.Position = UDim2.new(0.52, 0, 0, 0)
 	ActionCard.Size = UDim2.new(0.48, -4, 1, 0)
 	ActionCard.BackgroundColor3 = COLOR_CARD
-	ActionCard.BackgroundTransparency = 0
+	ActionCard.BackgroundTransparency = 0.08
 	ActionCard.BorderSizePixel = 0
 	ActionCard.Parent = CharacterGrid
 	corner(ActionCard, 12)
+	stroke(ActionCard, COLOR_ACCENT, 1, 0.45)
 
 	local function actionRow(y, title, subtitleText, dotColor)
 		local dot = Instance.new("Frame")
@@ -4267,7 +4175,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		t.BackgroundTransparency = 1
 		t.Text = title
 		t.TextColor3 = COLOR_TEXT
-		t.Font = Enum.Font.GothamBold
+		t.Font = Enum.Font.FredokaOne
 		t.TextSize = 12
 		t.TextXAlignment = Enum.TextXAlignment.Left
 		t.Parent = ActionCard
@@ -4278,7 +4186,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		sub.BackgroundTransparency = 1
 		sub.Text = subtitleText
 		sub.TextColor3 = COLOR_DIM
-		sub.Font = Enum.Font.GothamMedium
+		sub.Font = Enum.Font.FredokaOne
 		sub.TextSize = 9
 		sub.TextXAlignment = Enum.TextXAlignment.Left
 		sub.TextTruncate = Enum.TextTruncate.AtEnd
@@ -4291,7 +4199,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		run.BackgroundTransparency = 0.85
 		run.Text = "RUN"
 		run.TextColor3 = COLOR_ACCENT
-		run.Font = Enum.Font.GothamBold
+		run.Font = Enum.Font.FredokaOne
 		run.TextSize = 10
 		run.Parent = ActionCard
 		corner(run, 13)
@@ -4337,7 +4245,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	ClearSpawn.BackgroundTransparency = 1
 	ClearSpawn.Text = "🗑"
 	ClearSpawn.TextColor3 = COLOR_MUTED
-	ClearSpawn.Font = Enum.Font.GothamBold
+	ClearSpawn.Font = Enum.Font.FredokaOne
 	ClearSpawn.TextSize = 12
 	ClearSpawn.Parent = ActionCard
 	ClearSpawn.MouseButton1Click:Connect(function()
@@ -4884,7 +4792,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 			local text = Instance.new("TextLabel")
 			text.Size = UDim2.new(1, 0, 1, 0)
 			text.BackgroundTransparency = 1
-			text.Font = Enum.Font.GothamBold
+			text.Font = Enum.Font.FredokaOne
 			text.TextSize = 12
 			text.TextColor3 = AI_OUTLINE
 			text.TextStrokeTransparency = 0.35
@@ -5118,7 +5026,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toastTitle.BackgroundTransparency = 1
 		toastTitle.Text = "👁  ANTI-INVISÍVEL"
 		toastTitle.TextColor3 = AI_OUTLINE
-		toastTitle.Font = Enum.Font.GothamBlack
+		toastTitle.Font = Enum.Font.LuckiestGuy
 		toastTitle.TextSize = 11
 		toastTitle.TextXAlignment = Enum.TextXAlignment.Left
 		toastTitle.ZIndex = 60
@@ -5130,7 +5038,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toastText.BackgroundTransparency = 1
 		toastText.Text = "A função está ATIVA — revelando jogadores invisíveis do servidor."
 		toastText.TextColor3 = COLOR_TEXT
-		toastText.Font = Enum.Font.GothamMedium
+		toastText.Font = Enum.Font.FredokaOne
 		toastText.TextSize = 12
 		toastText.TextXAlignment = Enum.TextXAlignment.Left
 		toastText.TextYAlignment = Enum.TextYAlignment.Top
@@ -5146,7 +5054,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toastOff.BackgroundTransparency = 0.15
 		toastOff.Text = "Desativar"
 		toastOff.TextColor3 = COLOR_TEXT
-		toastOff.Font = Enum.Font.GothamBold
+		toastOff.Font = Enum.Font.FredokaOne
 		toastOff.TextSize = 13
 		toastOff.ZIndex = 61
 		toastOff.Parent = toast
@@ -5159,7 +5067,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toastClose.BackgroundTransparency = 0.2
 		toastClose.Text = "X"
 		toastClose.TextColor3 = COLOR_TEXT
-		toastClose.Font = Enum.Font.GothamBold
+		toastClose.Font = Enum.Font.FredokaOne
 		toastClose.TextSize = 12
 		toastClose.ZIndex = 61
 		toastClose.Parent = toast
@@ -5917,7 +5825,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		noticeTitle.BackgroundTransparency = 1
 		noticeTitle.Text = "🔒  ACESSO NEGADO"
 		noticeTitle.TextColor3 = Color3.fromRGB(255, 190, 90)
-		noticeTitle.Font = Enum.Font.GothamBlack
+		noticeTitle.Font = Enum.Font.LuckiestGuy
 		noticeTitle.TextSize = 11
 		noticeTitle.TextXAlignment = Enum.TextXAlignment.Left
 		noticeTitle.ZIndex = 91
@@ -5929,7 +5837,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		noticeText.BackgroundTransparency = 1
 		noticeText.Text = "Fling é exclusivo de Premium\nou cargo superior"
 		noticeText.TextColor3 = Color3.fromRGB(240, 235, 225)
-		noticeText.Font = Enum.Font.GothamMedium
+		noticeText.Font = Enum.Font.FredokaOne
 		noticeText.TextSize = 11
 		noticeText.TextXAlignment = Enum.TextXAlignment.Left
 		noticeText.TextYAlignment = Enum.TextYAlignment.Top
@@ -6031,7 +5939,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		shield.BackgroundTransparency = 0.55
 		shield.Text = "🔒"
 		shield.TextColor3 = Color3.fromRGB(255, 170, 60)
-		shield.Font = Enum.Font.GothamBold
+		shield.Font = Enum.Font.FredokaOne
 		shield.TextSize = 16
 		shield.AutoButtonColor = false
 		shield.ZIndex = 10
