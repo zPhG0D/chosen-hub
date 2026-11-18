@@ -3995,6 +3995,182 @@ if not okJerkoff then
 	warn("[Jogo] erro ao iniciar Jerkoff: " .. tostring(errJerkoff))
 end
 
+-- Bang (portado dos BangScript e BangScript_Atras, R6 recomendado)
+-- Botão desligado: nada acontece. Botão ligado: Z ativa o bang
+-- FRONTAL (na frente do rosto do jogador mais próximo) e C ativa
+-- o bang ATRÁS (atrás das costas). A mesma tecla de novo para;
+-- trocar de tecla muda de posição.
+local okBang, errBang = pcall(function()
+	local bangFeatureOn = false
+	local bangActive = false
+	local bangThrust = 0
+	local bangDirection = 1
+	local bangTargetHRP = nil
+	-- "front" = Z (na frente do rosto) • "back" = C (atrás das costas)
+	local bangMode = "front"
+	local bangChar, bangHRP
+
+	local BANG_OFFSET_BACK = 1.3
+	local BANG_SPEED = 1
+
+	local function BANG_setupCharacter(character)
+		bangChar = character
+		bangHRP = character:WaitForChild("HumanoidRootPart", 8)
+		if bangHRP then
+			pcall(function() bangHRP.Anchored = false end)
+		end
+	end
+
+	-- Congela/libera as animações do personagem (os outros veem o
+	-- boneco estático enquanto o bang está em andamento)
+	local function BANG_freeze(frozen)
+		if not bangChar then return end
+		local humanoid = bangChar:FindFirstChildOfClass("Humanoid")
+		local animate = bangChar:FindFirstChild("Animate")
+		if animate then
+			pcall(function() animate.Disabled = frozen end)
+		end
+		if not humanoid then return end
+		for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+			if frozen then
+				pcall(function() track:AdjustSpeed(0) end)
+			else
+				pcall(function() track:Stop(0) end)
+			end
+		end
+	end
+
+	local function BANG_stop()
+		bangActive = false
+		bangThrust = 0
+		bangDirection = 1
+		bangTargetHRP = nil
+		BANG_freeze(false)
+	end
+
+	local function BANG_start()
+		if bangActive or not bangHRP then return end
+
+		-- Jogador mais próximo da sessão vira o alvo
+		local closest, dist = nil, math.huge
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= LocalPlayer and p.Character
+				and p.Character:FindFirstChild("HumanoidRootPart") then
+				local d = (bangHRP.Position
+					- p.Character.HumanoidRootPart.Position).Magnitude
+				if d < dist then
+					dist = d
+					closest = p
+				end
+			end
+		end
+
+		local targetHRP = closest and closest.Character
+			and closest.Character:FindFirstChild("HumanoidRootPart")
+		if targetHRP then
+			bangTargetHRP = targetHRP
+			bangActive = true
+			bangThrust = 0
+			bangDirection = 1
+			BANG_freeze(true)
+		end
+	end
+
+	BANG_setupCharacter(LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait())
+
+	LocalPlayer.CharacterAdded:Connect(function(newChar)
+		BANG_setupCharacter(newChar)
+		-- Respawn encerra o bang em andamento (o botão continua ligado)
+		bangActive = false
+		bangThrust = 0
+		bangDirection = 1
+		bangTargetHRP = nil
+		if bangFeatureOn then
+			task.delay(0.5, function()
+				BANG_freeze(false)
+			end)
+		end
+	end)
+
+	-- SEM Anchored: âncora não replica ao servidor. O movimento usa
+	-- interpolação suave + velocidade zerada por frame (o cliente tem
+	-- network ownership do próprio personagem — replica normal).
+	RunService.RenderStepped:Connect(function(dt)
+		if bangActive and bangHRP and bangTargetHRP then
+			-- independente de FPS (mobile tem FPS variável)
+			bangThrust += 0.06 * BANG_SPEED * bangDirection * (dt * 60)
+
+			if bangThrust > 0.6 then bangDirection = -1 end
+			if bangThrust < -0.6 then bangDirection = 1 end
+
+			local goal
+			if bangMode == "back" then
+				-- POSIÇÃO ATRÁS: Z positivo (atrás das costas do alvo)
+				goal = bangTargetHRP.CFrame
+					* CFrame.new(0, 0, BANG_OFFSET_BACK + bangThrust)
+					* CFrame.Angles(0, 0, 0)
+			else
+				-- POSIÇÃO FRONTAL: na frente do rosto do alvo
+				goal = bangTargetHRP.CFrame
+					* CFrame.new(0, 2.5, -(BANG_OFFSET_BACK + bangThrust))
+					* CFrame.Angles(0, math.rad(180), 0)
+			end
+			bangHRP.CFrame = bangHRP.CFrame:Lerp(
+				goal, math.clamp(dt * 20, 0, 1))
+
+			-- trava física sem ancorar: mata o flicker da gravidade
+			bangHRP.AssemblyLinearVelocity = Vector3.zero
+			bangHRP.AssemblyAngularVelocity = Vector3.zero
+
+			-- mantém qualquer track que comece depois também congelado
+			local humanoid = bangChar and bangChar:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+					if track.Speed ~= 0 then
+						pcall(function() track:AdjustSpeed(0) end)
+					end
+				end
+			end
+		end
+	end)
+
+	local GameRow4 = createControlRow(GameTab, 5)
+	createToggleButton(GameRow4, "Bang  •  Z frente | C atrás", function(state)
+		bangFeatureOn = state
+		-- Ligar/desligar o botão nunca ativa o bang por si só:
+		-- Z ativa a versão frontal, C a versão atrás.
+		BANG_stop()
+	end, 1)
+
+	-- Z = bang frontal • C = bang atrás (só com o botão da aba ligado).
+	-- A mesma tecla com o bang ativo para; a outra tecla troca de
+	-- posição no alvo mais próximo.
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed or not bangFeatureOn then return end
+		if UserInputService:GetFocusedTextBox() then return end
+
+		local mode = nil
+		if input.KeyCode == Enum.KeyCode.Z then
+			mode = "front"
+		elseif input.KeyCode == Enum.KeyCode.C then
+			mode = "back"
+		end
+		if not mode then return end
+
+		if bangActive and bangMode == mode then
+			BANG_stop()
+		else
+			BANG_stop()
+			bangMode = mode
+			BANG_start()
+		end
+	end)
+end)
+
+if not okBang then
+	warn("[Jogo] erro ao iniciar Bang: " .. tostring(errBang))
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed or UserInputService:GetFocusedTextBox() or not animationSpeedEnabled then return end
 	if input.KeyCode == Enum.KeyCode.Q then
@@ -4694,7 +4870,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	end
 
 	-- Controles na aba Jogo (mesmos helpers visuais dos outros widgets)
-	createSection(GameTab, "Fling", "Arremesse encostando; antifling te protege.", 5)
+	createSection(GameTab, "Fling", "Arremesse encostando; antifling te protege.", 6)
 
 	-- PERMISSÃO: a seção Fling é exclusiva de Premium, Moderator e Owner.
 	-- O cargo real vem da API via atributos do ScreenGui (pode levar
@@ -4792,7 +4968,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	end
 
 	local WFCombo
-	WFCombo = createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 6, function(state)
+	WFCombo = createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 7, function(state)
 		if state and not WF_hasPermission() then
 			WF_showNotice()
 			WFCombo.setState(false)
@@ -4831,7 +5007,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		end
 	end)
 
-	local WFRow2 = createControlRow(GameTab, 7)
+	local WFRow2 = createControlRow(GameTab, 8)
 	local WFAntiCard, WFAntiSet = createToggleButton(WFRow2, "Antifling", function(state)
 		if state and not WF_hasPermission() then
 			WF_showNotice()
