@@ -90,14 +90,14 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 720, 0, 448)
-MainFrame.Position = UDim2.new(0.5, -360, 0.5, -224)
+MainFrame.Size = UDim2.new(0, 748, 0, 480)
+MainFrame.Position = UDim2.new(0.5, -374, 0.5, -240)
 MainFrame.BackgroundColor3 = COLOR_BG
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = false
 MainFrame.Parent = ScreenGui
-corner(MainFrame, 14)
+corner(MainFrame, 10)
 stroke(MainFrame, COLOR_BORDER, 1, 0.25)
 
 local MainFrameGradient = Instance.new("UIGradient")
@@ -123,7 +123,7 @@ PanelToggle.Font = Enum.Font.LuckiestGuy
 PanelToggle.TextSize = 16
 PanelToggle.BorderSizePixel = 0
 PanelToggle.Parent = ScreenGui
-corner(PanelToggle, 17)
+corner(PanelToggle, 9)
 stroke(PanelToggle, COLOR_BORDER, 1, 0.35)
 
 PanelToggle.MouseButton1Click:Connect(function()
@@ -159,7 +159,7 @@ TopBar.BackgroundColor3 = COLOR_PANEL
 TopBar.BackgroundTransparency = 0.2
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-corner(TopBar, 14)
+corner(TopBar, 10)
 stroke(TopBar, COLOR_BORDER, 1, 0.35)
 TopBar.Active = true
 
@@ -269,11 +269,11 @@ Body.BackgroundTransparency = 1
 Body.Parent = MainFrame
 
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 168, 1, 0)
+Sidebar.Size = UDim2.new(0, 190, 1, 0)
 Sidebar.BackgroundColor3 = COLOR_SIDE
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Body
-corner(Sidebar, 12)
+corner(Sidebar, 10)
 stroke(Sidebar, COLOR_BORDER, 1, 0.3)
 
 local SidebarGradient = Instance.new("UIGradient")
@@ -284,42 +284,20 @@ SidebarGradient.Color = ColorSequence.new({
 })
 SidebarGradient.Parent = Sidebar
 
-local SideTitle = Instance.new("TextLabel")
-SideTitle.Size = UDim2.new(1, -28, 0, 18)
-SideTitle.Position = UDim2.new(0, 14, 0, 16)
-SideTitle.BackgroundTransparency = 1
-SideTitle.Text = "◆  CHOSEN HUB"
-SideTitle.TextColor3 = COLOR_MUTED
-SideTitle.Font = Enum.Font.FredokaOne
-SideTitle.TextSize = 9
-SideTitle.TextXAlignment = Enum.TextXAlignment.Left
-SideTitle.Parent = Sidebar
-
-local SideSub = Instance.new("TextLabel")
-SideSub.Size = UDim2.new(1, -28, 0, 20)
-SideSub.Position = UDim2.new(0, 14, 0, 34)
-SideSub.BackgroundTransparency = 1
-SideSub.Text = "Escolha uma área"
-SideSub.TextColor3 = COLOR_TEXT
-SideSub.Font = Enum.Font.LuckiestGuy
-SideSub.TextSize = 13
-SideSub.TextXAlignment = Enum.TextXAlignment.Left
-SideSub.Parent = Sidebar
-
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, -20, 1, -88)
-TabContainer.Position = UDim2.new(0, 10, 0, 64)
+TabContainer.Size = UDim2.new(1, -20, 1, -44)
+TabContainer.Position = UDim2.new(0, 10, 0, 8)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = Sidebar
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Padding = UDim.new(0, 5)
 TabLayout.Parent = TabContainer
 
 local Version = Instance.new("TextLabel")
-Version.Size = UDim2.new(1, -28, 0, 20)
-Version.Position = UDim2.new(0, 14, 1, -27)
+Version.Size = UDim2.new(1, -28, 0, 16)
+Version.Position = UDim2.new(0, 14, 1, -20)
 Version.BackgroundTransparency = 1
 Version.Text = "v2.5  •  B ABRE/FECHA"
 Version.TextColor3 = COLOR_MUTED
@@ -329,12 +307,12 @@ Version.TextXAlignment = Enum.TextXAlignment.Left
 Version.Parent = Sidebar
 
 local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -180, 1, 0)
-ContentArea.Position = UDim2.new(0, 180, 0, 0)
+ContentArea.Size = UDim2.new(1, -198, 1, 0)
+ContentArea.Position = UDim2.new(0, 198, 0, 0)
 ContentArea.BackgroundColor3 = COLOR_PANEL
 ContentArea.BorderSizePixel = 0
 ContentArea.Parent = Body
-corner(ContentArea, 12)
+corner(ContentArea, 10)
 stroke(ContentArea, COLOR_BORDER, 1, 0.15)
 
 local ContentTitle = Instance.new("TextLabel")
@@ -349,7 +327,7 @@ ContentTitle.TextXAlignment = Enum.TextXAlignment.Left
 ContentTitle.Parent = ContentArea
 
 local ContentHolder = Instance.new("Frame")
-ContentHolder.Size = UDim2.new(0, 490, 1, -76)
+ContentHolder.Size = UDim2.new(1, -34, 1, -76)
 ContentHolder.Position = UDim2.new(0, 16, 0, 70)
 ContentHolder.BackgroundTransparency = 1
 ContentHolder.ClipsDescendants = true
@@ -371,35 +349,35 @@ local TabIcons = {
 local function createTab(name, order)
 	local btn = Instance.new("TextButton")
 	btn.Name = name .. "TabButton"
-	btn.Size = UDim2.new(1, 0, 0, 36)
+	btn.Size = UDim2.new(1, 0, 0, 40)
 	btn.BackgroundColor3 = COLOR_SIDE
 	btn.AutoButtonColor = false
 	btn.Text = ""
 	btn.LayoutOrder = order
 	btn.Parent = TabContainer
-	corner(btn, 19)
+	corner(btn, 8)
 	stroke(btn, COLOR_BORDER, 1, 0.35)
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(0, 26, 0, 26)
-	icon.Position = UDim2.new(0, 8, 0.5, -13)
+	icon.Size = UDim2.new(0, 30, 0, 30)
+	icon.Position = UDim2.new(0, 10, 0.5, -15)
 	icon.BackgroundTransparency = 1
 	icon.Text = TabIcons[name] or "◆"
 	icon.TextColor3 = COLOR_MUTED
 	icon.Font = Enum.Font.FredokaOne
-	icon.TextSize = 15
+	icon.TextSize = 17
 	icon.TextXAlignment = Enum.TextXAlignment.Center
 	icon.TextYAlignment = Enum.TextYAlignment.Center
 	icon.Parent = btn
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -50, 1, 0)
-	label.Position = UDim2.new(0, 42, 0, 0)
+	label.Size = UDim2.new(1, -56, 1, 0)
+	label.Position = UDim2.new(0, 48, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextColor3 = COLOR_DIM
 	label.Font = Enum.Font.FredokaOne
-	label.TextSize = 13
+	label.TextSize = 14
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = btn
 
@@ -510,7 +488,7 @@ end
 local function createControlRow(parent, order)
 	local row = Instance.new("Frame")
 	row.Name = "ControleDuplo"
-	row.Size = UDim2.new(1, -4, 0, 52)
+	row.Size = UDim2.new(1, -4, 0, 66)
 	row.BackgroundTransparency = 1
 	row.BorderSizePixel = 0
 	row.LayoutOrder = order or 1
@@ -530,15 +508,29 @@ end
 local function createToggleButton(parent, labelText, callback, order)
 	local state = false
 	local inRow = isControlRow(parent)
+
+	-- Separação visual: título em destaque e instrução/atalho em linha inferior.
+	-- O texto original continua intacto para preservar nomes e atalhos existentes.
+	local displayTitle = labelText
+	local instruction = "Clique para ativar ou desativar."
+	local splitTitle, splitInstruction = labelText:match("^(.-)%s+•%s+(.+)$")
+	if not splitTitle then
+		splitTitle, splitInstruction = labelText:match("^(.-)%s*|%s*(.+)$")
+	end
+	if splitTitle and splitInstruction then
+		displayTitle = splitTitle
+		instruction = "Atalho: " .. splitInstruction
+	end
+
 	local card = Instance.new("Frame")
-	card.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, 50)
+	card.Size = inRow and UDim2.new(0.5, -8, 1, 0) or UDim2.new(1, -4, 0, 64)
 	card.BackgroundColor3 = COLOR_CARD
-	card.BackgroundTransparency = 0.1
+	card.BackgroundTransparency = 0.08
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
-	corner(card, 12)
-	stroke(card, COLOR_BORDER, 1, 0.3)
+	corner(card, 8)
+	stroke(card, COLOR_BORDER, 1, 0.25)
 
 	local hit = Instance.new("TextButton")
 	hit.Size = UDim2.new(1, 0, 1, 0)
@@ -548,57 +540,80 @@ local function createToggleButton(parent, labelText, callback, order)
 	hit.Text = ""
 	hit.Parent = card
 
+	local statusDot = Instance.new("Frame")
+	statusDot.Size = UDim2.new(0, 8, 0, 8)
+	statusDot.Position = UDim2.new(0, 12, 0, 14)
+	statusDot.BackgroundColor3 = COLOR_MUTED
+	statusDot.BorderSizePixel = 0
+	statusDot.Parent = card
+	corner(statusDot, 4)
+
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -70, 1, 0)
-	title.Position = UDim2.new(0, 12, 0, 0)
+	title.Size = UDim2.new(1, -104, 0, 22)
+	title.Position = UDim2.new(0, 25, 0, 5)
 	title.BackgroundTransparency = 1
-	title.Text = labelText
+	title.Text = displayTitle
 	title.TextColor3 = COLOR_TEXT
 	title.Font = Enum.Font.FredokaOne
-	title.TextSize = 12
+	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextTruncate = Enum.TextTruncate.AtEnd
 	title.Parent = card
 
-	local switchTrack = Instance.new("Frame")
-	switchTrack.Size = UDim2.new(0, 36, 0, 18)
-	switchTrack.Position = UDim2.new(1, -54, 0.5, -9)
-	switchTrack.BackgroundColor3 = COLOR_SIDE
-	switchTrack.BorderSizePixel = 0
-	switchTrack.Parent = card
-	corner(switchTrack, 9)
-	stroke(switchTrack, COLOR_BORDER, 1, 0.3)
+	local description = Instance.new("TextLabel")
+	description.Size = UDim2.new(1, -104, 0, 17)
+	description.Position = UDim2.new(0, 25, 0, 31)
+	description.BackgroundTransparency = 1
+	description.Text = instruction
+	description.TextColor3 = COLOR_MUTED
+	description.Font = Enum.Font.FredokaOne
+	description.TextSize = 9
+	description.TextXAlignment = Enum.TextXAlignment.Left
+	description.TextTruncate = Enum.TextTruncate.AtEnd
+	description.Parent = card
 
-	local dot = Instance.new("Frame")
-	dot.Size = UDim2.new(0, 12, 0, 12)
-	dot.Position = UDim2.new(0, 3, 0.5, -6)
-	dot.BackgroundColor3 = COLOR_MUTED
-	dot.BorderSizePixel = 0
-	dot.Parent = switchTrack
-	corner(dot, 6)
+	local statePill = Instance.new("Frame")
+	statePill.Size = UDim2.new(0, 54, 0, 28)
+	statePill.Position = UDim2.new(1, -66, 0.5, -14)
+	statePill.BackgroundColor3 = COLOR_SIDE
+	statePill.BorderSizePixel = 0
+	statePill.Parent = card
+	corner(statePill, 9)
+	stroke(statePill, COLOR_BORDER, 1, 0.2)
+
+	local stateText = Instance.new("TextLabel")
+	stateText.Size = UDim2.new(1, 0, 1, 0)
+	stateText.BackgroundTransparency = 1
+	stateText.Text = "OFF"
+	stateText.TextColor3 = COLOR_DIM
+	stateText.Font = Enum.Font.FredokaOne
+	stateText.TextSize = 10
+	stateText.Parent = statePill
 
 	local function setState(newState)
 		state = newState
-		tween(dot, {
-			Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
-			BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED
-		}, 0.14)
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(26, 86, 60) or COLOR_CARD}, 0.12)
+		tween(statusDot, {BackgroundColor3 = state and COLOR_SUCCESS or COLOR_MUTED}, 0.14)
+		stateText.Text = state and "ON" or "OFF"
+		stateText.TextColor3 = state and COLOR_SUCCESS or COLOR_DIM
+		local pillStroke = statePill:FindFirstChildOfClass("UIStroke")
+		if pillStroke then tween(pillStroke, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.14) end
 		local st = card:FindFirstChildOfClass("UIStroke")
-		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.12) end
+		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.14) end
+		-- Fundo permanece escuro; somente o contorno e os indicadores mudam.
+		tween(card, {BackgroundColor3 = COLOR_CARD}, 0.12)
 		if callback then callback(state) end
 	end
 
 	hit.MouseButton1Click:Connect(function() setState(not state) end)
 	hit.MouseEnter:Connect(function()
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(32, 96, 68) or COLOR_CARD2}, 0.10)
-		local st = card:FindFirstChildOfClass("UIStroke")
-		if st and not state then tween(st, {Color = COLOR_BORDER2}, 0.10) end
+		if not state then
+			local st = card:FindFirstChildOfClass("UIStroke")
+			if st then tween(st, {Color = COLOR_BORDER2}, 0.10) end
+		end
 	end)
 	hit.MouseLeave:Connect(function()
-		tween(card, {BackgroundColor3 = state and Color3.fromRGB(28, 76, 52) or COLOR_CARD}, 0.10)
 		local st = card:FindFirstChildOfClass("UIStroke")
-		if st and not state then tween(st, {Color = COLOR_BORDER}, 0.10) end
+		if st then tween(st, {Color = state and COLOR_SUCCESS or COLOR_BORDER}, 0.10) end
 	end)
 	return card, setState
 end
@@ -618,7 +633,7 @@ local function createActionButton(parent, text, order, compact)
 	btn.TextTruncate = Enum.TextTruncate.AtEnd
 	btn.LayoutOrder = order or 1
 	btn.Parent = parent
-	corner(btn, 12)
+	corner(btn, 8)
 	stroke(btn, COLOR_BORDER, 1, 0.35)
 
 	padding(btn, 14, 10, 0, 0)
@@ -644,7 +659,7 @@ local function createInputWithAvatar(parent, placeholder, order)
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
-	corner(card, 12)
+	corner(card, 8)
 	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local avatar = Instance.new("ImageLabel")
@@ -681,7 +696,7 @@ local function createSliderControl(parent, titleText, minValue, maxValue, defaul
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
-	corner(card, 12)
+	corner(card, 8)
 	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local title = Instance.new("TextLabel")
@@ -825,7 +840,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order or 1
 	card.Parent = parent
-	corner(card, 12)
+	corner(card, 8)
 	stroke(card, COLOR_BORDER, 1, 0.3)
 
 	local hit = Instance.new("TextButton")
@@ -1058,7 +1073,7 @@ WelcomeCard.BackgroundTransparency = 0.08
 WelcomeCard.BorderSizePixel = 0
 WelcomeCard.LayoutOrder = 2
 WelcomeCard.Parent = HomeTab
-corner(WelcomeCard, 14)
+corner(WelcomeCard, 10)
 stroke(WelcomeCard, COLOR_BORDER, 1, 0.2)
 
 local WelcomeGradient = Instance.new("UIGradient")
@@ -1386,7 +1401,7 @@ local function chosenShowLiveToast(message, author)
     toast.BorderSizePixel = 0
     toast.ZIndex = 60
     toast.Parent = ScreenGui
-    corner(toast, 14)
+    corner(toast, 10)
     stroke(toast, COLOR_SUCCESS, 1.2, 0.35)
 
     -- Barra lateral de destaque (verde)
@@ -1450,7 +1465,7 @@ local function chosenShowLiveToast(message, author)
     toastClose.TextSize = 12
     toastClose.ZIndex = 61
     toastClose.Parent = toast
-    corner(toastClose, 12)
+    corner(toastClose, 8)
 
     -- Barra de contagem: o tempo restante (10s) esvazia da direita
     local toastTimer = Instance.new("Frame")
@@ -1554,7 +1569,7 @@ AnnouncementCard.BorderSizePixel = 0
 AnnouncementCard.LayoutOrder = 9
 AnnouncementCard.Visible = false
 AnnouncementCard.Parent = HomeTab
-corner(AnnouncementCard, 14)
+corner(AnnouncementCard, 10)
 stroke(AnnouncementCard, COLOR_BORDER, 1, 0.2)
 
 local AnnBannerTitle = Instance.new("TextLabel")
@@ -2243,10 +2258,11 @@ chosenBuildModerationTab = function()
 
     chosenModTab = createTab("Moderação", 8)
 
-    -- Ajusta a sidebar para acomodar 8 abas sem cortar.
-    TabLayout.Padding = UDim.new(0, 2)
+    -- A sidebar já comporta as 8 abas no tamanho padrão:
+    -- mantém a mesma altura e o mesmo espaçamento das demais.
+    TabLayout.Padding = UDim.new(0, 5)
     for _, data in pairs(Tabs) do
-        data.button.Size = UDim2.new(1, 0, 0, 32)
+        data.button.Size = UDim2.new(1, 0, 0, 40)
     end
 
     local refs = {}
@@ -2301,7 +2317,7 @@ chosenBuildModerationTab = function()
         card.BorderSizePixel = 0
         card.LayoutOrder = order
         card.Parent = chosenModTab
-        corner(card, 12)
+        corner(card, 8)
         stroke(card, COLOR_BORDER, 1, 0.3)
 
         local box = Instance.new("TextBox")
@@ -2353,7 +2369,7 @@ chosenBuildModerationTab = function()
     StatsRow.BorderSizePixel = 0
     StatsRow.LayoutOrder = nextOrder()
     StatsRow.Parent = chosenModTab
-    corner(StatsRow, 14)
+    corner(StatsRow, 10)
     stroke(StatsRow, COLOR_BORDER, 1, 0.2)
 
     local RegisteredBox = Instance.new("Frame")
@@ -2363,7 +2379,7 @@ chosenBuildModerationTab = function()
     RegisteredBox.BackgroundTransparency = 0.25
     RegisteredBox.BorderSizePixel = 0
     RegisteredBox.Parent = StatsRow
-    corner(RegisteredBox, 12)
+    corner(RegisteredBox, 8)
     stroke(RegisteredBox, COLOR_BORDER, 1, 0.35)
 
     local RegisteredCaption = Instance.new("TextLabel")
@@ -2395,7 +2411,7 @@ chosenBuildModerationTab = function()
     OnlineNowBox.BackgroundTransparency = 0.25
     OnlineNowBox.BorderSizePixel = 0
     OnlineNowBox.Parent = StatsRow
-    corner(OnlineNowBox, 12)
+    corner(OnlineNowBox, 8)
     stroke(OnlineNowBox, COLOR_BORDER, 1, 0.35)
 
     local OnlineNowCaption = Instance.new("TextLabel")
@@ -2479,7 +2495,7 @@ chosenBuildModerationTab = function()
     OnlineList.AutomaticCanvasSize = Enum.AutomaticSize.Y
     OnlineList.LayoutOrder = nextOrder()
     OnlineList.Parent = chosenModTab
-    corner(OnlineList, 12)
+    corner(OnlineList, 8)
     stroke(OnlineList, COLOR_BORDER, 1, 0.3)
 
     local OnlineListLayout = Instance.new("UIListLayout")
@@ -2512,7 +2528,7 @@ chosenBuildModerationTab = function()
         row.BorderSizePixel = 0
         row.LayoutOrder = index
         row.Parent = OnlineList
-        corner(row, 12)
+        corner(row, 8)
         stroke(row, COLOR_BORDER, 1, 0.3)
 
         local avatar = Instance.new("ImageLabel")
@@ -3007,6 +3023,465 @@ end)
 
 end
 
+-- Módulo isolado numa função própria: o chunk principal deste
+-- arquivo já está perto do limite de 200 variáveis locais do Luau,
+-- e declarar mais ~35 aqui em cima impede o script de compilar.
+local function chosenInstallVoiceBan()
+	-- ==========================================================
+	-- BAN DE VOZ (ROBLOX)
+	-- O Roblox não informa motivo nem duração de um ban de voz.
+	-- O painel apenas LÊ a interface: quando o aviso
+	-- "Conversa por voz suspensa" aparece, começa uma contagem de
+	-- 5 min no botão do topo. Ao terminar, o botão fica verde e
+	-- libera o rejoin. Nada aqui altera voz ou moderação.
+	-- ==========================================================
+
+	local COLOR_WARN = Color3.fromRGB(245, 178, 82)
+	local VOICE_BAN_SECONDS = 5 * 60
+
+	local voiceBanPhase = "idle" -- idle | active | released
+	local voiceBanRemaining = VOICE_BAN_SECONDS
+	local voiceBanStart = 0
+	local voiceBanToast = nil
+
+	local function voiceBanFormat(seconds)
+		local s = math.max(0, math.floor(seconds + 0.999))
+		return string.format("%02d:%02d", math.floor(s / 60), s % 60)
+	end
+
+	local function voiceBanRejoin()
+		pcall(function()
+			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+		end)
+	end
+
+	-- ---------- botão no topo, ao lado de SISTEMA ONLINE ----------
+
+	local VoiceBanButton = Instance.new("TextButton")
+	VoiceBanButton.Name = "ChosenVoiceBanButton"
+	VoiceBanButton.Size = UDim2.new(0, 104, 0, 26)
+	VoiceBanButton.Position = UDim2.new(1, -228, 0, 16)
+	VoiceBanButton.BackgroundColor3 = COLOR_CARD
+	VoiceBanButton.BackgroundTransparency = 0.35
+	VoiceBanButton.AutoButtonColor = false
+	VoiceBanButton.Text = "🎙  MEU BAN"
+	VoiceBanButton.TextColor3 = COLOR_MUTED
+	VoiceBanButton.Font = Enum.Font.FredokaOne
+	VoiceBanButton.TextSize = 9
+	VoiceBanButton.BorderSizePixel = 0
+	VoiceBanButton.Parent = TopBar
+	corner(VoiceBanButton, 8)
+	local VoiceBanButtonStroke = stroke(VoiceBanButton, COLOR_BORDER, 1, 0.4)
+
+	local function voiceBanPaint()
+		if voiceBanPhase == "active" then
+			VoiceBanButton.Text = "🎙  " .. voiceBanFormat(voiceBanRemaining)
+			VoiceBanButton.TextColor3 = COLOR_WARN
+			VoiceBanButtonStroke.Color = COLOR_WARN
+		elseif voiceBanPhase == "released" then
+			VoiceBanButton.Text = "🎙  REJOIN"
+			VoiceBanButton.TextColor3 = COLOR_SUCCESS
+			VoiceBanButtonStroke.Color = COLOR_SUCCESS
+		else
+			VoiceBanButton.Text = "🎙  MEU BAN"
+			VoiceBanButton.TextColor3 = COLOR_MUTED
+			VoiceBanButtonStroke.Color = COLOR_BORDER
+		end
+	end
+
+	VoiceBanButton.MouseEnter:Connect(function()
+		tween(VoiceBanButton, {BackgroundTransparency = 0.1}, 0.12)
+		local target = voiceBanPhase == "released" and COLOR_SUCCESS
+			or voiceBanPhase == "active" and COLOR_WARN
+			or COLOR_ACCENT
+		tween(VoiceBanButtonStroke, {Color = target}, 0.12)
+	end)
+	VoiceBanButton.MouseLeave:Connect(function()
+		tween(VoiceBanButton, {BackgroundTransparency = 0.35}, 0.12)
+		voiceBanPaint()
+	end)
+
+	-- ---------- aviso no canto, na altura do meio da tela ----------
+
+	local function voiceBanCloseToast()
+		local old = voiceBanToast
+		voiceBanToast = nil
+		local stray = ScreenGui:FindFirstChild("ChosenVoiceBanToast")
+		if stray and stray ~= old then
+			stray:Destroy()
+		end
+		if not old or not old.Parent then return end
+		tween(old, {Position = UDim2.new(1, 360, 0.5, 0)}, 0.3)
+		task.delay(0.35, function()
+			pcall(function() old:Destroy() end)
+		end)
+	end
+
+	local function voiceBanShowToast()
+		voiceBanCloseToast()
+
+		local toast = Instance.new("Frame")
+		toast.Name = "ChosenVoiceBanToast"
+		toast.AnchorPoint = Vector2.new(1, 0.5)
+		toast.Position = UDim2.new(1, 360, 0.5, 0) -- fora da tela; entra deslizando
+		toast.Size = UDim2.new(0, 316, 0, 128)
+		toast.BackgroundColor3 = COLOR_PANEL
+		toast.BackgroundTransparency = 0.03
+		toast.BorderSizePixel = 0
+		toast.ZIndex = 60
+		toast.Parent = ScreenGui
+		corner(toast, 10)
+		stroke(toast, COLOR_SUCCESS, 1.2, 0.35)
+		voiceBanToast = toast
+
+		local bar = Instance.new("Frame")
+		bar.Size = UDim2.new(0, 4, 1, 0)
+		bar.BackgroundColor3 = COLOR_SUCCESS
+		bar.BorderSizePixel = 0
+		bar.ZIndex = 61
+		bar.Parent = toast
+		corner(bar, 2)
+
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, -60, 0, 16)
+		title.Position = UDim2.new(0, 18, 0, 10)
+		title.BackgroundTransparency = 1
+		title.Text = "🎙  BAN DE VOZ"
+		title.TextColor3 = COLOR_SUCCESS
+		title.Font = Enum.Font.LuckiestGuy
+		title.TextSize = 11
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.ZIndex = 60
+		title.Parent = toast
+
+		local sub = Instance.new("TextLabel")
+		sub.Size = UDim2.new(1, -60, 0, 14)
+		sub.Position = UDim2.new(0, 18, 0, 27)
+		sub.BackgroundTransparency = 1
+		sub.Text = "SEU BAN PASSOU"
+		sub.TextColor3 = COLOR_TEXT
+		sub.Font = Enum.Font.FredokaOne
+		sub.TextSize = 10
+		sub.TextXAlignment = Enum.TextXAlignment.Left
+		sub.ZIndex = 60
+		sub.Parent = toast
+
+		local body = Instance.new("TextLabel")
+		body.Size = UDim2.new(1, -36, 0, 32)
+		body.Position = UDim2.new(0, 18, 0, 44)
+		body.BackgroundTransparency = 1
+		body.Text = "Já pode relogar para voltar a usar a voz."
+		body.TextColor3 = COLOR_MUTED
+		body.Font = Enum.Font.FredokaOne
+		body.TextSize = 10
+		body.TextXAlignment = Enum.TextXAlignment.Left
+		body.TextYAlignment = Enum.TextYAlignment.Top
+		body.TextWrapped = true
+		body.ZIndex = 60
+		body.Parent = toast
+
+		local close = Instance.new("TextButton")
+		close.Size = UDim2.new(0, 24, 0, 24)
+		close.Position = UDim2.new(1, -32, 0, 9)
+		close.BackgroundColor3 = COLOR_CARD2
+		close.BackgroundTransparency = 0.2
+		close.AutoButtonColor = false
+		close.Text = "X"
+		close.TextColor3 = COLOR_TEXT
+		close.Font = Enum.Font.FredokaOne
+		close.TextSize = 12
+		close.ZIndex = 61
+		close.Parent = toast
+		corner(close, 8)
+
+		local rejoin = Instance.new("TextButton")
+		rejoin.Size = UDim2.new(0, 132, 0, 26)
+		rejoin.Position = UDim2.new(0, 18, 1, -40)
+		rejoin.BackgroundColor3 = COLOR_CARD2
+		rejoin.BackgroundTransparency = 0.15
+		rejoin.AutoButtonColor = false
+		rejoin.Text = "🔁  REJOIN"
+		rejoin.TextColor3 = COLOR_SUCCESS
+		rejoin.Font = Enum.Font.LuckiestGuy
+		rejoin.TextSize = 11
+		rejoin.ZIndex = 61
+		rejoin.Parent = toast
+		corner(rejoin, 8)
+		local rejoinStroke = stroke(rejoin, COLOR_SUCCESS, 1, 0.25)
+
+		tween(toast, {Position = UDim2.new(1, -16, 0.5, 0)}, 0.35)
+
+		close.MouseEnter:Connect(function()
+			tween(close, {BackgroundColor3 = COLOR_CARD}, 0.12)
+		end)
+		close.MouseLeave:Connect(function()
+			tween(close, {BackgroundColor3 = COLOR_CARD2}, 0.12)
+		end)
+		close.MouseButton1Click:Connect(voiceBanCloseToast)
+
+		rejoin.MouseEnter:Connect(function()
+			tween(rejoin, {BackgroundColor3 = Color3.fromRGB(56, 102, 158), BackgroundTransparency = 0.05}, 0.12)
+			tween(rejoinStroke, {Color = COLOR_ACCENT}, 0.12)
+		end)
+		rejoin.MouseLeave:Connect(function()
+			tween(rejoin, {BackgroundColor3 = COLOR_CARD2, BackgroundTransparency = 0.15}, 0.12)
+			tween(rejoinStroke, {Color = COLOR_SUCCESS}, 0.12)
+		end)
+		rejoin.MouseButton1Click:Connect(function()
+			voiceBanRejoin()
+		end)
+	end
+
+	-- ---------- contagem ----------
+
+	local function voiceBanBegin(source)
+		voiceBanPhase = "active"
+		voiceBanStart = os.clock()
+		voiceBanRemaining = VOICE_BAN_SECONDS
+		VoiceBanButton.TextColor3 = COLOR_WARN
+		voiceBanPaint()
+		print("[CHOSEN VOZ] contagem iniciada (" .. tostring(source) .. ")")
+	end
+
+	local function voiceBanRelease()
+		if voiceBanPhase == "released" then return end
+		voiceBanPhase = "released"
+		voiceBanRemaining = 0
+		voiceBanPaint()
+		voiceBanShowToast()
+		print("[CHOSEN VOZ] contagem concluída: rejoin liberado")
+	end
+
+	local function voiceBanCancel()
+		voiceBanPhase = "idle"
+		voiceBanRemaining = VOICE_BAN_SECONDS
+		voiceBanPaint()
+		voiceBanCloseToast()
+	end
+
+	VoiceBanButton.MouseButton1Click:Connect(function()
+		if voiceBanPhase == "active" then
+			voiceBanCancel()
+		elseif voiceBanPhase == "released" then
+			voiceBanRejoin()
+		else
+			voiceBanBegin("manual")
+		end
+	end)
+
+	-- Relógio local: atualiza o texto sem chamadas extras.
+	task.spawn(function()
+		while VoiceBanButton.Parent do
+			if voiceBanPhase == "active" then
+				voiceBanRemaining = VOICE_BAN_SECONDS - (os.clock() - voiceBanStart)
+				if voiceBanRemaining <= 0 then
+					voiceBanRelease()
+				else
+					voiceBanPaint()
+				end
+			end
+			task.wait(0.5)
+		end
+	end)
+
+	-- Textos do próprio painel/console nunca contam como aviso do Roblox
+	-- (o console do F9 repete as nossas mensagens e gera falso positivo).
+	local function voiceBanNoiseText(text)
+		if #text > 90 then return true end
+		local t = string.lower(text)
+		if text:find("\n", 1, true) then return true end
+		if t:find("[chosen", 1, true) then return true end
+		if t:find("chosen voz", 1, true) then return true end
+		if t:find("-- ", 1, true) then return true end
+		return false
+	end
+
+	local function voiceBanTextMatches(text)
+		if voiceBanNoiseText(text) then return false end
+		local t = string.lower(text)
+		if not (t:find("voz", 1, true)
+			or t:find("voice", 1, true)
+			or t:find("microfone", 1, true)) then
+			return false
+		end
+		return t:find("banid", 1, true) ~= nil
+			or t:find("ban", 1, true) ~= nil
+			or t:find("suspens", 1, true) ~= nil
+			or t:find("suspend", 1, true) ~= nil
+			or t:find("indispon", 1, true) ~= nil
+			or t:find("unavailable", 1, true) ~= nil
+			or t:find("restrit", 1, true) ~= nil
+			or t:find("restrict", 1, true) ~= nil
+			or t:find("temporar", 1, true) ~= nil
+			or t:find("desativ", 1, true) ~= nil
+			or t:find("disabled", 1, true) ~= nil
+			or t:find("mute", 1, true) ~= nil
+			or t:find("mutad", 1, true) ~= nil
+			or t:find("bloque", 1, true) ~= nil
+			or t:find("block", 1, true) ~= nil
+			or t:find("cooldown", 1, true) ~= nil
+	end
+
+	-- Evita que o mesmo aviso reinicie a contagem várias vezes.
+	local voiceBanIgnore = {}
+
+	local function voiceBanNotice(text, source)
+		if voiceBanPhase == "active" then return end
+		local key = (string.lower(text):gsub("%s+", " "))
+		local now = os.clock()
+		local untilAt = voiceBanIgnore[key]
+		if untilAt and now < untilAt then
+			return
+		end
+		voiceBanIgnore[key] = now + 180
+		print("[CHOSEN VOZ] ban detectado " .. source .. ": " .. text)
+		voiceBanBegin("interface")
+	end
+
+	-- 1) Aviso no chat.
+	pcall(function()
+		local TextChatService = game:GetService("TextChatService")
+		TextChatService.MessageReceived:Connect(function(message)
+			if voiceBanPhase == "active" then return end
+			local text = type(message.Text) == "string" and message.Text or ""
+			if voiceBanTextMatches(text) then
+				voiceBanNotice(text, "pelo chat")
+			end
+		end)
+	end)
+
+	-- 2) Aviso na interface (o caso real: "Conversa por voz suspensa").
+	local function voiceBanScanRobloxUI()
+		local roots = {}
+		local okHui, hui = pcall(function()
+			if type(gethui) == "function" then
+				return gethui()
+			end
+		end)
+		if okHui and hui then table.insert(roots, hui) end
+		local okCore, core = pcall(function()
+			return game:GetService("CoreGui")
+		end)
+		if okCore and core then table.insert(roots, core) end
+		local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+		if playerGui then table.insert(roots, playerGui) end
+
+		for _, root in ipairs(roots) do
+			local ok, items = pcall(function()
+				return root:GetDescendants()
+			end)
+			if ok then
+				local checked = 0
+				for _, obj in ipairs(items) do
+					if checked >= 600 then break end
+					if obj.ClassName == "TextLabel" or obj.ClassName == "TextButton" then
+						local okText, text = pcall(function()
+							return obj.Text
+						end)
+						if okText and type(text) == "string"
+							and #text > 3 and #text <= 90
+							and obj.Visible then
+							checked += 1
+							if voiceBanTextMatches(text)
+								and not obj:IsDescendantOf(ScreenGui) then
+								return text
+							end
+						end
+					end
+				end
+			end
+		end
+		return nil
+	end
+
+	local function voiceBanInspect(obj)
+		if obj.ClassName ~= "TextLabel" and obj.ClassName ~= "TextButton" then
+			return
+		end
+		local okText, text = pcall(function()
+			return obj.Text
+		end)
+		if not okText or type(text) ~= "string" then return end
+		if #text < 4 or #text > 90 then return end
+		if voiceBanNoiseText(text) then return end
+		local okSelf, mine = pcall(function()
+			return obj:IsDescendantOf(ScreenGui)
+		end)
+		if okSelf and mine then return end
+		if voiceBanTextMatches(text) then
+			voiceBanNotice(text, "na interface")
+		end
+	end
+
+	local function voiceBanAddRoot(root)
+		if not root then return end
+		local ok, connected = pcall(function()
+			root.DescendantAdded:Connect(function(obj)
+				voiceBanInspect(obj)
+				-- Alguns avisos recebem o texto depois de serem criados.
+				if obj.ClassName == "TextLabel" or obj.ClassName == "TextButton" then
+					task.delay(0.2, function()
+						if obj.Parent then
+							voiceBanInspect(obj)
+						end
+					end)
+				end
+			end)
+			return true
+		end)
+		return ok and connected
+	end
+
+	voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+	pcall(function() voiceBanAddRoot(game:GetService("CoreGui")) end)
+	pcall(function()
+		if type(gethui) == "function" then voiceBanAddRoot(gethui()) end
+	end)
+	print("[CHOSEN VOZ] monitor de interface ativo")
+
+	-- Religa o monitor caso o PlayerGui seja recriado (respawn).
+	task.spawn(function()
+		while VoiceBanButton.Parent do
+			task.wait(5)
+			voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+		end
+	end)
+
+	-- Varredura única: se o ban já estava na tela ao injetar, pega o início.
+	task.spawn(function()
+		task.wait(2)
+		if voiceBanPhase == "active" then return end
+		local found = voiceBanScanRobloxUI()
+		if found then
+			voiceBanNotice(found, "na tela")
+		end
+	end)
+
+	-- 3) API de voz: só serve como registro. Durante o ban ela continua
+	-- dizendo "disponível", então não é usada para encerrar a contagem.
+	do
+		local okService, VoiceChatService = pcall(function()
+			return game:GetService("VoiceChatService")
+		end)
+		if okService and VoiceChatService then
+			task.spawn(function()
+				local wasEnabled = nil
+				while VoiceBanButton.Parent do
+					local ok, enabled = pcall(function()
+						return VoiceChatService:IsVoiceEnabledForUserIdAsync(LocalPlayer.UserId)
+					end)
+					if ok and type(enabled) == "boolean" and enabled ~= wasEnabled then
+						print("[CHOSEN VOZ] voz " .. (enabled and "disponível" or "indisponível"))
+						wasEnabled = enabled
+					end
+					task.wait(10)
+				end
+			end)
+		end
+	end
+end
+chosenInstallVoiceBan()
+
 local StatsCard = Instance.new("Frame")
 StatsCard.Size = UDim2.new(0, 112, 0, 94)
 StatsCard.BackgroundColor3 = COLOR_CARD
@@ -3015,7 +3490,7 @@ StatsCard.BorderSizePixel = 0
 StatsCard.LayoutOrder = 0
 StatsCard.Position = UDim2.new(1, -124, 0.5, -47)
 StatsCard.Parent = WelcomeCard
-corner(StatsCard, 14)
+corner(StatsCard, 10)
 stroke(StatsCard, COLOR_BORDER, 1, 0.2)
 
 local PingBox = Instance.new("Frame")
@@ -3025,7 +3500,7 @@ PingBox.BackgroundColor3 = COLOR_PANEL
 PingBox.BackgroundTransparency = 0.25
 PingBox.BorderSizePixel = 0
 PingBox.Parent = StatsCard
-corner(PingBox, 12)
+corner(PingBox, 8)
 stroke(PingBox, COLOR_BORDER, 1, 0.35)
 
 local PingCaption = Instance.new("TextLabel")
@@ -3057,7 +3532,7 @@ FpsBox.BackgroundColor3 = COLOR_PANEL
 FpsBox.BackgroundTransparency = 0.25
 FpsBox.BorderSizePixel = 0
 FpsBox.Parent = StatsCard
-corner(FpsBox, 12)
+corner(FpsBox, 8)
 stroke(FpsBox, COLOR_BORDER, 1, 0.35)
 
 local FpsCaption = Instance.new("TextLabel")
@@ -3106,19 +3581,39 @@ task.spawn(function()
 	end
 end)
 
-createSection(HomeTab, "Acesso rápido", "Comandos principais da interface.", 4)
+createSection(HomeTab, "Acesso rápido", "Seus comandos principais em um só lugar.", 4)
 local HomeActions = createControlRow(HomeTab, 5)
-local HomeRejoinButton = createActionButton(HomeActions, "🔁 REJOIN", 1)
-HomeRejoinButton.TextSize = 14
+
+-- Card agrupado: REJOIN + visibilidade dos cargos ocupam juntos metade da linha.
+local HomeQuickCard = Instance.new("Frame")
+HomeQuickCard.Name = "HomeQuickActionsCard"
+HomeQuickCard.Size = UDim2.new(0.5, -8, 1, 0)
+HomeQuickCard.BackgroundColor3 = COLOR_CARD
+HomeQuickCard.BackgroundTransparency = 0.04
+HomeQuickCard.BorderSizePixel = 0
+HomeQuickCard.LayoutOrder = 1
+HomeQuickCard.Parent = HomeActions
+corner(HomeQuickCard, 8)
+stroke(HomeQuickCard, COLOR_BORDER, 1, 0.25)
+
+local HomeRejoinButton = createActionButton(HomeQuickCard, "🔁 REJOIN", 1)
+HomeRejoinButton.Size = UDim2.new(0.5, -9, 1, -12)
+HomeRejoinButton.Position = UDim2.new(0, 6, 0, 6)
+HomeRejoinButton.TextSize = 11
 HomeRejoinButton.Font = Enum.Font.LuckiestGuy
+HomeRejoinButton.TextXAlignment = Enum.TextXAlignment.Center
 HomeRejoinButton.MouseButton1Click:Connect(function()
 	pcall(function()
 		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 	end)
 end)
-local HomeTagsButton = createActionButton(HomeActions, "👁  OCULTAR CARGOS", 2)
-HomeTagsButton.TextSize = 11
+
+local HomeTagsButton = createActionButton(HomeQuickCard, "👁  CARGOS", 2)
+HomeTagsButton.Size = UDim2.new(0.5, -9, 1, -12)
+HomeTagsButton.Position = UDim2.new(0.5, 3, 0, 6)
+HomeTagsButton.TextSize = 10
 HomeTagsButton.Font = Enum.Font.FredokaOne
+HomeTagsButton.TextXAlignment = Enum.TextXAlignment.Center
 HomeTagsButton.MouseButton1Click:Connect(function()
 	local nowHidden = false
 	if type(chosenToggleTagsVisibility) == "function" then
@@ -3126,41 +3621,123 @@ HomeTagsButton.MouseButton1Click:Connect(function()
 	end
 
 	HomeTagsButton.Text = nowHidden
-		and "👁  MOSTRAR CARGOS"
-		or "👁  OCULTAR CARGOS"
+		and "👁  MOSTRAR"
+		or "👁  OCULTAR"
 end)
 
-createSection(HomeTab, "Servidores", "Veja os servidores públicos disponíveis e escolha onde entrar.", 6)
-local ServerToolbar = createControlRow(HomeTab, 7)
-local RefreshServersButton = createActionButton(ServerToolbar, "🔄 Atualizar", 1)
-RefreshServersButton.Size = UDim2.new(0, 96, 0, 26)
-RefreshServersButton.Position = UDim2.new(0, 0, 0.5, -13)
+-- Botão de servidores: ocupa a outra metade da linha e abre a janela dedicada.
+local OpenServersButton = createActionButton(HomeActions, "🌐  SERVIDORES", 2)
+OpenServersButton.TextSize = 13
+OpenServersButton.Font = Enum.Font.LuckiestGuy
+OpenServersButton.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Janela interna no mesmo espaço das abas, sem alterar a navegação nem as chamadas da API.
+local ServerWindow = Instance.new("Frame")
+ServerWindow.Name = "ServerWindow"
+ServerWindow.Size = UDim2.new(1, 0, 1, 0)
+ServerWindow.Position = UDim2.new(0, 0, 0, 0)
+ServerWindow.BackgroundColor3 = COLOR_PANEL
+ServerWindow.BorderSizePixel = 0
+ServerWindow.Visible = false
+ServerWindow.ZIndex = 20
+ServerWindow.Parent = ContentArea
+corner(ServerWindow, 10)
+stroke(ServerWindow, COLOR_BORDER2, 1, 0.12)
+
+local ServerWindowHeader = Instance.new("Frame")
+ServerWindowHeader.Size = UDim2.new(1, -20, 0, 46)
+ServerWindowHeader.Position = UDim2.new(0, 10, 0, 8)
+ServerWindowHeader.BackgroundColor3 = COLOR_CARD
+ServerWindowHeader.BorderSizePixel = 0
+ServerWindowHeader.ZIndex = 21
+ServerWindowHeader.Parent = ServerWindow
+corner(ServerWindowHeader, 10)
+stroke(ServerWindowHeader, COLOR_BORDER, 1, 0.3)
+
+local ServerWindowTitle = Instance.new("TextLabel")
+ServerWindowTitle.Size = UDim2.new(1, -112, 1, 0)
+ServerWindowTitle.Position = UDim2.new(0, 13, 0, 0)
+ServerWindowTitle.BackgroundTransparency = 1
+ServerWindowTitle.Text = "🌐  SERVIDORES DISPONÍVEIS"
+ServerWindowTitle.TextColor3 = COLOR_TEXT
+ServerWindowTitle.Font = Enum.Font.LuckiestGuy
+ServerWindowTitle.TextSize = 14
+ServerWindowTitle.TextXAlignment = Enum.TextXAlignment.Left
+ServerWindowTitle.ZIndex = 22
+ServerWindowTitle.Parent = ServerWindowHeader
+
+local CloseServersButton = Instance.new("TextButton")
+CloseServersButton.Size = UDim2.new(0, 34, 0, 30)
+CloseServersButton.Position = UDim2.new(1, -42, 0.5, -15)
+CloseServersButton.BackgroundColor3 = COLOR_CARD2
+CloseServersButton.BorderSizePixel = 0
+CloseServersButton.AutoButtonColor = false
+CloseServersButton.Text = "✕"
+CloseServersButton.TextColor3 = COLOR_TEXT
+CloseServersButton.Font = Enum.Font.FredokaOne
+CloseServersButton.TextSize = 14
+CloseServersButton.ZIndex = 22
+CloseServersButton.Parent = ServerWindowHeader
+corner(CloseServersButton, 8)
+stroke(CloseServersButton, COLOR_BORDER, 1, 0.3)
+
+local function closeServerWindow()
+	ServerWindow.Visible = false
+end
+
+OpenServersButton.MouseButton1Click:Connect(function()
+	ServerWindow.Visible = true
+end)
+
+CloseServersButton.MouseButton1Click:Connect(closeServerWindow)
+
+ContentFrames["Início"]:GetPropertyChangedSignal("Visible"):Connect(function()
+	if not ContentFrames["Início"].Visible then
+		ServerWindow.Visible = false
+	end
+end)
+
+local ServerToolbar = Instance.new("Frame")
+ServerToolbar.Name = "ServerToolbar"
+ServerToolbar.Size = UDim2.new(1, -20, 0, 34)
+ServerToolbar.Position = UDim2.new(0, 10, 0, 62)
+ServerToolbar.BackgroundTransparency = 1
+ServerToolbar.ZIndex = 21
+ServerToolbar.Parent = ServerWindow
+
+local RefreshServersButton = createActionButton(ServerToolbar, "↻  ATUALIZAR LISTA", 1)
+RefreshServersButton.Size = UDim2.new(0, 142, 0, 30)
+RefreshServersButton.Position = UDim2.new(0, 0, 0, 2)
 RefreshServersButton.TextSize = 10
 RefreshServersButton.Font = Enum.Font.FredokaOne
+RefreshServersButton.TextXAlignment = Enum.TextXAlignment.Center
 
 local ServerStatusLabel = Instance.new("TextLabel")
-ServerStatusLabel.Size = UDim2.new(0.5, -10, 1, 0)
-ServerStatusLabel.Position = UDim2.new(0.5, 5, 0, 0)
+ServerStatusLabel.Size = UDim2.new(1, -154, 1, 0)
+ServerStatusLabel.Position = UDim2.new(0, 154, 0, 0)
 ServerStatusLabel.BackgroundTransparency = 1
 ServerStatusLabel.Text = "Nenhuma lista carregada"
 ServerStatusLabel.TextColor3 = COLOR_DIM
 ServerStatusLabel.Font = Enum.Font.FredokaOne
 ServerStatusLabel.TextSize = 10
 ServerStatusLabel.TextXAlignment = Enum.TextXAlignment.Right
+ServerStatusLabel.ZIndex = 22
 ServerStatusLabel.Parent = ServerToolbar
 
 local ServerList = Instance.new("ScrollingFrame")
 ServerList.Name = "ServerList"
-ServerList.Size = UDim2.new(1, -4, 0, 190)
+ServerList.Size = UDim2.new(1, -20, 1, -112)
+ServerList.Position = UDim2.new(0, 10, 0, 104)
+ServerList.ZIndex = 21
 ServerList.BackgroundColor3 = COLOR_CARD
 ServerList.BackgroundTransparency = 0.08
 ServerList.BorderSizePixel = 0
 ServerList.ScrollBarThickness = 3
 ServerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 ServerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-ServerList.LayoutOrder = 8
-ServerList.Parent = HomeTab
-corner(ServerList, 12)
+ServerList.LayoutOrder = 1
+ServerList.Parent = ServerWindow
+corner(ServerList, 8)
 stroke(ServerList, COLOR_BORDER, 1, 0.3)
 
 local ServerListLayout = Instance.new("UIListLayout")
@@ -3234,7 +3811,7 @@ local function addServerEntry(server, index)
 	row.BorderSizePixel = 0
 	row.LayoutOrder = index
 	row.Parent = ServerList
-	corner(row, 12)
+	corner(row, 8)
 	local rowStroke = stroke(row, COLOR_BORDER, 1, 0.3)
 
 	local gameThumb = Instance.new("ImageLabel")
@@ -3549,7 +4126,7 @@ pcall(function()
 	FriendsList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	FriendsList.LayoutOrder = 4
 	FriendsList.Parent = AmigosTab
-	corner(FriendsList, 12)
+	corner(FriendsList, 8)
 	stroke(FriendsList, COLOR_BORDER, 1, 0.3)
 
 	local FriendsListLayout = Instance.new("UIListLayout")
@@ -3624,7 +4201,7 @@ pcall(function()
 		row.BorderSizePixel = 0
 		row.LayoutOrder = index
 		row.Parent = FriendsList
-		corner(row, 12)
+		corner(row, 8)
 		stroke(row, COLOR_BORDER, 1, 0.3)
 
 		local avatar = Instance.new("ImageLabel")
@@ -4057,7 +4634,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	MoveCard.BackgroundTransparency = 0.08
 	MoveCard.BorderSizePixel = 0
 	MoveCard.Parent = CharacterGrid
-	corner(MoveCard, 12)
+	corner(MoveCard, 8)
 	stroke(MoveCard, COLOR_BORDER, 1, 0.3)
 
 	local function moveCaption(text, y)
@@ -4157,7 +4734,7 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	ActionCard.BackgroundTransparency = 0.08
 	ActionCard.BorderSizePixel = 0
 	ActionCard.Parent = CharacterGrid
-	corner(ActionCard, 12)
+	corner(ActionCard, 8)
 	stroke(ActionCard, COLOR_ACCENT, 1, 0.45)
 
 	local function actionRow(y, title, subtitleText, dotColor)
@@ -5008,7 +5585,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toast.BorderSizePixel = 0
 		toast.ZIndex = 60
 		toast.Parent = ScreenGui
-		corner(toast, 14)
+		corner(toast, 10)
 		stroke(toast, AI_OUTLINE, 1.2, 0.35)
 
 		-- Barra lateral de destaque (roxo)
@@ -5071,7 +5648,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		toastClose.TextSize = 12
 		toastClose.ZIndex = 61
 		toastClose.Parent = toast
-		corner(toastClose, 12)
+		corner(toastClose, 8)
 
 		-- Barra de contagem: o tempo restante (10s) esvazia da direita
 		local toastTimer = Instance.new("Frame")
@@ -5807,7 +6384,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		notice.BorderSizePixel = 0
 		notice.ZIndex = 90
 		notice.Parent = ScreenGui
-		corner(notice, 14)
+		corner(notice, 10)
 		stroke(notice, Color3.fromRGB(255, 170, 60), 1.2, 0.35)
 
 		-- Barra lateral de destaque (âmbar)
