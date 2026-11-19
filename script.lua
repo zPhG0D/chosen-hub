@@ -3293,33 +3293,44 @@ local function chosenInstallVoiceBan()
 		if t:find("[chosen", 1, true) then return true end
 		if t:find("chosen voz", 1, true) then return true end
 		if t:find("-- ", 1, true) then return true end
+		-- Nomes de comando de scripts/menus (ex.: Infinity Yield:
+		-- "muteallvoices / muteallvcs") não são aviso de ban.
+		if t:find("mute", 1, true) then return true end
+		if t:find("unmute", 1, true) then return true end
+		if t:find("vcs", 1, true) then return true end
+		if t:find("bypass", 1, true) then return true end
+		if t:find("anti voice", 1, true) then return true end
+		if t:find("anti-voz", 1, true) then return true end
+		-- Texto com cara de código/lista não é frase de aviso.
+		if text:find("[\\/%(%)%[%]{}_=<>|]", 1) then return true end
 		return false
 	end
 
 	local function voiceBanTextMatches(text)
 		if voiceBanNoiseText(text) then return false end
 		local t = string.lower(text)
+
+		-- Exige falar de voz/microfone...
 		if not (t:find("voz", 1, true)
 			or t:find("voice", 1, true)
 			or t:find("microfone", 1, true)) then
 			return false
 		end
-		return t:find("banid", 1, true) ~= nil
-			or t:find("ban", 1, true) ~= nil
-			or t:find("suspens", 1, true) ~= nil
+
+		-- ...e de suspensão/bloqueio. Nada de "mute", "block" ou
+		-- "cooldown" soltos: aparecem em menus de script e davam falso positivo.
+		return t:find("suspens", 1, true) ~= nil
 			or t:find("suspend", 1, true) ~= nil
+			or t:find("banid", 1, true) ~= nil
+			or t:find("banido", 1, true) ~= nil
+			or t:find("banned", 1, true) ~= nil
 			or t:find("indispon", 1, true) ~= nil
 			or t:find("unavailable", 1, true) ~= nil
 			or t:find("restrit", 1, true) ~= nil
 			or t:find("restrict", 1, true) ~= nil
-			or t:find("temporar", 1, true) ~= nil
-			or t:find("desativ", 1, true) ~= nil
-			or t:find("disabled", 1, true) ~= nil
-			or t:find("mute", 1, true) ~= nil
-			or t:find("mutad", 1, true) ~= nil
-			or t:find("bloque", 1, true) ~= nil
-			or t:find("block", 1, true) ~= nil
-			or t:find("cooldown", 1, true) ~= nil
+			or t:find("bloquead", 1, true) ~= nil
+			-- "ban" isolado, mas só como palavra inteira
+			or t:find("%f[%a]ban%f[%A]") ~= nil
 	end
 
 	-- Evita que o mesmo aviso reinicie a contagem várias vezes.
@@ -3394,6 +3405,9 @@ local function chosenInstallVoiceBan()
 		return nil
 	end
 
+	local voiceBanDiagSeen = {}
+	local voiceBanDiagKeys = 0
+
 	local function voiceBanInspect(obj)
 		if obj.ClassName ~= "TextLabel" and obj.ClassName ~= "TextButton" then
 			return
@@ -3403,13 +3417,23 @@ local function chosenInstallVoiceBan()
 		end)
 		if not okText or type(text) ~= "string" then return end
 		if #text < 4 or #text > 90 then return end
-		if voiceBanNoiseText(text) then return end
 		local okSelf, mine = pcall(function()
 			return obj:IsDescendantOf(ScreenGui)
 		end)
 		if okSelf and mine then return end
 		if voiceBanTextMatches(text) then
 			voiceBanNotice(text, "na interface")
+			return
+		end
+		-- Diagnóstico: mostra no F9 textos com "voz/voice" que foram
+		-- ignorados. Ajuda a identificar novos falsos positivos.
+		local lower = string.lower(text)
+		if not voiceBanDiagSeen[text]
+			and (lower:find("voz", 1, true) or lower:find("voice", 1, true)) then
+			if voiceBanDiagKeys >= 8 then return end
+			voiceBanDiagKeys += 1
+			voiceBanDiagSeen[text] = true
+			print("[CHOSEN VOZ] ignorado: " .. text)
 		end
 	end
 
