@@ -3039,6 +3039,11 @@ local function chosenInstallVoiceBan()
 	local COLOR_WARN = Color3.fromRGB(245, 178, 82)
 	local VOICE_BAN_SECONDS = 5 * 60
 
+	-- Se o jogo começar a crashar ao abrir scripts grandes, troque para
+	-- false: desliga só a varredura da interface. O botão manual e a
+	-- detecção pelo chat continuam funcionando normalmente.
+	local VOICE_BAN_UI_WATCH = true
+
 	local voiceBanPhase = "idle" -- idle | active | released
 	local voiceBanRemaining = VOICE_BAN_SECONDS
 	local voiceBanStart = 0
@@ -3437,43 +3442,99 @@ local function chosenInstallVoiceBan()
 		end
 	end
 
-	local function voiceBanAddRoot(root)
-		if not root then return end
-		local ok, connected = pcall(function()
-			root.DescendantAdded:Connect(function(obj)
-				voiceBanInspect(obj)
-				-- Alguns avisos recebem o texto depois de serem criados.
-				if obj.ClassName == "TextLabel" or obj.ClassName == "TextButton" then
-					task.delay(0.2, function()
-						if obj.Parent then
-							voiceBanInspect(obj)
-						end
-					end)
-				end
-			end)
-			return true
-		end)
-		return ok and connected
+	local voiceBanRoots = {}
+
+	-- Fila: quando um script grande (Infinite Yield, emotes) monta a
+	-- interface, centenas de TextLabels nascem no mesmo frame. Ler o
+	-- texto de todos na hora travava o cliente. Agora só empilhamos e
+	-- o processamento acontece em lotes pequenos, fora do frame.
+	local voiceBanQueue = {}
+	local voiceBanQueueIndex = 1
+	local VOICE_BAN_QUEUE_MAX = 600
+	local VOICE_BAN_BATCH = 15
+
+	local function voiceBanEnqueue(obj)
+		if #voiceBanQueue - (voiceBanQueueIndex - 1) >= VOICE_BAN_QUEUE_MAX then
+			return
+		end
+		voiceBanQueue[#voiceBanQueue + 1] = obj
 	end
 
-	voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
-	pcall(function() voiceBanAddRoot(game:GetService("CoreGui")) end)
-	pcall(function()
-		if type(gethui) == "function" then voiceBanAddRoot(gethui()) end
+	task.spawn(function()
+		while VoiceBanButton.Parent do
+			local processed = 0
+			while voiceBanQueueIndex <= #voiceBanQueue and processed < VOICE_BAN_BATCH do
+				local obj = voiceBanQueue[voiceBanQueueIndex]
+				voiceBanQueue[voiceBanQueueIndex] = nil
+				voiceBanQueueIndex += 1
+				processed += 1
+
+				if obj and obj.Parent then
+					pcall(voiceBanInspect, obj)
+					-- Texto pode chegar depois da criação do label.
+					local okEmpty, current = pcall(function()
+						return obj.Text
+					end)
+					if okEmpty and (current == nil or current == "") then
+						task.delay(0.25, function()
+							if obj.Parent then
+								voiceBanEnqueue(obj)
+							end
+						end)
+					end
+				end
+			end
+
+			if voiceBanQueueIndex > #voiceBanQueue then
+				voiceBanQueue = {}
+				voiceBanQueueIndex = 1
+			end
+
+			task.wait(0.08)
+		end
 	end)
-	print("[CHOSEN VOZ] monitor de interface ativo")
+
+	local function voiceBanAddRoot(root)
+		if not root then return end
+		for _, existing in ipairs(voiceBanRoots) do
+			if existing == root then return end
+		end
+		table.insert(voiceBanRoots, root)
+
+		pcall(function()
+			root.DescendantAdded:Connect(function(obj)
+				local class = obj.ClassName
+				if class ~= "TextLabel" and class ~= "TextButton" then return end
+				voiceBanEnqueue(obj)
+			end)
+		end)
+	end
+
+	if VOICE_BAN_UI_WATCH then
+		voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+		pcall(function() voiceBanAddRoot(game:GetService("CoreGui")) end)
+		pcall(function()
+			if type(gethui) == "function" then voiceBanAddRoot(gethui()) end
+		end)
+		print("[CHOSEN VOZ] monitor de interface ativo")
+	else
+		print("[CHOSEN VOZ] monitor de interface desligado (VOICE_BAN_UI_WATCH = false)")
+	end
 
 	-- Religa o monitor caso o PlayerGui seja recriado (respawn).
 	task.spawn(function()
 		while VoiceBanButton.Parent do
 			task.wait(5)
-			voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+			if VOICE_BAN_UI_WATCH then
+				voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+			end
 		end
 	end)
 
 	-- Varredura única: se o ban já estava na tela ao injetar, pega o início.
 	task.spawn(function()
 		task.wait(2)
+		if not VOICE_BAN_UI_WATCH then return end
 		if voiceBanPhase == "active" then return end
 		local found = voiceBanScanRobloxUI()
 		if found then
@@ -4380,10 +4441,60 @@ pcall(function()
 	task.defer(loadFriendsInServer)
 end)
 
+-- ==========================================================
+-- PERSISTÊNCIA DE ESTADO (vale para todas as abas)
+-- Fica no escopo principal porque os blocos de aba são "do ... end"
+-- e um "local" criado dentro de um deles não é visível no outro.
+-- ==========================================================
+local PERSIST_PATH = "7yd7/ChosenPanelConfig.json"
+local PERSIST_STATE = {
+	noclip = false,
+	clickTp = false,
+	antiAfk = false,
+	flashback = false,
+	impulse = false,
+	animSpeed = false,
+	antiInvis = true, -- padrão antigo: nasce ligado
+}
+local antiAfkEnabled = false
+local antiAfkConnection = nil
+
+local function persistWrite()
+	pcall(function()
+		if type(writefile) ~= "function" then return end
+		local http = game:GetService("HttpService")
+		pcall(function()
+			if type(makefolder) == "function" then makefolder("7yd7") end
+		end)
+		writefile(PERSIST_PATH, http:JSONEncode(PERSIST_STATE))
+	end)
+end
+
+local function persistRead()
+	pcall(function()
+		if type(readfile) ~= "function" or type(isfile) ~= "function" then return end
+		if not isfile(PERSIST_PATH) then return end
+		local http = game:GetService("HttpService")
+		local decoded = http:JSONDecode(readfile(PERSIST_PATH))
+		if type(decoded) ~= "table" then return end
+		if type(decoded.noclip) == "boolean" then PERSIST_STATE.noclip = decoded.noclip end
+		if type(decoded.clickTp) == "boolean" then PERSIST_STATE.clickTp = decoded.clickTp end
+		if type(decoded.antiAfk) == "boolean" then PERSIST_STATE.antiAfk = decoded.antiAfk end
+		if type(decoded.flashback) == "boolean" then PERSIST_STATE.flashback = decoded.flashback end
+		if type(decoded.impulse) == "boolean" then PERSIST_STATE.impulse = decoded.impulse end
+		if type(decoded.animSpeed) == "boolean" then PERSIST_STATE.animSpeed = decoded.animSpeed end
+		if type(decoded.antiInvis) == "boolean" then PERSIST_STATE.antiInvis = decoded.antiInvis end
+	end)
+end
+
+persistRead()
+
 -- Jogo Tab (bloco autocontido: libera os registros locais ao fim)
 do
 -- Jogo Tab
 createSection(GameTab, "Jogo", "Movimento, atalhos e utilidades.", 1)
+
+-- Variáveis locais (inicialização)
 local noclip = false
 local noclipHotkeyEnabled = false
 local noclipSetState
@@ -4407,6 +4518,7 @@ local impulseCharacter = nil
 local impulseHRP = nil
 local stopImpulseLoop
 local restoreImpulse
+
 
 stopImpulseLoop = function()
 	if impulseLoopConnection then
@@ -4521,8 +4633,16 @@ local GameRow1 = createControlRow(GameTab, 2)
 local _, setNoclipState = createToggleButton(GameRow1, "Noclip  •  N = alternar", function(state)
 	noclip = state
 	noclipHotkeyEnabled = state
+	PERSIST_STATE.noclip = state
+	persistWrite()
 end, 1)
 noclipSetState = setNoclipState
+-- Reaplica o estado salvo no próprio botão (nasce desligado).
+if PERSIST_STATE.noclip then
+	noclip = true
+	noclipHotkeyEnabled = true
+	setNoclipState(true)
+end
 
 RunService.Stepped:Connect(function()
 	if noclip and LocalPlayer.Character then
@@ -4532,9 +4652,16 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-createToggleButton(GameRow1, "Click TP  •  Ctrl + M1", function(state)
+local _, setClickTpState = createToggleButton(GameRow1, "Click TP  •  Ctrl + M1", function(state)
 	clickTp = state
+	PERSIST_STATE.clickTp = state
+	persistWrite()
 end, 2)
+-- Reaplica o estado salvo no próprio botão (nasce desligado).
+if PERSIST_STATE.clickTp then
+	clickTp = true
+	setClickTpState(true)
+end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if clickTp and not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -4548,11 +4675,18 @@ end)
 
 -- Flashback em meia-linha, com Impulse ao lado
 local GameRow2 = createControlRow(GameTab, 3)
-createToggleButton(GameRow2, "Flashback  •  Segure V", function(state)
+local _, setFlashbackState = createToggleButton(GameRow2, "Flashback  •  Segure V", function(state)
 	flashback = state
 	if not state then history = {} isRewinding = false end
+	PERSIST_STATE.flashback = state
+	persistWrite()
 end, 1)
-createToggleButton(GameRow2, "Impulse  •  Tecla M", function(state)
+if PERSIST_STATE.flashback then
+	flashback = true
+	setFlashbackState(true)
+end
+
+local _, setImpulseState = createToggleButton(GameRow2, "Impulse  •  Tecla M", function(state)
 	impulseHotkeyEnabled = state
 	if not state then
 		if impulseIsImpulsing then
@@ -4561,7 +4695,13 @@ createToggleButton(GameRow2, "Impulse  •  Tecla M", function(state)
 			stopImpulseLoop()
 		end
 	end
+	PERSIST_STATE.impulse = state
+	persistWrite()
 end, 2)
+if PERSIST_STATE.impulse then
+	impulseHotkeyEnabled = true
+	setImpulseState(true)
+end
 
 -- Fly movido para a aba Jogador (mesma lógica/callback), com ajuste na mesma linha
 createSection(PlayerTab, "Fly", "Ligue o voo e ajuste a velocidade na mesma linha.", 3)
@@ -4880,10 +5020,17 @@ if not okPlayerMove then
 end
 
 local GameRow3 = createControlRow(GameTab, 4)
-createToggleButton(GameRow3, "Anim Speed  •  Q|E", function(state)
+local _, setAnimSpeedState = createToggleButton(GameRow3, "Anim Speed  •  Q|E", function(state)
 	animationSpeedEnabled = state
 	animationSpeed = 1
+	PERSIST_STATE.animSpeed = state
+	persistWrite()
 end, 1)
+if PERSIST_STATE.animSpeed then
+	animationSpeedEnabled = true
+	animationSpeed = 1
+	setAnimSpeedState(true)
+end
 
 -- Jerkoff (animação FE clássica — funciona em R6 e R15)
 local okJerkoff, errJerkoff = pcall(function()
@@ -5584,11 +5731,13 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		if not state then
 			AI_clear()
 		end
+		PERSIST_STATE.antiInvis = state
+		persistWrite()
 	end, 2)
 
-	-- Já nasce ATIVO junto com o painel (o botão só serve pra desligar)
-	AI_enabled = true
-	AISetState(true)
+	-- Restaura o estado salvo (padrão: ligado, igual ao comportamento antigo)
+	AI_enabled = PERSIST_STATE.antiInvis
+	AISetState(AI_enabled)
 
 	-- Toast de inicialização (mesmo estilo do Aviso): entra
 	-- deslizando no canto, fica 10s, tem o X pra fechar e um
@@ -5707,7 +5856,10 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		task.delay(10, dismiss)
 	end
 
-	AIShowStartupToast()
+	-- Aviso no canto só aparece quando a função já está ativa.
+	if AI_enabled then
+		AIShowStartupToast()
+	end
 end)
 
 if not okAntiInvis then
@@ -6032,12 +6184,12 @@ end -- fim do bloco ESP
 do
 createSection(MiscTab, "Extras", "Ferramentas adicionais e efeitos visuais.", 1)
 local MiscRow1 = createControlRow(MiscTab, 2)
-local antiAfkEnabled = false
-local antiAfkConnection = nil
-createToggleButton(MiscRow1, "💤 Anti-AFK", function(state)
+local _, setAntiAfkState = createToggleButton(MiscRow1, "💤 Anti-AFK", function(state)
 	antiAfkEnabled = state
+	PERSIST_STATE.antiAfk = state
+	persistWrite()
 	if antiAfkConnection then antiAfkConnection:Disconnect() antiAfkConnection = nil end
-	if antiAfkEnabled then
+	if state then
 		antiAfkConnection = LocalPlayer.Idled:Connect(function()
 			pcall(function()
 				VirtualUser:CaptureController()
@@ -6047,19 +6199,93 @@ createToggleButton(MiscRow1, "💤 Anti-AFK", function(state)
 	end
 end, 1)
 
+-- Reaplica o estado salvo no próprio botão (nasce desligado).
+if PERSIST_STATE.antiAfk then
+	antiAfkEnabled = true
+	setAntiAfkState(true)
+end
+
+-- ==========================================================
+-- SCRIPTS EXTERNOS (Infinite Yield / Free Emotes)
+-- Carregados fora do thread do clique, com checagem de download
+-- e trava curta contra duplo clique. Sem isso, dois cliques
+-- abrem duas copias do mesmo script e pesam no executor.
+-- ==========================================================
+
+local chosenExternalLast = {}
+
+local function chosenRunExternal(key, url, label)
+	local now = os.clock()
+	if chosenExternalLast[key] and (now - chosenExternalLast[key]) < 6 then
+		warn("[CHOSEN EXT] " .. label .. ": aguarde alguns segundos (carregando).")
+		return
+	end
+	chosenExternalLast[key] = now
+
+	task.spawn(function()
+		local okFetch, source = pcall(function()
+			return game:HttpGet(url)
+		end)
+		if not okFetch or type(source) ~= "string" or #source < 8 then
+			chosenExternalLast[key] = nil
+			warn("[CHOSEN EXT] " .. label .. ": falha ao baixar o script.")
+			return
+		end
+
+		-- Página de erro/HTML não é script.
+		local head = string.lower(source:sub(1, 40))
+		if head:find("<!doctype", 1, true) or head:find("<html", 1, true) then
+			chosenExternalLast[key] = nil
+			warn("[CHOSEN EXT] " .. label .. ": o link devolveu uma página HTML.")
+			return
+		end
+
+		local loader = loadstring or load
+		if type(loader) ~= "function" then
+			chosenExternalLast[key] = nil
+			warn("[CHOSEN EXT] " .. label .. ": executor sem loadstring.")
+			return
+		end
+
+		-- Deixa o frame respirar antes de compilar 500 KB de código.
+		task.wait(0.1)
+
+		local okCompile, chunk = pcall(loader, source)
+		if not okCompile or type(chunk) ~= "function" then
+			chosenExternalLast[key] = nil
+			warn("[CHOSEN EXT] " .. label .. ": script inválido ou bloqueado.")
+			return
+		end
+
+		-- Roda no ambiente global do executor, igual a uma injeção
+		-- normal. Sem isso o script herda o ambiente do painel e
+		-- alguns scripts grandes se comportam mal.
+		pcall(function()
+			if type(setfenv) == "function" and type(getgenv) == "function" then
+				setfenv(chunk, getgenv())
+			end
+		end)
+
+		local okRun, err = pcall(chunk)
+		if not okRun then
+			chosenExternalLast[key] = nil
+			warn("[CHOSEN EXT] " .. label .. ": erro ao executar -> " .. tostring(err))
+			return
+		end
+
+		print("[CHOSEN EXT] " .. label .. " carregado.")
+	end)
+end
+
 local infinityButton = createActionButton(MiscRow1, "📜 Infinite Yield", 2)
 infinityButton.MouseButton1Click:Connect(function()
-	pcall(function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-	end)
+	chosenRunExternal("iy", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", "Infinite Yield")
 end)
 
 local MiscRow2 = createControlRow(MiscTab, 3)
 local emoteButton = createActionButton(MiscRow2, "💃 Free emotes", 1)
 emoteButton.MouseButton1Click:Connect(function()
-	pcall(function()
-		loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024"))()
-	end)
+	chosenRunExternal("emotes", "https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024", "Free Emotes")
 end)
 
 local rejoinButton = createActionButton(MiscRow2, "🔄 Rejoin", 2)
