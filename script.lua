@@ -3023,6 +3023,24 @@ end)
 
 end
 
+-- ==========================================================
+-- TRAVA DE CARGA EXTERNA
+-- Fica true enquanto um script grande (Infinite Yield / emotes)
+-- está sendo injetado. Os módulos que reagem à criação de
+-- instâncias consultam esta flag para ficar quietos durante a
+-- montagem da interface, que é o pico de instâncias.
+-- ==========================================================
+-- MODO LEVE (interruptor único de emergência)
+-- true = desliga os dois módulos que mais reagem à criação de
+-- instâncias (monitor da interface de voz + varredura do
+-- Anti-Invisível). Se algum script grande ainda derrubar o
+-- cliente ao injetar, ligue isto para confirmar a causa.
+local CHOSEN_LIGHT_MODE = false
+
+local CHOSEN_EXT_BUSY = false
+local CHOSEN_EXT_BUSY_TOKEN = 0
+local CHOSEN_VB_RESCAN_AT = 0
+
 -- Módulo isolado numa função própria: o chunk principal deste
 -- arquivo já está perto do limite de 200 variáveis locais do Luau,
 -- e declarar mais ~35 aqui em cima impede o script de compilar.
@@ -3042,7 +3060,7 @@ local function chosenInstallVoiceBan()
 	-- Se o jogo começar a crashar ao abrir scripts grandes, troque para
 	-- false: desliga só a varredura da interface. O botão manual e a
 	-- detecção pelo chat continuam funcionando normalmente.
-	local VOICE_BAN_UI_WATCH = true
+	local VOICE_BAN_UI_WATCH = not CHOSEN_LIGHT_MODE
 
 	local voiceBanPhase = "idle" -- idle | active | released
 	local voiceBanRemaining = VOICE_BAN_SECONDS
@@ -3443,6 +3461,13 @@ local function chosenInstallVoiceBan()
 	end
 
 	local voiceBanRoots = {}
+	local voiceBanConnections = {}
+	local voiceBanAttached = false
+	-- Pausa automática: se uma enxurrada de instâncias chegar (script
+	-- externo injetado por fora), o monitor se desconecta sozinho e
+	-- volta alguns segundos depois.
+	local voiceBanPausedUntil = 0
+	local voiceBanDetachAll
 
 	-- Fila: quando um script grande (Infinite Yield, emotes) monta a
 	-- interface, centenas de TextLabels nascem no mesmo frame. Ler o
@@ -3450,18 +3475,117 @@ local function chosenInstallVoiceBan()
 	-- o processamento acontece em lotes pequenos, fora do frame.
 	local voiceBanQueue = {}
 	local voiceBanQueueIndex = 1
-	local VOICE_BAN_QUEUE_MAX = 600
-	local VOICE_BAN_BATCH = 15
+	local VOICE_BAN_QUEUE_MAX = 300
+	local VOICE_BAN_BATCH = 10
+
+	-- Orçamento de eventos por segundo. Um script grande cria
+	-- milhares de objetos; sem esse teto o DescendantAdded vira uma
+	-- enxurrada de callbacks e o executor fecha. Ao estourar, a
+	-- gente para de enfileirar e resolve tudo numa varredura só.
+	local VOICE_BAN_EVENT_BUDGET = 120
+	local voiceBanBudget = 0
+	local voiceBanBudgetReset = 0
+
+	local function voiceBanRequestRescan(delay)
+		local at = os.clock() + (delay or 2)
+		if at > CHOSEN_VB_RESCAN_AT then
+			CHOSEN_VB_RESCAN_AT = at
+		end
+	end
 
 	local function voiceBanEnqueue(obj)
 		if #voiceBanQueue - (voiceBanQueueIndex - 1) >= VOICE_BAN_QUEUE_MAX then
+			voiceBanRequestRescan(3)
 			return
 		end
 		voiceBanQueue[#voiceBanQueue + 1] = obj
 	end
 
+	local function voiceBanOnDescendant(obj)
+		local class = obj.ClassName
+		if class ~= "TextLabel" and class ~= "TextButton" then return end
+
+		-- O painel também mora no CoreGui: ignora a própria interface.
+		local okSelf, mine = pcall(function()
+			return obj:IsDescendantOf(ScreenGui)
+		end)
+		if okSelf and mine then return end
+
+		-- Injeção externa em andamento: não processa nada agora.
+		if CHOSEN_EXT_BUSY then
+			voiceBanRequestRescan(4)
+			return
+		end
+
+		local now = os.clock()
+		if now > voiceBanBudgetReset then
+			voiceBanBudgetReset = now + 1
+			voiceBanBudget = 0
+		end
+		voiceBanBudget += 1
+		if voiceBanBudget > VOICE_BAN_EVENT_BUDGET then
+			-- Enxurrada: desconecta na hora em vez de só ignorar.
+			-- Ignorar ainda paga uma chamada Lua por instância criada.
+			voiceBanPausedUntil = now + 6
+			voiceBanRequestRescan(7)
+			if voiceBanDetachAll then voiceBanDetachAll() end
+			return
+		end
+
+		voiceBanEnqueue(obj)
+	end
+
+	local function voiceBanAddRoot(root)
+		if not root then return end
+		for _, existing in ipairs(voiceBanRoots) do
+			if existing == root then return end
+		end
+		table.insert(voiceBanRoots, root)
+
+		local conn
+		local ok = pcall(function()
+			conn = root.DescendantAdded:Connect(voiceBanOnDescendant)
+		end)
+		if ok and conn then
+			table.insert(voiceBanConnections, conn)
+		end
+	end
+
+	local function voiceBanAttachAll()
+		if voiceBanAttached then return end
+		voiceBanAttached = true
+		voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
+		pcall(function() voiceBanAddRoot(game:GetService("CoreGui")) end)
+		pcall(function()
+			if type(gethui) == "function" then voiceBanAddRoot(gethui()) end
+		end)
+	end
+
+	-- Desconecta de verdade durante uma injeção externa. Só ignorar o
+	-- evento ainda custa uma chamada Lua por instância criada, e o IY
+	-- cria milhares. Desconectado, o custo é zero.
+	voiceBanDetachAll = function()
+		if not voiceBanAttached then return end
+		voiceBanAttached = false
+		for _, conn in ipairs(voiceBanConnections) do
+			pcall(function() conn:Disconnect() end)
+		end
+		voiceBanConnections = {}
+		voiceBanRoots = {}
+		voiceBanQueue = {}
+		voiceBanQueueIndex = 1
+		voiceBanBudget = 0
+	end
+
 	task.spawn(function()
 		while VoiceBanButton.Parent do
+			-- Pausa durante carga externa/enxurrada e retoma depois.
+			if CHOSEN_EXT_BUSY or CHOSEN_LIGHT_MODE or os.clock() < voiceBanPausedUntil then
+				voiceBanDetachAll()
+			elseif VOICE_BAN_UI_WATCH and not voiceBanAttached then
+				voiceBanAttachAll()
+			end
+
 			local processed = 0
 			while voiceBanQueueIndex <= #voiceBanQueue and processed < VOICE_BAN_BATCH do
 				local obj = voiceBanQueue[voiceBanQueueIndex]
@@ -3471,17 +3595,6 @@ local function chosenInstallVoiceBan()
 
 				if obj and obj.Parent then
 					pcall(voiceBanInspect, obj)
-					-- Texto pode chegar depois da criação do label.
-					local okEmpty, current = pcall(function()
-						return obj.Text
-					end)
-					if okEmpty and (current == nil or current == "") then
-						task.delay(0.25, function()
-							if obj.Parent then
-								voiceBanEnqueue(obj)
-							end
-						end)
-					end
 				end
 			end
 
@@ -3490,32 +3603,27 @@ local function chosenInstallVoiceBan()
 				voiceBanQueueIndex = 1
 			end
 
-			task.wait(0.08)
+			-- Depois de uma enxurrada (ou de uma injeção externa),
+			-- uma única varredura lê o estado final da interface.
+			-- Isso substitui as centenas de retentativas por objeto.
+			if CHOSEN_VB_RESCAN_AT > 0
+				and not CHOSEN_EXT_BUSY
+				and os.clock() >= CHOSEN_VB_RESCAN_AT then
+				CHOSEN_VB_RESCAN_AT = 0
+				if voiceBanPhase ~= "active" then
+					local found = voiceBanScanRobloxUI()
+					if found then
+						voiceBanNotice(found, "na interface")
+					end
+				end
+			end
+
+			task.wait(0.1)
 		end
 	end)
 
-	local function voiceBanAddRoot(root)
-		if not root then return end
-		for _, existing in ipairs(voiceBanRoots) do
-			if existing == root then return end
-		end
-		table.insert(voiceBanRoots, root)
-
-		pcall(function()
-			root.DescendantAdded:Connect(function(obj)
-				local class = obj.ClassName
-				if class ~= "TextLabel" and class ~= "TextButton" then return end
-				voiceBanEnqueue(obj)
-			end)
-		end)
-	end
-
 	if VOICE_BAN_UI_WATCH then
-		voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
-		pcall(function() voiceBanAddRoot(game:GetService("CoreGui")) end)
-		pcall(function()
-			if type(gethui) == "function" then voiceBanAddRoot(gethui()) end
-		end)
+		voiceBanAttachAll()
 		print("[CHOSEN VOZ] monitor de interface ativo")
 	else
 		print("[CHOSEN VOZ] monitor de interface desligado (VOICE_BAN_UI_WATCH = false)")
@@ -3525,7 +3633,9 @@ local function chosenInstallVoiceBan()
 	task.spawn(function()
 		while VoiceBanButton.Parent do
 			task.wait(5)
-			if VOICE_BAN_UI_WATCH then
+			if VOICE_BAN_UI_WATCH
+				and not CHOSEN_EXT_BUSY
+				and not CHOSEN_LIGHT_MODE then
 				voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
 			end
 		end
@@ -3535,6 +3645,7 @@ local function chosenInstallVoiceBan()
 	task.spawn(function()
 		task.wait(2)
 		if not VOICE_BAN_UI_WATCH then return end
+		if CHOSEN_EXT_BUSY then return end
 		if voiceBanPhase == "active" then return end
 		local found = voiceBanScanRobloxUI()
 		if found then
@@ -4767,18 +4878,45 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	local MOVE_jumpPower = 50
 	local MOVE_walkOn = false
 	local MOVE_jumpOn = false
-	local MOVE_DEFAULT_WALK = 16
-	local MOVE_DEFAULT_JUMP = 50
 	local savedSpawnCFrame = nil
 
+	-- Valores ORIGINAIS do jogo, capturados só na primeira vez que
+	-- você clica em APPLY. 16 é apenas o padrão do Roblox: muitos
+	-- jogos usam outro valor (ex.: 24, 32) e o painel não pode
+	-- sobrescrever isso sem você pedir.
+	local MOVE_savedWalk = nil
+	local MOVE_savedJump = nil
+	local MOVE_savedUseJumpPower = nil
+
+	local function MOVE_capture(humanoid)
+		if MOVE_savedWalk == nil then
+			MOVE_savedWalk = humanoid.WalkSpeed
+		end
+		if MOVE_savedJump == nil then
+			MOVE_savedUseJumpPower = humanoid.UseJumpPower
+			MOVE_savedJump = humanoid.UseJumpPower
+				and humanoid.JumpPower
+				or humanoid.JumpHeight
+		end
+	end
+
 	local function MOVE_apply()
+		-- Nada foi aplicado: não toca no personagem. Era aqui que a
+		-- velocidade do jogo virava 16 só por injetar o painel.
+		if not MOVE_walkOn and not MOVE_jumpOn then return end
+
 		local char = LocalPlayer.Character
 		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 		if not humanoid then return end
 		pcall(function()
-			humanoid.UseJumpPower = true
-			humanoid.WalkSpeed = MOVE_walkOn and MOVE_walkSpeed or MOVE_DEFAULT_WALK
-			humanoid.JumpPower = MOVE_jumpOn and MOVE_jumpPower or MOVE_DEFAULT_JUMP
+			MOVE_capture(humanoid)
+			if MOVE_walkOn then
+				humanoid.WalkSpeed = MOVE_walkSpeed
+			end
+			if MOVE_jumpOn then
+				humanoid.UseJumpPower = true
+				humanoid.JumpPower = MOVE_jumpPower
+			end
 		end)
 	end
 
@@ -4840,6 +4978,41 @@ local okPlayerMove, errPlayerMove = pcall(function()
 	moveCaption("JUMP POWER", 68)
 	local JumpBox = moveBox(84)
 	JumpBox.Text = "50"
+
+	-- RESET: devolve WalkSpeed/JumpPower exatamente como estavam
+	-- antes do primeiro APPLY e limpa os valores capturados. Depois
+	-- disso o painel não mexe mais no personagem sozinho.
+	local function MOVE_reset()
+		local char = LocalPlayer.Character
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		MOVE_walkOn = false
+		MOVE_jumpOn = false
+		if humanoid then
+			pcall(function()
+				if MOVE_savedWalk ~= nil then
+					humanoid.WalkSpeed = MOVE_savedWalk
+				end
+				if MOVE_savedJump ~= nil then
+					if MOVE_savedUseJumpPower then
+						humanoid.UseJumpPower = true
+						humanoid.JumpPower = MOVE_savedJump
+					else
+						humanoid.UseJumpPower = false
+						humanoid.JumpHeight = MOVE_savedJump
+					end
+				end
+			end)
+			WalkBox.Text = tostring(math.floor(humanoid.WalkSpeed + 0.5))
+			if humanoid.UseJumpPower then
+				JumpBox.Text = tostring(math.floor(humanoid.JumpPower + 0.5))
+			else
+				JumpBox.Text = tostring(math.floor(humanoid.JumpHeight + 0.5))
+			end
+		end
+		MOVE_savedWalk = nil
+		MOVE_savedJump = nil
+		MOVE_savedUseJumpPower = nil
+	end
 
 	-- Botões APPLY (abaixo do card, alinhados à coluna esquerda)
 	local function applyButton(text, x, callback)
@@ -4995,6 +5168,21 @@ local okPlayerMove, errPlayerMove = pcall(function()
 		CheckpointSub.TextColor3 = COLOR_DIM
 	end)
 
+	-- Reset: devolve speed e pulo ao que o jogo usava.
+	local ResetSub, ResetRun = actionRow(
+		124, "Resetar Speed/Jump", "Volta ao normal do jogo", Color3.fromRGB(120, 190, 255))
+	ResetRun.MouseButton1Click:Connect(function()
+		MOVE_reset()
+		ResetSub.Text = "Restaurado ✓"
+		ResetSub.TextColor3 = COLOR_SUCCESS
+		task.delay(2, function()
+			if ResetSub and ResetSub.Parent then
+				ResetSub.Text = "Volta ao normal do jogo"
+				ResetSub.TextColor3 = COLOR_DIM
+			end
+		end)
+	end)
+
 	-- Respawn: reaplica Walk/Jump aplicados e devolve ao checkpoint
 	LocalPlayer.CharacterAdded:Connect(function(newCharacter)
 		task.spawn(function()
@@ -5012,7 +5200,6 @@ local okPlayerMove, errPlayerMove = pcall(function()
 			end)
 		end
 	end)
-	MOVE_apply()
 end)
 
 if not okPlayerMove then
@@ -5720,7 +5907,7 @@ local okAntiInvis, errAntiInvis = pcall(function()
 	task.spawn(function()
 		while true do
 			task.wait(0.3)
-			if AI_enabled then
+			if AI_enabled and not CHOSEN_EXT_BUSY and not CHOSEN_LIGHT_MODE then
 				pcall(AI_tick)
 			end
 		end
@@ -5969,6 +6156,15 @@ end
 
 createToggleButton(ESPTab, "👁 ESP  •  wallhack", function(state)
 	roleEspEnabled = state
+	if not state then
+		-- Esconde uma vez ao desligar: o loop por frame deixa de rodar.
+		for _, esp in pairs(espObjects) do
+			esp.box.Visible = false
+			esp.boxOutline.Visible = false
+			esp.nameTag.Visible = false
+			esp.distanceText.Visible = false
+		end
+	end
 end, 2)
 
 createSection(ESPTab, "AIMBOT", "Ligue a mira e arraste o raio do FOV na mesma linha.", 4)
@@ -6099,18 +6295,27 @@ local function smoothLookAt(target)
 end
 
 RunService.RenderStepped:Connect(function()
-	UpdateRoles()
+	-- FOV só é tocado quando o aimbot está ligado.
+	if aimbotEnabled and showFov then
+		fovCircle.Visible = true
+		fovCircle.Radius = fovRadius
+		fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-	fovCircle.Visible = showFov and aimbotEnabled
-	fovCircle.Radius = fovRadius
-	fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
-	if fovRainbow then
-		hue = (hue + 0.005) % 1
-		fovCircle.Color = Color3.fromHSV(hue, 1, 1)
-	else
-		fovCircle.Color = COLOR_ACCENT
+		if fovRainbow then
+			hue = (hue + 0.005) % 1
+			fovCircle.Color = Color3.fromHSV(hue, 1, 1)
+		else
+			fovCircle.Color = COLOR_ACCENT
+		end
+	elseif fovCircle.Visible then
+		fovCircle.Visible = false
 	end
+
+	-- Sem ESP ligado não há nada para atualizar. Antes, UpdateRoles()
+	-- rodava todo frame mesmo com a função desligada.
+	if not roleEspEnabled then return end
+
+	UpdateRoles()
 
 	for player, esp in pairs(espObjects) do
 		local role = Roles[player]
@@ -6264,6 +6469,21 @@ local function chosenRunExternal(key, url, label)
 			if type(setfenv) == "function" and type(getgenv) == "function" then
 				setfenv(chunk, getgenv())
 			end
+		end)
+
+		-- Daqui até 15s depois, os módulos do painel que reagem à
+		-- criação de instâncias (monitor de voz/anti-invisível) ficam
+		-- parados. É exatamente o pico de instâncias do IY/emotes e
+		-- era o que derrubava o cliente.
+		CHOSEN_EXT_BUSY = true
+		CHOSEN_EXT_BUSY_TOKEN += 1
+		local busyToken = CHOSEN_EXT_BUSY_TOKEN
+		task.delay(15, function()
+			if CHOSEN_EXT_BUSY_TOKEN ~= busyToken then return end
+			CHOSEN_EXT_BUSY = false
+			-- Relê a interface depois da montagem (texto que chegou
+			-- tarde, botão de voz etc).
+			CHOSEN_VB_RESCAN_AT = os.clock() + 1
 		end)
 
 		local okRun, err = pcall(chunk)
