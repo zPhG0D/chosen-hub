@@ -88,6 +88,24 @@ if not ScreenGui.Parent then
 	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
+-- ==========================================================
+-- FLAGS GLOBAIS
+-- Declaradas no topo porque vários módulos (API, tags de cargo
+-- e monitor de voz) precisam consultá-las.
+-- ==========================================================
+
+-- MODO LEVE (interruptor de emergência): true desliga os
+-- módulos que reagem à criação de instâncias (monitor da
+-- interface de voz + varredura do Anti-Invisível).
+local CHOSEN_LIGHT_MODE = false
+
+-- Fica true enquanto um script grande (Infinite Yield / emotes)
+-- está carregando. Enquanto isso o painel inteiro fica quieto:
+-- sem HTTP, sem tags e sem varreduras.
+local CHOSEN_EXT_BUSY = false
+local CHOSEN_EXT_BUSY_TOKEN = 0
+local CHOSEN_VB_RESCAN_AT = 0
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 748, 0, 480)
@@ -1177,6 +1195,9 @@ local chosenToggleTagsVisibility = nil
 -- usuários online com painel (com servidor atual de cada um),
 -- ou nil em caso de falha.
 local chosenGetOnlineSessions = nil
+-- Ponte para o toast de aviso (fora do bloco): a injeção externa
+-- avisa quando o Infinite Yield / emotes terminam de carregar.
+local chosenToastBridge = nil
 do
 -- CHOSEN HUB API: perfil, cargo e presença
 -- Substitua apenas o domínio abaixo pelo domínio do seu projeto Supabase.
@@ -1496,17 +1517,24 @@ local function chosenShowLiveToast(message, author)
     task.delay(10, dismiss)
 end
 
+-- Ponte para fora do bloco: o retorno da injeção externa (aba
+-- Diversos) usa este aviso para confirmar que o script carregou.
+chosenToastBridge = chosenShowLiveToast
+
 -- Consulta a mensagem instantânea a cada 8s (é um aviso do
 -- momento, então a checagem é mais frequente que a do anúncio).
 task.spawn(function()
     while ScreenGui.Parent do
-        local ok, data = chosenApiCall({
-            Url = CHOSEN_API_URL .. "/live-message",
-            Method = "GET",
-            Headers = {
-                ["Accept"] = "application/json"
-            }
-        })
+        local ok, data = false, nil
+        if not CHOSEN_EXT_BUSY then
+            ok, data = chosenApiCall({
+                Url = CHOSEN_API_URL .. "/live-message",
+                Method = "GET",
+                Headers = {
+                    ["Accept"] = "application/json"
+                }
+            })
+        end
 
         if ok and type(data.message) == "table" then
             local m = data.message
@@ -1975,23 +2003,14 @@ local function chosenEnsureRoleTag(player)
         }
         chosenBuildTagChars(chosenRoleTags[player])
 
-        -- Anexa na cabeça atual e reconecta a cada respawn.
+        -- Anexa na cabeça atual. O respawn/morph é tratado pelo loop
+        -- de manutenção (0.25s), sem criar uma conexão nova por
+        -- respawn — isso vazava conexões e pesava com o tempo.
         local char = player.Character or player.CharacterAdded:Wait()
         local head = char:WaitForChild("Head", 8)
         if head then
             billboard.Parent = head
         end
-
-        player.CharacterAdded:Connect(function(newChar)
-            local newHead = newChar:WaitForChild("Head", 8)
-            -- Billboard pode ter sido destruído por um morph; nesses
-            -- casos a manutenção recria a tag sozinha.
-            if newHead and billboard.Parent then
-                pcall(function()
-                    billboard.Parent = newHead
-                end)
-            end
-        end)
     end)
 end
 
@@ -2025,7 +2044,10 @@ task.spawn(function()
         refreshClock = refreshClock + 0.05
         maintClock = maintClock + 0.05
 
+        local extQuiet = CHOSEN_EXT_BUSY
+
         for _, tag in pairs(chosenRoleTags) do
+            if not extQuiet then
             pcall(function()
                 -- Visibilidade: dono com painel aberto + olho aberto
                 tag.billboard.Enabled = chosenTagShouldShow(tag.player)
@@ -2064,6 +2086,7 @@ task.spawn(function()
                     end
                 end
             end)
+            end
         end
 
         -- Manutenção anti-morph (a cada 0.25s): skins/morphs (ex: item
@@ -2071,7 +2094,7 @@ task.spawn(function()
         -- sem disparar CharacterAdded. Aqui a tag é reanexada à cabeça
         -- nova — ou recriada do zero se foi destruída — mantendo o
         -- cargo (temporário ou real) que ela já tinha.
-        if maintClock >= 0.25 then
+        if not extQuiet and maintClock >= 0.25 then
             maintClock = 0
 
             local toRecreate = {}
@@ -2107,7 +2130,7 @@ task.spawn(function()
 
         -- Reconsulta periódica: tags que faltam + cargos atualizados
         -- + quem está com o painel aberto (presença).
-        if refreshClock >= 15 then
+        if not extQuiet and refreshClock >= 15 then
             refreshClock = 0
             chosenRefreshOnlineSet()
 
@@ -3004,17 +3027,21 @@ task.spawn(function()
     end
 
     while ScreenGui.Parent do
-        chosenHeartbeat()
-        chosenUpdateProfile()
+        -- Sem requisições durante a injeção de um script grande:
+        -- as chamadas HTTP do painel competem com o download/compilação.
+        if not CHOSEN_EXT_BUSY then
+            chosenHeartbeat()
+            chosenUpdateProfile()
 
-        -- Anúncio: todos os usuários buscam a cada ciclo.
-        if type(chosenFetchAnnouncement) == "function" then
-            pcall(chosenFetchAnnouncement)
-        end
+            -- Anúncio: todos os usuários buscam a cada ciclo.
+            if type(chosenFetchAnnouncement) == "function" then
+                pcall(chosenFetchAnnouncement)
+            end
 
-        -- Estatísticas: só refresca se a aba Moderação existir.
-        if type(chosenRefreshModStats) == "function" then
-            pcall(chosenRefreshModStats)
+            -- Estatísticas: só refresca se a aba Moderação existir.
+            if type(chosenRefreshModStats) == "function" then
+                pcall(chosenRefreshModStats)
+            end
         end
 
         task.wait(30)
@@ -3024,22 +3051,9 @@ end)
 end
 
 -- ==========================================================
--- TRAVA DE CARGA EXTERNA
--- Fica true enquanto um script grande (Infinite Yield / emotes)
--- está sendo injetado. Os módulos que reagem à criação de
--- instâncias consultam esta flag para ficar quietos durante a
--- montagem da interface, que é o pico de instâncias.
+-- BAN DE VOZ
+-- (as flags de carga externa agora ficam no topo do arquivo)
 -- ==========================================================
--- MODO LEVE (interruptor único de emergência)
--- true = desliga os dois módulos que mais reagem à criação de
--- instâncias (monitor da interface de voz + varredura do
--- Anti-Invisível). Se algum script grande ainda derrubar o
--- cliente ao injetar, ligue isto para confirmar a causa.
-local CHOSEN_LIGHT_MODE = false
-
-local CHOSEN_EXT_BUSY = false
-local CHOSEN_EXT_BUSY_TOKEN = 0
-local CHOSEN_VB_RESCAN_AT = 0
 
 -- Módulo isolado numa função própria: o chunk principal deste
 -- arquivo já está perto do limite de 200 variáveis locais do Luau,
@@ -3759,6 +3773,8 @@ local safeClock = (type(os) == "table" and type(os.clock) == "function" and os.c
 local frameCount, lastTime = 0, safeClock()
 
 RunService.RenderStepped:Connect(function()
+	-- Silêncio durante injeção externa (o frame é do IY/emotes).
+	if CHOSEN_EXT_BUSY then return end
 	frameCount += 1
 	local now = safeClock()
 	if now - lastTime >= 1 then
@@ -4570,23 +4586,55 @@ local PERSIST_STATE = {
 local antiAfkEnabled = false
 local antiAfkConnection = nil
 
+-- Guarda as funções de arquivo ORIGINAIS. O Infinite Yield sobrescreve
+-- os globais writefile/readfile/isfile quando carrega; capturadas uma
+-- única vez aqui, a persistência continua funcionando depois dele.
+local PERSIST_FS = {
+	write = type(writefile) == "function" and writefile or nil,
+	read = type(readfile) == "function" and readfile or nil,
+	isfile = type(isfile) == "function" and isfile or nil,
+	mkdir = type(makefolder) == "function" and makefolder or nil,
+}
+
+-- Rastreamento da injeção de scripts externos (IY / emotes).
+-- Grava a etapa atual em 7yd7/ChosenInjectionTrace.txt. Se o cliente
+-- fechar, o último registro mostra exatamente onde ele parou.
+local function chosenTrace(stage)
+	pcall(function()
+		print("[CHOSEN EXT] etapa: " .. stage)
+		if type(PERSIST_FS.write) ~= "function" then return end
+		if type(PERSIST_FS.mkdir) == "function" then
+			pcall(PERSIST_FS.mkdir, "7yd7")
+		end
+		local now = (type(os) == "table" and type(os.clock) == "function")
+			and os.clock() or 0
+		PERSIST_FS.write(
+			"7yd7/ChosenInjectionTrace.txt",
+			string.format("%.1f | %s", now, stage)
+		)
+	end)
+end
+
 local function persistWrite()
 	pcall(function()
-		if type(writefile) ~= "function" then return end
+		if type(PERSIST_FS.write) ~= "function" then return end
 		local http = game:GetService("HttpService")
 		pcall(function()
-			if type(makefolder) == "function" then makefolder("7yd7") end
+			if type(PERSIST_FS.mkdir) == "function" then PERSIST_FS.mkdir("7yd7") end
 		end)
-		writefile(PERSIST_PATH, http:JSONEncode(PERSIST_STATE))
+		PERSIST_FS.write(PERSIST_PATH, http:JSONEncode(PERSIST_STATE))
 	end)
 end
 
 local function persistRead()
 	pcall(function()
-		if type(readfile) ~= "function" or type(isfile) ~= "function" then return end
-		if not isfile(PERSIST_PATH) then return end
+		if type(PERSIST_FS.read) ~= "function"
+			or type(PERSIST_FS.isfile) ~= "function" then
+			return
+		end
+		if not PERSIST_FS.isfile(PERSIST_PATH) then return end
 		local http = game:GetService("HttpService")
-		local decoded = http:JSONDecode(readfile(PERSIST_PATH))
+		local decoded = http:JSONDecode(PERSIST_FS.read(PERSIST_PATH))
 		if type(decoded) ~= "table" then return end
 		if type(decoded.noclip) == "boolean" then PERSIST_STATE.noclip = decoded.noclip end
 		if type(decoded.clickTp) == "boolean" then PERSIST_STATE.clickTp = decoded.clickTp end
@@ -4756,6 +4804,7 @@ if PERSIST_STATE.noclip then
 end
 
 RunService.Stepped:Connect(function()
+	if CHOSEN_EXT_BUSY then return end
 	if noclip and LocalPlayer.Character then
 		for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
 			if p:IsA("BasePart") then p.CanCollide = false end
@@ -6120,6 +6169,10 @@ local hue = 0
 
 local espObjects = {}
 
+-- Declaradas antes do toggle para que o botão possa criar/remover
+-- os desenhos sob demanda (nada é criado com o ESP desligado).
+local createESP, removeESP
+
 local Roles = {}
 
 local function UpdateRoles()
@@ -6156,13 +6209,15 @@ end
 
 createToggleButton(ESPTab, "👁 ESP  •  wallhack", function(state)
 	roleEspEnabled = state
-	if not state then
-		-- Esconde uma vez ao desligar: o loop por frame deixa de rodar.
-		for _, esp in pairs(espObjects) do
-			esp.box.Visible = false
-			esp.boxOutline.Visible = false
-			esp.nameTag.Visible = false
-			esp.distanceText.Visible = false
+	if state then
+		-- Cria os desenhos só agora (economiza memória com o ESP off).
+		for _, player in ipairs(Players:GetPlayers()) do
+			if createESP then createESP(player) end
+		end
+	else
+		-- Remove de verdade: zero Drawing em uso enquanto desligado.
+		for _, player in ipairs(Players:GetPlayers()) do
+			if removeESP then removeESP(player) end
 		end
 	end
 end, 2)
@@ -6205,7 +6260,7 @@ fovCircle.Transparency = 1
 fovCircle.Color = Color3.new(1, 1, 1)
 fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-local function createESP(player)
+createESP = function(player)
 	if player == LocalPlayer or espObjects[player] then return end
 
 	local box = Drawing.new("Square")
@@ -6242,7 +6297,7 @@ local function createESP(player)
 	}
 end
 
-local function removeESP(player)
+removeESP = function(player)
 	if espObjects[player] then
 		for _, drawing in pairs(espObjects[player]) do
 			pcall(function()
@@ -6254,8 +6309,12 @@ local function removeESP(player)
 	end
 end
 
-for _, player in ipairs(Players:GetPlayers()) do createESP(player) end
-Players.PlayerAdded:Connect(createESP)
+-- Nada é criado com o ESP desligado: zero Drawing em uso.
+Players.PlayerAdded:Connect(function(player)
+	if roleEspEnabled then
+		createESP(player)
+	end
+end)
 Players.PlayerRemoving:Connect(removeESP)
 
 local function isVisible(part)
@@ -6419,6 +6478,143 @@ end
 
 local chosenExternalLast = {}
 
+-- ==========================================================
+-- JANELA DE CONFIRMAÇÃO (injeção externa)
+-- Antes de esconder o painel para carregar o IY/emotes, explica o
+-- que vai acontecer. Mesmo estilo do Aviso (toast), mas centralizada
+-- e com botão de confirmar — acaba o susto de "o painel sumiu".
+-- ==========================================================
+local chosenExtDialog = nil
+
+local function chosenConfirmInject(title, message, onConfirm)
+	if chosenExtDialog then
+		pcall(function() chosenExtDialog:Destroy() end)
+		chosenExtDialog = nil
+	end
+
+	-- Fundo escurecido: cobre o painel e segura os cliques.
+	local overlay = Instance.new("Frame")
+	overlay.Name = "ChosenInjectConfirm"
+	overlay.Size = UDim2.new(1, 0, 1, 0)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.5
+	overlay.BorderSizePixel = 0
+	overlay.Active = true
+	overlay.ZIndex = 90
+	overlay.Parent = ScreenGui
+	chosenExtDialog = overlay
+
+	local card = Instance.new("Frame")
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.new(0.5, 0, 0.5, 0)
+	card.Size = UDim2.new(0, 420, 0, 198)
+	card.BackgroundColor3 = COLOR_PANEL
+	card.BackgroundTransparency = 0.02
+	card.BorderSizePixel = 0
+	card.Active = true
+	card.ZIndex = 91
+	card.Parent = overlay
+	corner(card, 12)
+	stroke(card, COLOR_ACCENT, 1.4, 0.2)
+
+	-- Faixa de destaque no topo (mesma linguagem do toast de Aviso)
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.new(1, -24, 0, 3)
+	bar.Position = UDim2.new(0, 12, 0, 8)
+	bar.BackgroundColor3 = COLOR_ACCENT
+	bar.BorderSizePixel = 0
+	bar.ZIndex = 92
+	bar.Parent = card
+	corner(bar, 2)
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -40, 0, 20)
+	titleLabel.Position = UDim2.new(0, 20, 0, 22)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = COLOR_TEXT
+	titleLabel.Font = Enum.Font.LuckiestGuy
+	titleLabel.TextSize = 16
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.ZIndex = 92
+	titleLabel.Parent = card
+
+	local msg = Instance.new("TextLabel")
+	msg.Size = UDim2.new(1, -40, 0, 76)
+	msg.Position = UDim2.new(0, 20, 0, 50)
+	msg.BackgroundTransparency = 1
+	msg.Text = message
+	msg.TextColor3 = COLOR_DIM
+	msg.Font = Enum.Font.FredokaOne
+	msg.TextSize = 12
+	msg.TextXAlignment = Enum.TextXAlignment.Left
+	msg.TextYAlignment = Enum.TextYAlignment.Top
+	msg.TextWrapped = true
+	msg.ZIndex = 92
+	msg.Parent = card
+
+	local function close()
+		pcall(function() overlay:Destroy() end)
+		if chosenExtDialog == overlay then
+			chosenExtDialog = nil
+		end
+	end
+
+	local cancel = Instance.new("TextButton")
+	cancel.Size = UDim2.new(0.5, -26, 0, 38)
+	cancel.Position = UDim2.new(0, 20, 1, -54)
+	cancel.BackgroundColor3 = COLOR_CARD2
+	cancel.BackgroundTransparency = 0.15
+	cancel.AutoButtonColor = false
+	cancel.Text = "CANCELAR"
+	cancel.TextColor3 = COLOR_MUTED
+	cancel.Font = Enum.Font.FredokaOne
+	cancel.TextSize = 11
+	cancel.ZIndex = 92
+	cancel.Parent = card
+	corner(cancel, 8)
+	stroke(cancel, COLOR_BORDER, 1, 0.35)
+
+	local go = Instance.new("TextButton")
+	go.Size = UDim2.new(0.5, -26, 0, 38)
+	go.Position = UDim2.new(0.5, 6, 1, -54)
+	go.BackgroundColor3 = COLOR_SUCCESS
+	go.BackgroundTransparency = 0.08
+	go.AutoButtonColor = false
+	go.Text = "INJETAR AGORA"
+	go.TextColor3 = Color3.fromRGB(8, 30, 18)
+	go.Font = Enum.Font.FredokaOne
+	go.TextSize = 11
+	go.ZIndex = 92
+	go.Parent = card
+	corner(go, 8)
+	stroke(go, COLOR_SUCCESS, 1, 0.45)
+
+	cancel.MouseEnter:Connect(function()
+		tween(cancel, { BackgroundColor3 = Color3.fromRGB(56, 102, 158) }, 0.12)
+	end)
+	cancel.MouseLeave:Connect(function()
+		tween(cancel, { BackgroundColor3 = COLOR_CARD2 }, 0.12)
+	end)
+	go.MouseEnter:Connect(function()
+		tween(go, { BackgroundColor3 = Color3.fromRGB(120, 245, 170) }, 0.12)
+	end)
+	go.MouseLeave:Connect(function()
+		tween(go, { BackgroundColor3 = COLOR_SUCCESS }, 0.12)
+	end)
+
+	cancel.MouseButton1Click:Connect(close)
+
+	local busy = false
+	go.MouseButton1Click:Connect(function()
+		if busy then return end
+		busy = true
+		close()
+		-- Só depois que a janela sai da tela a injeção começa.
+		task.defer(onConfirm)
+	end)
+end
+
 local function chosenRunExternal(key, url, label)
 	local now = os.clock()
 	if chosenExternalLast[key] and (now - chosenExternalLast[key]) < 6 then
@@ -6428,19 +6624,23 @@ local function chosenRunExternal(key, url, label)
 	chosenExternalLast[key] = now
 
 	task.spawn(function()
+		chosenTrace(label .. ": iniciando download")
 		local okFetch, source = pcall(function()
 			return game:HttpGet(url)
 		end)
 		if not okFetch or type(source) ~= "string" or #source < 8 then
 			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": falhou no download")
 			warn("[CHOSEN EXT] " .. label .. ": falha ao baixar o script.")
 			return
 		end
+		chosenTrace(label .. ": baixado (" .. tostring(#source) .. " bytes)")
 
 		-- Página de erro/HTML não é script.
 		local head = string.lower(source:sub(1, 40))
 		if head:find("<!doctype", 1, true) or head:find("<html", 1, true) then
 			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": link devolveu HTML")
 			warn("[CHOSEN EXT] " .. label .. ": o link devolveu uma página HTML.")
 			return
 		end
@@ -6448,19 +6648,28 @@ local function chosenRunExternal(key, url, label)
 		local loader = loadstring or load
 		if type(loader) ~= "function" then
 			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": executor sem loadstring")
 			warn("[CHOSEN EXT] " .. label .. ": executor sem loadstring.")
 			return
 		end
 
 		-- Deixa o frame respirar antes de compilar 500 KB de código.
-		task.wait(0.1)
+		task.wait(0.15)
+
+		-- Libera o lixo acumulado antes da compilação. É aqui que o
+		-- "esperei mais tempo e crashou" costuma aparecer: o limite
+		-- de memória do executor pega o lixo que sobrou do jogo.
+		pcall(function() collectgarbage("collect") end)
 
 		local okCompile, chunk = pcall(loader, source)
+		source = nil -- a fonte não é mais necessária; libera ~500 KB
 		if not okCompile or type(chunk) ~= "function" then
 			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": falhou ao compilar")
 			warn("[CHOSEN EXT] " .. label .. ": script inválido ou bloqueado.")
 			return
 		end
+		chosenTrace(label .. ": compilado")
 
 		-- Roda no ambiente global do executor, igual a uma injeção
 		-- normal. Sem isso o script herda o ambiente do painel e
@@ -6471,22 +6680,65 @@ local function chosenRunExternal(key, url, label)
 			end
 		end)
 
-		-- Daqui até 15s depois, os módulos do painel que reagem à
-		-- criação de instâncias (monitor de voz/anti-invisível) ficam
-		-- parados. É exatamente o pico de instâncias do IY/emotes e
-		-- era o que derrubava o cliente.
+		-- Painel inteiro em silêncio durante a carga: sem tags, sem
+		-- HTTP, sem monitor de voz e sem Anti-Invisível.
 		CHOSEN_EXT_BUSY = true
-		CHOSEN_EXT_BUSY_TOKEN += 1
-		local busyToken = CHOSEN_EXT_BUSY_TOKEN
-		task.delay(15, function()
-			if CHOSEN_EXT_BUSY_TOKEN ~= busyToken then return end
-			CHOSEN_EXT_BUSY = false
-			-- Relê a interface depois da montagem (texto que chegou
-			-- tarde, botão de voz etc).
-			CHOSEN_VB_RESCAN_AT = os.clock() + 1
+
+		-- O IY cria milhares de instâncias de uma vez, no mesmo
+		-- container (CoreGui) onde o painel mora. Com o painel
+		-- ESCONDIDO, o Roblox não recalcula layout/render de ~2 mil
+		-- instâncias do painel nesse frame — é o pico que mais pesa.
+		local panelWasEnabled = true
+		pcall(function()
+			panelWasEnabled = ScreenGui.Enabled
+			ScreenGui.Enabled = false
 		end)
 
+		-- O IY pode esperar o jogo carregar por dezenas de segundos
+		-- antes de montar a interface. Este vigia mantém a trava
+		-- ativa durante todo o chunk, não só por um tempo fixo.
+		-- Teto de 120s: se um script nunca retornar, o painel volta
+		-- a funcionar em vez de ficar pausado para sempre.
+		local extDone = false
+		local extWatch = 0
+		task.spawn(function()
+			while not extDone do
+				if extWatch >= 120 then
+					CHOSEN_EXT_BUSY = false
+					CHOSEN_VB_RESCAN_AT = os.clock() + 1
+					-- Se o script externo nunca retornar, devolve o
+					-- painel à tela em vez de deixá-lo invisível.
+					pcall(function()
+						ScreenGui.Enabled = panelWasEnabled
+					end)
+					return
+				end
+				CHOSEN_EXT_BUSY = true
+				task.wait(0.5)
+				extWatch += 0.5
+			end
+		end)
+
+		chosenTrace(label .. ": executando o script")
 		local okRun, err = pcall(chunk)
+
+		extDone = true
+		pcall(function()
+			ScreenGui.Enabled = panelWasEnabled
+		end)
+		chosenTrace(okRun and (label .. ": script retornou")
+			or (label .. ": ERRO -> " .. tostring(err)))
+		pcall(function() collectgarbage("collect") end)
+
+		-- Mais 8s de silêncio depois que o script retorna, para a
+		-- interface dele terminar de assentar.
+		CHOSEN_EXT_BUSY_TOKEN += 1
+		local busyToken = CHOSEN_EXT_BUSY_TOKEN
+		task.delay(8, function()
+			if CHOSEN_EXT_BUSY_TOKEN ~= busyToken then return end
+			CHOSEN_EXT_BUSY = false
+			CHOSEN_VB_RESCAN_AT = os.clock() + 1
+		end)
 		if not okRun then
 			chosenExternalLast[key] = nil
 			warn("[CHOSEN EXT] " .. label .. ": erro ao executar -> " .. tostring(err))
@@ -6494,18 +6746,40 @@ local function chosenRunExternal(key, url, label)
 		end
 
 		print("[CHOSEN EXT] " .. label .. " carregado.")
+		-- Aviso no canto, no mesmo estilo do toast de mensagens.
+		if type(chosenToastBridge) == "function" then
+			pcall(chosenToastBridge,
+				label .. " carregado com sucesso.",
+				"CHOSEN HUB")
+		end
 	end)
 end
 
 local infinityButton = createActionButton(MiscRow1, "📜 Infinite Yield", 2)
 infinityButton.MouseButton1Click:Connect(function()
-	chosenRunExternal("iy", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", "Infinite Yield")
+	chosenConfirmInject(
+		"📜  INFINITE YIELD",
+		"O painel vai fechar por alguns segundos enquanto o Infinite Yield é carregado. Ele volta sozinho logo depois — nada do que você ligou é perdido.",
+		function()
+			chosenRunExternal("iy",
+				"https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source",
+				"Infinite Yield")
+		end
+	)
 end)
 
 local MiscRow2 = createControlRow(MiscTab, 3)
 local emoteButton = createActionButton(MiscRow2, "💃 Free emotes", 1)
 emoteButton.MouseButton1Click:Connect(function()
-	chosenRunExternal("emotes", "https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024", "Free Emotes")
+	chosenConfirmInject(
+		"💃  FREE EMOTES",
+		"O painel vai fechar por alguns segundos enquanto o script de emotes é carregado. Ele volta sozinho logo depois — nada do que você ligou é perdido.",
+		function()
+			chosenRunExternal("emotes",
+				"https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024",
+				"Free Emotes")
+		end
+	)
 end)
 
 local rejoinButton = createActionButton(MiscRow2, "🔄 Rejoin", 2)
