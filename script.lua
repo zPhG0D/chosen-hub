@@ -6615,145 +6615,130 @@ local function chosenConfirmInject(title, message, onConfirm)
 	end)
 end
 
-local chosenExternalActive = false
-
 local function chosenRunExternal(key, url, label)
 	local now = os.clock()
-
-	-- Uma única injeção externa por vez, mesmo se forem botões diferentes.
-	if chosenExternalActive or CHOSEN_EXT_BUSY then
-		warn("[CHOSEN EXT] " .. label .. ": já existe uma carga externa em andamento.")
-		return
-	end
-
 	if chosenExternalLast[key] and (now - chosenExternalLast[key]) < 6 then
 		warn("[CHOSEN EXT] " .. label .. ": aguarde alguns segundos (carregando).")
 		return
 	end
-
 	chosenExternalLast[key] = now
-	chosenExternalActive = true
 
 	task.spawn(function()
-		local panelWasEnabled = nil
-		local panelStateCaptured = false
-		local finished = false
-		local executionReturned = false
-
-		-- Restaura o painel e libera a trava em qualquer falha anterior
-		-- à execução. A função é idempotente para evitar restaurações duplicadas.
-		local function restorePanel()
-			if panelStateCaptured then
-				pcall(function()
-					if ScreenGui and ScreenGui.Parent then
-						ScreenGui.Enabled = panelWasEnabled
-					end
-				end)
-			end
-		end
-
-		local function abortBeforeRun(reason)
-			if finished then return end
-			finished = true
-			restorePanel()
-			CHOSEN_EXT_BUSY = false
-			chosenExternalActive = false
-			chosenExternalLast[key] = nil
-			CHOSEN_VB_RESCAN_AT = os.clock() + 1
-			chosenTrace(label .. ": " .. reason)
-			warn("[CHOSEN EXT] " .. label .. ": " .. reason)
-		end
-
-		-- PRIMEIRO desativa o painel e pausa os workers; só depois baixa
-		-- ou compila o código externo. Não destrói o ScreenGui.
-		CHOSEN_EXT_BUSY = true
-		local okPanel, panelErr = pcall(function()
-			panelWasEnabled = ScreenGui.Enabled
-			panelStateCaptured = true
-			ScreenGui.Enabled = false
-		end)
-		if not okPanel then
-			abortBeforeRun("não foi possível desativar o painel: " .. tostring(panelErr))
-			return
-		end
-
-		chosenTrace(label .. ": painel desativado; iniciando download")
-		task.wait(0.35)
-		pcall(function() collectgarbage("collect") end)
-
+		chosenTrace(label .. ": iniciando download")
 		local okFetch, source = pcall(function()
 			return game:HttpGet(url)
 		end)
 		if not okFetch or type(source) ~= "string" or #source < 8 then
-			abortBeforeRun("falha ao baixar o script.")
+			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": falhou no download")
+			warn("[CHOSEN EXT] " .. label .. ": falha ao baixar o script.")
 			return
 		end
 		chosenTrace(label .. ": baixado (" .. tostring(#source) .. " bytes)")
 
-		-- Impede que uma página de erro HTML seja compilada como Luau.
-		local head = string.lower(source:sub(1, 80))
+		-- Página de erro/HTML não é script.
+		local head = string.lower(source:sub(1, 40))
 		if head:find("<!doctype", 1, true) or head:find("<html", 1, true) then
-			abortBeforeRun("o link devolveu uma página HTML, não um script.")
+			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": link devolveu HTML")
+			warn("[CHOSEN EXT] " .. label .. ": o link devolveu uma página HTML.")
 			return
 		end
 
 		local loader = loadstring or load
 		if type(loader) ~= "function" then
-			abortBeforeRun("executor sem suporte a loadstring/load.")
+			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": executor sem loadstring")
+			warn("[CHOSEN EXT] " .. label .. ": executor sem loadstring.")
 			return
 		end
 
-		task.wait(0.2)
+		-- Deixa o frame respirar antes de compilar 500 KB de código.
+		task.wait(0.15)
+
+		-- Libera o lixo acumulado antes da compilação. É aqui que o
+		-- "esperei mais tempo e crashou" costuma aparecer: o limite
+		-- de memória do executor pega o lixo que sobrou do jogo.
 		pcall(function() collectgarbage("collect") end)
 
 		local okCompile, chunk = pcall(loader, source)
-		source = nil
+		source = nil -- a fonte não é mais necessária; libera ~500 KB
 		if not okCompile or type(chunk) ~= "function" then
-			abortBeforeRun("script inválido ou bloqueado na compilação.")
+			chosenExternalLast[key] = nil
+			chosenTrace(label .. ": falhou ao compilar")
+			warn("[CHOSEN EXT] " .. label .. ": script inválido ou bloqueado.")
 			return
 		end
-		chosenTrace(label .. ": compilado; iniciando execução")
+		chosenTrace(label .. ": compilado")
 
-		-- Mantém o mesmo ambiente global que o carregador anterior utilizava.
+		-- Roda no ambiente global do executor, igual a uma injeção
+		-- normal. Sem isso o script herda o ambiente do painel e
+		-- alguns scripts grandes se comportam mal.
 		pcall(function()
 			if type(setfenv) == "function" and type(getgenv) == "function" then
 				setfenv(chunk, getgenv())
 			end
 		end)
 
-		-- Se o código externo não retornar, o painel será restaurado após
-		-- 150 segundos. Isso não cancela o código externo já iniciado.
+		-- Painel inteiro em silêncio durante a carga: sem tags, sem
+		-- HTTP, sem monitor de voz e sem Anti-Invisível.
+		CHOSEN_EXT_BUSY = true
+
+		-- O IY cria milhares de instâncias de uma vez, no mesmo
+		-- container (CoreGui) onde o painel mora. Com o painel
+		-- ESCONDIDO, o Roblox não recalcula layout/render de ~2 mil
+		-- instâncias do painel nesse frame — é o pico que mais pesa.
+		local panelWasEnabled = true
+		pcall(function()
+			panelWasEnabled = ScreenGui.Enabled
+			ScreenGui.Enabled = false
+		end)
+
+		-- O IY pode esperar o jogo carregar por dezenas de segundos
+		-- antes de montar a interface. Este vigia mantém a trava
+		-- ativa durante todo o chunk, não só por um tempo fixo.
+		-- Teto de 120s: se um script nunca retornar, o painel volta
+		-- a funcionar em vez de ficar pausado para sempre.
+		local extDone = false
+		local extWatch = 0
 		task.spawn(function()
-			local elapsed = 0
-			while not executionReturned and elapsed < 150 do
+			while not extDone do
+				if extWatch >= 120 then
+					CHOSEN_EXT_BUSY = false
+					CHOSEN_VB_RESCAN_AT = os.clock() + 1
+					-- Se o script externo nunca retornar, devolve o
+					-- painel à tela em vez de deixá-lo invisível.
+					pcall(function()
+						ScreenGui.Enabled = panelWasEnabled
+					end)
+					return
+				end
+				CHOSEN_EXT_BUSY = true
 				task.wait(0.5)
-				elapsed += 0.5
-			end
-			if not executionReturned then
-				restorePanel()
-				-- Mantém os workers pausados enquanto o chunk ainda estiver ativo.
-				chosenTrace(label .. ": tempo limite; painel restaurado")
-				warn("[CHOSEN EXT] " .. label .. ": excedeu 150s. O painel foi restaurado, mas o script externo pode continuar executando.")
+				extWatch += 0.5
 			end
 		end)
 
+		chosenTrace(label .. ": executando o script")
 		local okRun, err = pcall(chunk)
-		executionReturned = true
-		restorePanel()
+
+		extDone = true
+		pcall(function()
+			ScreenGui.Enabled = panelWasEnabled
+		end)
 		chosenTrace(okRun and (label .. ": script retornou")
 			or (label .. ": ERRO -> " .. tostring(err)))
 		pcall(function() collectgarbage("collect") end)
 
-		-- Dá tempo para a interface externa terminar de se estabilizar.
-		-- O painel já pode voltar, mas os workers do CHOSEN HUB ficam pausados.
-		if not finished then
-			task.wait(8)
-			finished = true
+		-- Mais 8s de silêncio depois que o script retorna, para a
+		-- interface dele terminar de assentar.
+		CHOSEN_EXT_BUSY_TOKEN += 1
+		local busyToken = CHOSEN_EXT_BUSY_TOKEN
+		task.delay(8, function()
+			if CHOSEN_EXT_BUSY_TOKEN ~= busyToken then return end
 			CHOSEN_EXT_BUSY = false
 			CHOSEN_VB_RESCAN_AT = os.clock() + 1
-			chosenExternalActive = false
-		end
-
+		end)
 		if not okRun then
 			chosenExternalLast[key] = nil
 			warn("[CHOSEN EXT] " .. label .. ": erro ao executar -> " .. tostring(err))
@@ -6761,8 +6746,11 @@ local function chosenRunExternal(key, url, label)
 		end
 
 		print("[CHOSEN EXT] " .. label .. " carregado.")
+		-- Aviso no canto, no mesmo estilo do toast de mensagens.
 		if type(chosenToastBridge) == "function" then
-			pcall(chosenToastBridge, label .. " carregado com sucesso.", "CHOSEN HUB")
+			pcall(chosenToastBridge,
+				label .. " carregado com sucesso.",
+				"CHOSEN HUB")
 		end
 	end)
 end
