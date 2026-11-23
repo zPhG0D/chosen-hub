@@ -68,12 +68,21 @@ pcall(function()
 	if oldCore then
 		oldCore:Destroy()
 	end
+	local oldDim = CoreGui:FindFirstChild("ChosenInjectDim")
+	if oldDim then
+		oldDim:Destroy()
+	end
 end)
 
 pcall(function()
 	local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-	if playerGui and playerGui:FindFirstChild("ChosenPanelGui") then
-		playerGui.ChosenPanelGui:Destroy()
+	if playerGui then
+		if playerGui:FindFirstChild("ChosenPanelGui") then
+			playerGui.ChosenPanelGui:Destroy()
+		end
+		if playerGui:FindFirstChild("ChosenInjectDim") then
+			playerGui.ChosenInjectDim:Destroy()
+		end
 	end
 end)
 
@@ -962,8 +971,23 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	corner(valueBox, 8)
 	stroke(valueBox, COLOR_BORDER, 1, 0.3)
 
+	-- Cadeado do ajuste: aparece só quando a barra/número estão
+	-- travados (potência restrita). O toggle continua livre.
+	local lockBadge = Instance.new("TextLabel")
+	lockBadge.Name = "ValueLock"
+	lockBadge.Size = UDim2.new(0, 14, 0, 14)
+	lockBadge.Position = UDim2.new(1, -66, 0.5, -7)
+	lockBadge.BackgroundTransparency = 1
+	lockBadge.Text = "🔒"
+	lockBadge.TextColor3 = COLOR_MUTED
+	lockBadge.TextSize = 10
+	lockBadge.Visible = false
+	lockBadge.ZIndex = 3
+	lockBadge.Parent = card
+
 	local currentValue = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 	local dragging = false
+	local sliderLocked = false
 
 	local function setValue(value, updateBox)
 		value = tonumber(value) or currentValue
@@ -980,7 +1004,22 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 		end
 	end
 
+	-- Trava só a barra + o número (o toggle do card continua ativo).
+	local function setValueLock(locked)
+		sliderLocked = locked and true or false
+		valueBox.TextEditable = not sliderLocked
+		lockBadge.Visible = sliderLocked
+		local dim = sliderLocked and 0.62 or 0
+		track.BackgroundTransparency = sliderLocked and 0.55 or 0
+		fill.BackgroundTransparency = dim
+		knob.BackgroundTransparency = dim
+		knob.Active = not sliderLocked
+		valueBox.TextTransparency = sliderLocked and 0.3 or 0
+		valueBox.BackgroundTransparency = sliderLocked and 0.15 or 0
+	end
+
 	local function setFromX(x)
+		if sliderLocked then return end
 		local left = track.AbsolutePosition.X
 		local width = track.AbsoluteSize.X
 		if width <= 0 then return end
@@ -989,6 +1028,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 	end
 
 	track.InputBegan:Connect(function(input)
+		if sliderLocked then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
@@ -996,6 +1036,7 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 		end
 	end)
 	knob.InputBegan:Connect(function(input)
+		if sliderLocked then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
@@ -1016,6 +1057,10 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 		end
 	end)
 	valueBox.FocusLost:Connect(function()
+		if sliderLocked then
+			valueBox.Text = tostring(currentValue)
+			return
+		end
 		local typed = tonumber(valueBox.Text)
 		if typed == nil then
 			valueBox.Text = tostring(currentValue)
@@ -1042,6 +1087,10 @@ local function createComboControl(parent, labelText, minValue, maxValue, default
 		card = card,
 		setState = setState,
 		setValue = setValue,
+		setValueLock = setValueLock,
+		track = track,
+		knob = knob,
+		valueBox = valueBox,
 		getState = function()
 			return state
 		end,
@@ -3321,6 +3370,20 @@ local function chosenInstallVoiceBan()
 		end
 	end)
 
+	-- Texto com CARA de comando/menu de script — e não frase do Roblox.
+	-- Existe para descartar "muteallvoices", "/vmute", "vcbypass" sem
+	-- descartar um aviso legítimo tipo "você foi silenciado no chat de voz".
+	local function voiceBanCommandText(text)
+		if text:find("[\\/%(%)%[%]{}_=<>|]", 1) then return true end
+		local first = text:sub(1, 1)
+		if first == "-" or first == ";" or first == ":" or first == ">" then
+			return true
+		end
+		-- Token único e curto: nome de comando sem espaço.
+		if #text <= 24 and not text:find(" ", 1, true) then return true end
+		return false
+	end
+
 	-- Textos do próprio painel/console nunca contam como aviso do Roblox
 	-- (o console do F9 repete as nossas mensagens e gera falso positivo).
 	local function voiceBanNoiseText(text)
@@ -3330,14 +3393,17 @@ local function chosenInstallVoiceBan()
 		if t:find("[chosen", 1, true) then return true end
 		if t:find("chosen voz", 1, true) then return true end
 		if t:find("-- ", 1, true) then return true end
-		-- Nomes de comando de scripts/menus (ex.: Infinity Yield:
-		-- "muteallvoices / muteallvcs") não são aviso de ban.
-		if t:find("mute", 1, true) then return true end
-		if t:find("unmute", 1, true) then return true end
-		if t:find("vcs", 1, true) then return true end
 		if t:find("bypass", 1, true) then return true end
 		if t:find("anti voice", 1, true) then return true end
 		if t:find("anti-voz", 1, true) then return true end
+		-- Comando de menu só é ruído quando TEM CARA de comando. Antes,
+		-- qualquer texto com "mute"/"unmute"/"vcs" era descartado — e isso
+		-- engolia o aviso real ("muted from voice chat", "silenciado no
+		-- chat de voz"), que é justamente o caso mais comum de suspensão.
+		if voiceBanCommandText(text)
+			and (t:find("mute", 1, true) or t:find("vcs", 1, true)) then
+			return true
+		end
 		-- Texto com cara de código/lista não é frase de aviso.
 		if text:find("[\\/%(%)%[%]{}_=<>|]", 1) then return true end
 		return false
@@ -3347,15 +3413,20 @@ local function chosenInstallVoiceBan()
 		if voiceBanNoiseText(text) then return false end
 		local t = string.lower(text)
 
-		-- Exige falar de voz/microfone...
+		-- Exige falar de voz/microfone (PT, EN, ES e FR)...
 		if not (t:find("voz", 1, true)
 			or t:find("voice", 1, true)
-			or t:find("microfone", 1, true)) then
+			or t:find("microfone", 1, true)
+			or t:find("microphone", 1, true)
+			or t:find("micrófono", 1, true)
+			or t:find("microfono", 1, true)
+			or t:find("voix", 1, true)
+			or t:find("vocal", 1, true)) then
 			return false
 		end
 
-		-- ...e de suspensão/bloqueio. Nada de "mute", "block" ou
-		-- "cooldown" soltos: aparecem em menus de script e davam falso positivo.
+		-- ...e de suspensão/bloqueio/silenciamento. "mute" solto continua
+		-- fora: aparece em menus de script e dava falso positivo.
 		return t:find("suspens", 1, true) ~= nil
 			or t:find("suspend", 1, true) ~= nil
 			or t:find("banid", 1, true) ~= nil
@@ -3365,13 +3436,19 @@ local function chosenInstallVoiceBan()
 			or t:find("unavailable", 1, true) ~= nil
 			or t:find("restrit", 1, true) ~= nil
 			or t:find("restrict", 1, true) ~= nil
-			or t:find("bloquead", 1, true) ~= nil
+			or t:find("bloqu", 1, true) ~= nil
+			or t:find("silenciad", 1, true) ~= nil
+			or t:find("mutad", 1, true) ~= nil
+			or t:find("muted", 1, true) ~= nil
+			or t:find("prohibid", 1, true) ~= nil
+			or t:find("desactiv", 1, true) ~= nil
 			-- "ban" isolado, mas só como palavra inteira
 			or t:find("%f[%a]ban%f[%A]") ~= nil
 	end
 
 	-- Evita que o mesmo aviso reinicie a contagem várias vezes.
 	local voiceBanIgnore = {}
+	local voiceBanIgnoreSweep = 0
 
 	local function voiceBanNotice(text, source)
 		if voiceBanPhase == "active" then return end
@@ -3382,6 +3459,23 @@ local function chosenInstallVoiceBan()
 			return
 		end
 		voiceBanIgnore[key] = now + 180
+		-- Poda: sem isso a tabela cresce durante a sessão inteira (uma
+		-- entrada por texto distinto e nunca é liberada).
+		if now >= voiceBanIgnoreSweep then
+			voiceBanIgnoreSweep = now + 60
+			local alive = 0
+			for k, at in pairs(voiceBanIgnore) do
+				if now >= at then
+					voiceBanIgnore[k] = nil
+				else
+					alive += 1
+				end
+			end
+			-- Teto de segurança: se algo escapar da poda, zera de vez.
+			if alive > 64 then
+				voiceBanIgnore = {}
+			end
+		end
 		print("[CHOSEN VOZ] ban detectado " .. source .. ": " .. text)
 		voiceBanBegin("interface")
 	end
@@ -3399,7 +3493,25 @@ local function chosenInstallVoiceBan()
 	end)
 
 	-- 2) Aviso na interface (o caso real: "Conversa por voz suspensa").
-	local function voiceBanScanRobloxUI()
+	-- A varredura é FATIADA por frame: o GetDescendants() de CoreGui num
+	-- jogo grande é o único pico real deste monitor. Rodando inteiro num
+	-- frame só, ele dava uma engasgada justamente no instante em que o IY
+	-- termina de montar a interface. Fatiado, o custo se espalha e o frame
+	-- nunca segura.
+	local VOICE_BAN_SCAN_SLICE = 120
+	local VOICE_BAN_SCAN_MAX_TEXTS = 600
+	local voiceBanScanState = nil
+	local voiceBanScanConn = nil
+
+	local function voiceBanScanStop()
+		if voiceBanScanConn then
+			pcall(function() voiceBanScanConn:Disconnect() end)
+			voiceBanScanConn = nil
+		end
+		voiceBanScanState = nil
+	end
+
+	local function voiceBanScanRoots()
 		local roots = {}
 		local okHui, hui = pcall(function()
 			if type(gethui) == "function" then
@@ -3413,33 +3525,101 @@ local function chosenInstallVoiceBan()
 		if okCore and core then table.insert(roots, core) end
 		local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
 		if playerGui then table.insert(roots, playerGui) end
+		return roots
+	end
 
-		for _, root in ipairs(roots) do
+	-- Um passo por frame: busca UMA árvore ou examina um punhado de textos.
+	local function voiceBanScanStep()
+		local st = voiceBanScanState
+		if not st then return end
+		if not VoiceBanButton.Parent
+			or voiceBanPhase == "active"
+			or CHOSEN_EXT_BUSY then
+			voiceBanScanStop()
+			return
+		end
+
+		if not st.items then
+			if st.rootIndex > #st.roots then
+				voiceBanScanStop()
+				return
+			end
+			local root = st.roots[st.rootIndex]
+			st.rootIndex += 1
 			local ok, items = pcall(function()
 				return root:GetDescendants()
 			end)
-			if ok then
-				local checked = 0
-				for _, obj in ipairs(items) do
-					if checked >= 600 then break end
-					if obj.ClassName == "TextLabel" or obj.ClassName == "TextButton" then
-						local okText, text = pcall(function()
-							return obj.Text
-						end)
-						if okText and type(text) == "string"
-							and #text > 3 and #text <= 90
-							and obj.Visible then
-							checked += 1
-							if voiceBanTextMatches(text)
-								and not obj:IsDescendantOf(ScreenGui) then
-								return text
-							end
-						end
+			st.items = ok and items or {}
+			st.itemIndex = 1
+			st.checked = 0
+			return
+		end
+
+		-- Já leu o teto de textos desta árvore: passa para a próxima
+		-- sem varrer o resto dos objetos à toa.
+		if st.checked >= VOICE_BAN_SCAN_MAX_TEXTS then
+			st.items = nil
+			st.itemIndex = 1
+			return
+		end
+
+		local items = st.items
+		local last = math.min(#items, st.itemIndex + VOICE_BAN_SCAN_SLICE - 1)
+		local i = st.itemIndex
+		local found = nil
+		while i <= last do
+			local obj = items[i]
+			i += 1
+			if obj and st.checked < VOICE_BAN_SCAN_MAX_TEXTS
+				and (obj.ClassName == "TextLabel" or obj.ClassName == "TextButton") then
+				local okText, text = pcall(function()
+					return obj.Text
+				end)
+				if okText and type(text) == "string"
+					and #text > 3 and #text <= 90
+					and obj.Visible then
+					st.checked += 1
+					local okSelf, mine = pcall(function()
+						return obj:IsDescendantOf(ScreenGui)
+					end)
+					if not (okSelf and mine) and voiceBanTextMatches(text) then
+						found = text
+						break
 					end
 				end
 			end
 		end
-		return nil
+
+		st.itemIndex = i
+		if found then
+			voiceBanScanStop()
+			voiceBanNotice(found, "na interface")
+			return
+		end
+		if i > #items then
+			st.items = nil
+			st.itemIndex = 1
+		end
+	end
+
+	local function voiceBanScanBegin()
+		if voiceBanScanState then
+			voiceBanScanStop()
+		end
+		if voiceBanPhase == "active" then return end
+		local roots = voiceBanScanRoots()
+		if #roots == 0 then return end
+		voiceBanScanState = {
+			roots = roots,
+			rootIndex = 1,
+			items = nil,
+			itemIndex = 1,
+			checked = 0,
+		}
+		voiceBanScanConn = RunService.Heartbeat:Connect(function()
+			local ok = pcall(voiceBanScanStep)
+			if not ok then voiceBanScanStop() end
+		end)
 	end
 
 	local voiceBanDiagSeen = {}
@@ -3579,7 +3759,10 @@ local function chosenInstallVoiceBan()
 	-- evento ainda custa uma chamada Lua por instância criada, e o IY
 	-- cria milhares. Desconectado, o custo é zero.
 	voiceBanDetachAll = function()
-		if not voiceBanAttached then return end
+		-- Uma varredura fatiada em andamento também para: durante a
+		-- injeção externa nem o Heartbeat da varredura deve rodar.
+		if voiceBanScanState then voiceBanScanStop() end
+		if not voiceBanAttached and #voiceBanConnections == 0 then return end
 		voiceBanAttached = false
 		for _, conn in ipairs(voiceBanConnections) do
 			pcall(function() conn:Disconnect() end)
@@ -3620,15 +3803,15 @@ local function chosenInstallVoiceBan()
 			-- Depois de uma enxurrada (ou de uma injeção externa),
 			-- uma única varredura lê o estado final da interface.
 			-- Isso substitui as centenas de retentativas por objeto.
+			-- A varredura é fatiada por frame (voiceBanScanBegin), então
+			-- este ponto não segura o frame nem logo após o IY.
 			if CHOSEN_VB_RESCAN_AT > 0
 				and not CHOSEN_EXT_BUSY
+				and not CHOSEN_LIGHT_MODE
 				and os.clock() >= CHOSEN_VB_RESCAN_AT then
 				CHOSEN_VB_RESCAN_AT = 0
 				if voiceBanPhase ~= "active" then
-					local found = voiceBanScanRobloxUI()
-					if found then
-						voiceBanNotice(found, "na interface")
-					end
+					voiceBanScanBegin()
 				end
 			end
 
@@ -3648,6 +3831,7 @@ local function chosenInstallVoiceBan()
 		while VoiceBanButton.Parent do
 			task.wait(5)
 			if VOICE_BAN_UI_WATCH
+				and voiceBanAttached
 				and not CHOSEN_EXT_BUSY
 				and not CHOSEN_LIGHT_MODE then
 				voiceBanAddRoot(LocalPlayer:FindFirstChild("PlayerGui"))
@@ -3655,16 +3839,14 @@ local function chosenInstallVoiceBan()
 		end
 	end)
 
-	-- Varredura única: se o ban já estava na tela ao injetar, pega o início.
+	-- Varredura única (fatiada): se o ban já estava na tela ao injetar,
+	-- pega o início sem travar o frame.
 	task.spawn(function()
 		task.wait(2)
 		if not VOICE_BAN_UI_WATCH then return end
 		if CHOSEN_EXT_BUSY then return end
 		if voiceBanPhase == "active" then return end
-		local found = voiceBanScanRobloxUI()
-		if found then
-			voiceBanNotice(found, "na tela")
-		end
+		voiceBanScanBegin()
 	end)
 
 	-- 3) API de voz: só serve como registro. Durante o ban ela continua
@@ -4655,7 +4837,6 @@ createSection(GameTab, "Jogo", "Movimento, atalhos e utilidades.", 1)
 
 -- Variáveis locais (inicialização)
 local noclip = false
-local noclipHotkeyEnabled = false
 local noclipSetState
 local clickTp = false
 local flashback = false
@@ -4789,28 +4970,93 @@ local maxHistory = 300
 local isRewinding = false
 
 local GameRow1 = createControlRow(GameTab, 2)
-local _, setNoclipState = createToggleButton(GameRow1, "Noclip  •  N = alternar", function(state)
+
+-- ==========================================================
+-- COLISÃO COMPARTILHADA (Noclip + Antifling)
+-- Os dois recursos precisam deixar o personagem sem colisão.
+-- Cada um guardar o "original" por conta própria dava problema:
+-- ligar o segundo salvava o estado já alterado pelo primeiro e,
+-- ao desligar, devolvia a colisão errada (noclip permanente).
+-- Agora existe uma lista de donos e a colisão só volta quando o
+-- ÚLTIMO dono desliga.
+-- ==========================================================
+local COLL = { owners = {}, saved = {} }
+
+local function COLL_set(owner, on)
+	if on then
+		COLL.owners[owner] = true
+	else
+		COLL.owners[owner] = nil
+	end
+	local char = LocalPlayer.Character
+	if char then
+		for _, p in ipairs(char:GetDescendants()) do
+			if p:IsA("BasePart") then
+				if next(COLL.owners) ~= nil then
+					if COLL.saved[p] == nil then
+						COLL.saved[p] = p.CanCollide
+					end
+					p.CanCollide = false
+				elseif COLL.saved[p] ~= nil then
+					local was = COLL.saved[p]
+					COLL.saved[p] = nil
+					pcall(function() p.CanCollide = was end)
+				end
+			end
+		end
+	end
+	-- Último dono saiu: nada mais a restaurar, descarta restos.
+	if next(COLL.owners) == nil then
+		COLL.saved = {}
+	end
+end
+
+-- Reaplica enquanto algum dono estiver ativo (o jogo pode devolver
+-- a colisão; personagem novo também precisa entrar na lista).
+RunService.Stepped:Connect(function()
+	if next(COLL.owners) == nil then return end
+	local char = LocalPlayer.Character
+	if not char then return end
+	for part in pairs(COLL.saved) do
+		if not part.Parent then
+			COLL.saved[part] = nil
+		end
+	end
+	for _, p in ipairs(char:GetDescendants()) do
+		if p:IsA("BasePart") then
+			if COLL.saved[p] == nil then
+				COLL.saved[p] = p.CanCollide
+			end
+			p.CanCollide = false
+		end
+	end
+end)
+
+-- Noclip possui dois estados independentes:
+-- noclip = botão mestre do painel (só o painel desliga este estado).
+-- noclipMode = modo selecionado pela tecla N (Noclip/Normal).
+-- A tecla N nunca altera o estado visual nem a persistência do botão.
+local noclipMode = true
+
+local function applyNoclip()
+	COLL_set("noclip", noclip and noclipMode)
+end
+
+local _, setNoclipState = createToggleButton(GameRow1, "Noclip  •  N = modo Normal/Noclip", function(state)
 	noclip = state
-	noclipHotkeyEnabled = state
+	applyNoclip()
 	PERSIST_STATE.noclip = state
 	persistWrite()
 end, 1)
 noclipSetState = setNoclipState
--- Reaplica o estado salvo no próprio botão (nasce desligado).
+
+-- Reaplica o estado salvo no próprio botão.
+-- Ao habilitar pelo painel, inicia no modo Noclip.
 if PERSIST_STATE.noclip then
 	noclip = true
-	noclipHotkeyEnabled = true
+	noclipMode = true
 	setNoclipState(true)
 end
-
-RunService.Stepped:Connect(function()
-	if CHOSEN_EXT_BUSY then return end
-	if noclip and LocalPlayer.Character then
-		for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
-			if p:IsA("BasePart") then p.CanCollide = false end
-		end
-	end
-end)
 
 local _, setClickTpState = createToggleButton(GameRow1, "Click TP  •  Ctrl + M1", function(state)
 	clickTp = state
@@ -5617,10 +5863,11 @@ local okAntiInvis, errAntiInvis = pcall(function()
 		if t >= AI_INVISIBLE then
 			part.Transparency = AI_PROBE
 		end
-		local ltm = part.LocalTransparencyModifier
-		if ltm >= AI_INVISIBLE then
-			part.LocalTransparencyModifier = AI_PROBE
-		end
+		-- NUNCA escrever LocalTransparencyModifier aqui: este handler
+		-- roda DENTRO do sinal da própria propriedade, então a escrita
+		-- re-dispara o evento e o Roblox acusa
+		-- "Exponential event growth detected". A escrita do LTM fica
+		-- no AI_revealPart, uma única vez por parte.
 	end
 
 	local function AI_disconnect(entry)
@@ -5647,9 +5894,9 @@ local okAntiInvis, errAntiInvis = pcall(function()
 					part:GetPropertyChangedSignal("Transparency"):Connect(function()
 						AI_forcePart(part, entry)
 					end),
-					part:GetPropertyChangedSignal("LocalTransparencyModifier"):Connect(function()
-						AI_forcePart(part, entry)
-					end),
+					-- Só o Transparency tem sinal aqui. Escutar o
+					-- LocalTransparencyModifier e escrevê-lo no mesmo
+					-- handler causava crescimento exponencial de eventos.
 				}
 			end)
 		end
@@ -5666,7 +5913,13 @@ local okAntiInvis, errAntiInvis = pcall(function()
 				if entry.origLTM == nil then
 					entry.origLTM = ltm
 				end
-				part.LocalTransparencyModifier = AI_PROBE
+				-- Uma única escrita de LTM por parte, na revelação.
+				-- Repetir isso a cada varredura realimentava o evento
+				-- LocalTransparencyModifierChanged do CoreGui.
+				if not entry.ltmDone then
+					entry.ltmDone = true
+					part.LocalTransparencyModifier = AI_PROBE
+				end
 			end
 		end)
 	end
@@ -5692,9 +5945,10 @@ local okAntiInvis, errAntiInvis = pcall(function()
 				part.Transparency = entry.origT
 			end
 			local ltm = part.LocalTransparencyModifier
-			if entry.origLTM ~= nil
+			if entry.ltmDone and entry.origLTM ~= nil
 				and (ltm >= AI_INVISIBLE or ltm == AI_PROBE) then
 				part.LocalTransparencyModifier = entry.origLTM
+				entry.ltmDone = false
 			end
 		end)
 	end
@@ -6139,8 +6393,14 @@ RunService.Heartbeat:Connect(function()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gp)
-	if not gp and input.KeyCode == Enum.KeyCode.N and noclipHotkeyEnabled and not UserInputService:GetFocusedTextBox() then
-		noclip = not noclip
+	if not gp and input.KeyCode == Enum.KeyCode.N
+		and not UserInputService:GetFocusedTextBox() then
+		-- N alterna somente o modo interno.
+		-- O botão mestre continua ON e só pode ser desligado manualmente.
+		if noclip then
+			noclipMode = not noclipMode
+			applyNoclip()
+		end
 	end
 	if flashback and not gp and input.KeyCode == Enum.KeyCode.V then isRewinding = true end
 end)
@@ -6370,6 +6630,15 @@ RunService.RenderStepped:Connect(function()
 		fovCircle.Visible = false
 	end
 
+	-- Aimbot funciona SOZINHO: não depende do ESP/wallhack ligado.
+	if aimbotEnabled
+		and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+		local target = getClosestPart()
+		if target then
+			smoothLookAt(target)
+		end
+	end
+
 	-- Sem ESP ligado não há nada para atualizar. Antes, UpdateRoles()
 	-- rodava todo frame mesmo com a função desligada.
 	if not roleEspEnabled then return end
@@ -6432,13 +6701,6 @@ RunService.RenderStepped:Connect(function()
 			end
 		end
 	end
-
-	if aimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-		local target = getClosestPart()
-		if target then
-			smoothLookAt(target)
-		end
-	end
 end)
 end -- fim do bloco ESP
 
@@ -6486,44 +6748,73 @@ local chosenExternalLast = {}
 -- ==========================================================
 local chosenExtDialog = nil
 
-local function chosenConfirmInject(title, message, onConfirm)
+local function chosenConfirmInject(icon, title, message, onConfirm)
 	if chosenExtDialog then
 		pcall(function() chosenExtDialog:Destroy() end)
 		chosenExtDialog = nil
 	end
 
-	-- Fundo escurecido: cobre o painel e segura os cliques.
+	-- Fundo escurecido em um ScreenGui PRÓPRIO com IgnoreGuiInset:
+	-- assim ele cobre a tela inteira, inclusive a faixa da topbar do
+	-- Roblox e qualquer canto — e fica acima do painel (DisplayOrder).
+	local dimGui = Instance.new("ScreenGui")
+	dimGui.Name = "ChosenInjectDim"
+	dimGui.IgnoreGuiInset = true
+	dimGui.ResetOnSpawn = false
+	dimGui.DisplayOrder = 999
+	dimGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pcall(function() dimGui.Parent = CoreGui end)
+	if not dimGui.Parent then
+		local pg = LocalPlayer:FindFirstChild("PlayerGui")
+			or LocalPlayer:WaitForChild("PlayerGui")
+		dimGui.Parent = pg
+	end
+	chosenExtDialog = dimGui
+
+	-- Fundo escurecido: cobre a TELA INTEIRA (com folga nas bordas,
+	-- para não sobrar faixa clara em nenhum canto) e segura cliques.
 	local overlay = Instance.new("Frame")
 	overlay.Name = "ChosenInjectConfirm"
-	overlay.Size = UDim2.new(1, 0, 1, 0)
-	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.AnchorPoint = Vector2.new(0.5, 0.5)
+	overlay.Position = UDim2.fromScale(0.5, 0.5)
+	overlay.Size = UDim2.new(1, 160, 1, 160)
+	overlay.BackgroundColor3 = Color3.fromRGB(3, 8, 16)
 	overlay.BackgroundTransparency = 0.5
 	overlay.BorderSizePixel = 0
 	overlay.Active = true
-	overlay.ZIndex = 90
-	overlay.Parent = ScreenGui
-	chosenExtDialog = overlay
+	overlay.ZIndex = 500
+	overlay.Parent = dimGui
+
+	-- Leve degradê: mais escuro embaixo, dá profundidade sem
+	-- deixar faixa clara em nenhuma borda.
+	local dimGrad = Instance.new("UIGradient")
+	dimGrad.Rotation = 90
+	dimGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.44),
+		NumberSequenceKeypoint.new(1, 0.58),
+	})
+	dimGrad.Parent = overlay
 
 	local card = Instance.new("Frame")
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
-	card.Position = UDim2.new(0.5, 0, 0.5, 0)
-	card.Size = UDim2.new(0, 420, 0, 198)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.Size = UDim2.new(0, 420, 0, 182)
 	card.BackgroundColor3 = COLOR_PANEL
 	card.BackgroundTransparency = 0.02
 	card.BorderSizePixel = 0
 	card.Active = true
-	card.ZIndex = 91
+	card.ZIndex = 501
 	card.Parent = overlay
-	corner(card, 12)
+	corner(card, 10)
 	stroke(card, COLOR_ACCENT, 1.4, 0.2)
 
-	-- Faixa de destaque no topo (mesma linguagem do toast de Aviso)
+	-- Faixa de destaque no topo (mesma linguagem do toast de Aviso).
 	local bar = Instance.new("Frame")
 	bar.Size = UDim2.new(1, -24, 0, 3)
 	bar.Position = UDim2.new(0, 12, 0, 8)
 	bar.BackgroundColor3 = COLOR_ACCENT
 	bar.BorderSizePixel = 0
-	bar.ZIndex = 92
+	bar.ZIndex = 502
 	bar.Parent = card
 	corner(bar, 2)
 
@@ -6531,16 +6822,17 @@ local function chosenConfirmInject(title, message, onConfirm)
 	titleLabel.Size = UDim2.new(1, -40, 0, 20)
 	titleLabel.Position = UDim2.new(0, 20, 0, 22)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = title
+	titleLabel.Text = (icon and (icon .. "  ") or "") .. title
 	titleLabel.TextColor3 = COLOR_TEXT
 	titleLabel.Font = Enum.Font.LuckiestGuy
 	titleLabel.TextSize = 16
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.ZIndex = 92
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 502
 	titleLabel.Parent = card
 
 	local msg = Instance.new("TextLabel")
-	msg.Size = UDim2.new(1, -40, 0, 76)
+	msg.Size = UDim2.new(1, -40, 0, 62)
 	msg.Position = UDim2.new(0, 20, 0, 50)
 	msg.BackgroundTransparency = 1
 	msg.Text = message
@@ -6550,58 +6842,54 @@ local function chosenConfirmInject(title, message, onConfirm)
 	msg.TextXAlignment = Enum.TextXAlignment.Left
 	msg.TextYAlignment = Enum.TextYAlignment.Top
 	msg.TextWrapped = true
-	msg.ZIndex = 92
+	msg.ZIndex = 502
 	msg.Parent = card
 
 	local function close()
-		pcall(function() overlay:Destroy() end)
-		if chosenExtDialog == overlay then
+		pcall(function() dimGui:Destroy() end)
+		if chosenExtDialog == dimGui then
 			chosenExtDialog = nil
 		end
 	end
 
-	local cancel = Instance.new("TextButton")
-	cancel.Size = UDim2.new(0.5, -26, 0, 38)
-	cancel.Position = UDim2.new(0, 20, 1, -54)
-	cancel.BackgroundColor3 = COLOR_CARD2
-	cancel.BackgroundTransparency = 0.15
-	cancel.AutoButtonColor = false
-	cancel.Text = "CANCELAR"
-	cancel.TextColor3 = COLOR_MUTED
-	cancel.Font = Enum.Font.FredokaOne
-	cancel.TextSize = 11
-	cancel.ZIndex = 92
-	cancel.Parent = card
-	corner(cancel, 8)
-	stroke(cancel, COLOR_BORDER, 1, 0.35)
+	-- Botões no mesmo estilo do painel: cor chapada, canto 8,
+	-- borda fina e hover suave — sem degradê nem sombra.
+	local function makeButton(x, label, bg, textColor, hoverColor, borderColor)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 184, 0, 40)
+		btn.Position = UDim2.new(0, x, 1, -52)
+		btn.BackgroundColor3 = bg
+		btn.BackgroundTransparency = 0.12
+		btn.AutoButtonColor = false
+		btn.Text = label
+		btn.TextColor3 = textColor
+		btn.Font = Enum.Font.FredokaOne
+		btn.TextSize = 12
+		btn.ZIndex = 502
+		btn.Parent = card
+		corner(btn, 8)
+		stroke(btn, borderColor, 1, 0.35)
 
-	local go = Instance.new("TextButton")
-	go.Size = UDim2.new(0.5, -26, 0, 38)
-	go.Position = UDim2.new(0.5, 6, 1, -54)
-	go.BackgroundColor3 = COLOR_SUCCESS
-	go.BackgroundTransparency = 0.08
-	go.AutoButtonColor = false
-	go.Text = "INJETAR AGORA"
-	go.TextColor3 = Color3.fromRGB(8, 30, 18)
-	go.Font = Enum.Font.FredokaOne
-	go.TextSize = 11
-	go.ZIndex = 92
-	go.Parent = card
-	corner(go, 8)
-	stroke(go, COLOR_SUCCESS, 1, 0.45)
+		btn.MouseEnter:Connect(function()
+			tween(btn, { BackgroundColor3 = hoverColor }, 0.12)
+		end)
+		btn.MouseLeave:Connect(function()
+			tween(btn, { BackgroundColor3 = bg }, 0.12)
+		end)
+		return btn
+	end
 
-	cancel.MouseEnter:Connect(function()
-		tween(cancel, { BackgroundColor3 = Color3.fromRGB(56, 102, 158) }, 0.12)
-	end)
-	cancel.MouseLeave:Connect(function()
-		tween(cancel, { BackgroundColor3 = COLOR_CARD2 }, 0.12)
-	end)
-	go.MouseEnter:Connect(function()
-		tween(go, { BackgroundColor3 = Color3.fromRGB(120, 245, 170) }, 0.12)
-	end)
-	go.MouseLeave:Connect(function()
-		tween(go, { BackgroundColor3 = COLOR_SUCCESS }, 0.12)
-	end)
+	local cancel = makeButton(
+		18, "✖   CANCELAR",
+		COLOR_CARD2, COLOR_TEXT,
+		Color3.fromRGB(56, 102, 158), COLOR_BORDER
+	)
+
+	local go = makeButton(
+		218, "⚡   INJETAR",
+		COLOR_SUCCESS, Color3.fromRGB(8, 30, 18),
+		Color3.fromRGB(120, 245, 170), Color3.fromRGB(52, 178, 110)
+	)
 
 	cancel.MouseButton1Click:Connect(close)
 
@@ -6758,7 +7046,8 @@ end
 local infinityButton = createActionButton(MiscRow1, "📜 Infinite Yield", 2)
 infinityButton.MouseButton1Click:Connect(function()
 	chosenConfirmInject(
-		"📜  INFINITE YIELD",
+		"📜",
+		"INFINITE YIELD",
 		"O painel vai fechar por alguns segundos enquanto o Infinite Yield é carregado. Ele volta sozinho logo depois — nada do que você ligou é perdido.",
 		function()
 			chosenRunExternal("iy",
@@ -6772,7 +7061,8 @@ local MiscRow2 = createControlRow(MiscTab, 3)
 local emoteButton = createActionButton(MiscRow2, "💃 Free emotes", 1)
 emoteButton.MouseButton1Click:Connect(function()
 	chosenConfirmInject(
-		"💃  FREE EMOTES",
+		"💃",
+		"FREE EMOTES",
 		"O painel vai fechar por alguns segundos enquanto o script de emotes é carregado. Ele volta sozinho logo depois — nada do que você ligou é perdido.",
 		function()
 			chosenRunExternal("emotes",
@@ -6999,14 +7289,53 @@ local okWalkFling, errWalkFling = pcall(function()
 	local WF_saved = {}
 	local WF_friendCache = {}
 
+	-- Amizade: IsFriendsWith pode CEDER (yield). Chamar isso dentro do
+	-- loop do fling atrasava o efeito e, na prática, o Skip Friends nunca
+	-- pegava a tempo — o amigo era arremessado igual. Agora a consulta
+	-- roda em paralelo e o loop só lê o cache.
+	local WF_nextFriendScan = 0
+
+	local function WF_primeFriends()
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= LocalPlayer and WF_friendCache[p.UserId] == nil then
+				WF_friendCache[p.UserId] = false
+				task.spawn(function()
+					local ok, result = pcall(function()
+						return LocalPlayer:IsFriendsWith(p.UserId)
+					end)
+					if ok and type(result) == "boolean" then
+						WF_friendCache[p.UserId] = result
+					end
+				end)
+			end
+		end
+	end
+
 	local function WF_isFriend(p)
 		if p == LocalPlayer then return false end
-		if WF_friendCache[p.UserId] == nil then
-			local ok, result = pcall(function() return LocalPlayer:IsFriendsWith(p.UserId) end)
-			WF_friendCache[p.UserId] = ok and result or false
-		end
-		return WF_friendCache[p.UserId]
+		return WF_friendCache[p.UserId] == true
 	end
+
+	-- Amigo encostado? Se sim, o WalkFling NÃO amplifica a velocidade
+	-- naquele frame — era exatamente isso que arremessava o amigo.
+	local function WF_friendNear(hrp)
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= LocalPlayer and p.Character and WF_isFriend(p) then
+				local fhrp = p.Character:FindFirstChild("HumanoidRootPart")
+				if fhrp and (fhrp.Position - hrp.Position).Magnitude <= 8 then
+					return true
+				end
+			end
+		end
+		return false
+	end
+
+	Players.PlayerAdded:Connect(function()
+		WF_primeFriends()
+	end)
+	Players.PlayerRemoving:Connect(function(p)
+		WF_friendCache[p.UserId] = nil
+	end)
 
 	local function WF_prepareSelf()
 		if WF_prepared then return end
@@ -7053,34 +7382,46 @@ local okWalkFling, errWalkFling = pcall(function()
 				part.CanCollide = false
 			end
 		end
-		if WF_skipFriends then
-			for _, p in ipairs(Players:GetPlayers()) do
-				if p ~= LocalPlayer and p.Character and WF_isFriend(p) then
-					for _, d in ipairs(p.Character:GetDescendants()) do
-						if d:IsA("BasePart") then d.CanCollide = false end
-					end
-				end
-			end
-		end
 	end)
 
 	local function WF_start()
 		if WF_active then return end
 		WF_active = true
+		-- Enquanto o próprio fling está ativo, a "mão" do antifling na
+		-- colisão sai: sem colisão você não encosta em ninguém — e aí o
+		-- fling não funcionaria. (A limitação de velocidade continua
+		-- pausada, como antes.) O próprio fling assume a liberação de
+		-- colisão (WF_prepareSelf + handler do Stepped).
+		local charWFA = LocalPlayer.Character
+		if charWFA and not WF_prepared then
+			WF_prepareSelf()
+		end
+		WF_primeFriends()
 		task.spawn(function()
 			while WF_walkfling do
 				local char = LocalPlayer.Character
 				local hrp = char and char:FindFirstChild("HumanoidRootPart")
 				if hrp then
 					if not WF_prepared then WF_prepareSelf() end
+					if os.clock() >= WF_nextFriendScan then
+						WF_nextFriendScan = os.clock() + 5
+						WF_primeFriends()
+					end
 					RunService.Heartbeat:Wait()
 					if hrp.Parent then
 						local vel = hrp.AssemblyLinearVelocity
-						hrp.AssemblyLinearVelocity = vel * 10000 + Vector3.new(0, WF_power, 0)
+						local skip = WF_skipFriends and WF_friendNear(hrp)
+						if not skip then
+							hrp.AssemblyLinearVelocity = vel * 10000 + Vector3.new(0, WF_power, 0)
+						end
 						RunService.RenderStepped:Wait()
-						if hrp.Parent then hrp.AssemblyLinearVelocity = vel end
+						if hrp.Parent and not skip then
+							hrp.AssemblyLinearVelocity = vel
+						end
 						RunService.Stepped:Wait()
-						if hrp.Parent then hrp.AssemblyLinearVelocity = vel + Vector3.new(0, 0.1, 0) end
+						if hrp.Parent and not skip then
+							hrp.AssemblyLinearVelocity = vel + Vector3.new(0, 0.1, 0)
+						end
 					end
 				else
 					task.wait(0.1)
@@ -7088,13 +7429,16 @@ local okWalkFling, errWalkFling = pcall(function()
 			end
 			WF_active = false
 			WF_releaseSelf()
+			if WF_antiFling then COLL_set("antifling", true) end
 		end)
 	end
 
 	-- Controles na aba Jogo (mesmos helpers visuais dos outros widgets)
 	createSection(GameTab, "Fling", "Arremesse encostando; antifling te protege.", 6)
 
-	-- PERMISSÃO: a seção Fling é exclusiva de Premium, Moderator e Owner.
+	-- PERMISSÃO: apenas a POTÊNCIA do Fling fica restrita
+	-- (Premium/MoD/Owner). O Fling como um todo é liberado para
+	-- membros: toggle, Antifling e Skip Friends funcionam livre.
 	-- O cargo real vem da API via atributos do ScreenGui (pode levar
 	-- alguns segundos após executar o painel — a checagem é no clique).
 	local function WF_hasPermission()
@@ -7109,7 +7453,7 @@ local okWalkFling, errWalkFling = pcall(function()
 	-- (independente do layout da aba, impossível passar despercebido).
 	local WF_noticeToken = 0
 	local function WF_showNotice()
-		warn("[Chosen] Fling bloqueado: requer Premium ou superior")
+		warn("[Chosen] Potencia do Fling bloqueada: requer Premium ou superior")
 		WF_noticeToken += 1
 		local token = WF_noticeToken
 
@@ -7144,7 +7488,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		noticeTitle.Size = UDim2.new(1, -30, 0, 16)
 		noticeTitle.Position = UDim2.new(0, 18, 0, 9)
 		noticeTitle.BackgroundTransparency = 1
-		noticeTitle.Text = "🔒  ACESSO NEGADO"
+		noticeTitle.Text = "🔒  POTÊNCIA BLOQUEADA"
 		noticeTitle.TextColor3 = Color3.fromRGB(255, 190, 90)
 		noticeTitle.Font = Enum.Font.LuckiestGuy
 		noticeTitle.TextSize = 11
@@ -7156,7 +7500,7 @@ local okWalkFling, errWalkFling = pcall(function()
 		noticeText.Size = UDim2.new(1, -30, 0, 26)
 		noticeText.Position = UDim2.new(0, 18, 0, 27)
 		noticeText.BackgroundTransparency = 1
-		noticeText.Text = "Fling é exclusivo de Premium\nou cargo superior"
+		noticeText.Text = "Só a potência do Fling\né exclusiva de Premium"
 		noticeText.TextColor3 = Color3.fromRGB(240, 235, 225)
 		noticeText.Font = Enum.Font.FredokaOne
 		noticeText.TextSize = 11
@@ -7191,11 +7535,6 @@ local okWalkFling, errWalkFling = pcall(function()
 
 	local WFCombo
 	WFCombo = createComboControl(GameTab, "WalkFling", 1000, 100000, WF_power, 7, function(state)
-		if state and not WF_hasPermission() then
-			WF_showNotice()
-			WFCombo.setState(false)
-			return
-		end
 		WF_walkfling = state
 		if state then
 			WF_start()
@@ -7203,94 +7542,93 @@ local okWalkFling, errWalkFling = pcall(function()
 			WF_releaseSelf()
 		end
 	end, function(value)
+		if not WF_hasPermission() then
+			if WFCombo then WFCombo.setValue(WF_power, true) end
+			return
+		end
 		WF_power = value
 	end)
 	local WFComboCard = WFCombo.card
 
-	-- Antifling: zera velocidades absurdas aplicadas por outros flings.
-	-- Pausa automaticamente enquanto o próprio WalkFling está ativo para
-	-- não brigar com o efeito que ele cria.
+	-- Antifling: solta a colisão (mesmo mecanismo do noclip) + limita a
+	-- velocidade que "flings" de terceiros conseguem injetar no seu HRP.
+	-- O Fling como um todo agora é liberado; só a POTÊNCIA da WalkFling
+	-- fica restrita (Premium/MoD/Owner) via barra + número.
 	RunService.Heartbeat:Connect(function()
 		if not WF_antiFling then return end
 		if WF_walkfling then return end
 		local char = LocalPlayer.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-		if not hrp then return end
+		if not hrp or (humanoid and humanoid.Health <= 0) then return end
 		local vel = hrp.AssemblyLinearVelocity
-		if vel.Magnitude > 300 then
-			hrp.AssemblyLinearVelocity = Vector3.zero
+		local afMax = math.max(180, (humanoid and humanoid.WalkSpeed or 16) * 6)
+		if vel.Magnitude > afMax then
+			hrp.AssemblyLinearVelocity = vel.Unit * afMax
+		end
+		local av = hrp.AssemblyAngularVelocity
+		if av.Magnitude > 30 then
 			hrp.AssemblyAngularVelocity = Vector3.zero
-		else
-			local av = hrp.AssemblyAngularVelocity
-			if av.Magnitude > 150 then
-				hrp.AssemblyAngularVelocity = Vector3.zero
-			end
 		end
 	end)
 
 	local WFRow2 = createControlRow(GameTab, 8)
 	local WFAntiCard, WFAntiSet = createToggleButton(WFRow2, "Antifling", function(state)
-		if state and not WF_hasPermission() then
-			WF_showNotice()
-			WFAntiSet(false)
-			return
-		end
 		WF_antiFling = state
+		if WF_walkfling then
+			-- Próprio fling ativo: a colisão é liberada pelo próprio
+			-- fling (mecanismo WF). O antifling só pausa o clamp de velocidade
+			-- (o Heartbeat checa WF_antiFling + WF_walkfling). Se o antifling
+			-- está sendo desligado, limpamos o owner para a liberação de
+			-- colisão não "vazar" quando o próprio fling for desligado.
+			if not state then
+				COLL_set("antifling", false)
+			end
+		else
+			COLL_set("antifling", state)
+		end
 	end, 1)
 
 	local WFSkipCard, WFSkipSet = createToggleButton(WFRow2, "Skip Friends", function(state)
-		if state and not WF_hasPermission() then
-			WF_showNotice()
-			WFSkipSet(false)
-			return
-		end
 		WF_skipFriends = state
+		if state then WF_primeFriends() end
 	end, 2)
 
-	-- BLOQUEIO VISUAL: sem Premium ou superior, os cards ficam
-	-- escurecidos e cobertos por um escudo não-clicável (a checagem
-	-- no callback continua valendo como segunda barreira).
-	local WF_shields = {}
-	for _, card in ipairs({ WFComboCard, WFAntiCard, WFSkipCard }) do
-		local shield = Instance.new("TextButton")
-		shield.Name = "WFLockShield"
-		shield.Size = UDim2.new(1, 0, 1, 0)
-		shield.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
-		shield.BackgroundTransparency = 0.55
-		shield.Text = "🔒"
-		shield.TextColor3 = Color3.fromRGB(255, 170, 60)
-		shield.Font = Enum.Font.FredokaOne
-		shield.TextSize = 16
-		shield.AutoButtonColor = false
-		shield.ZIndex = 10
-		shield.Visible = false
-		-- Clicar no escudo (nada responde embaixo) mostra o aviso
-		-- de que o Fling exige Premium ou superior.
-		shield.MouseButton1Click:Connect(WF_showNotice)
-		shield.Parent = card
-		WF_shields[card] = shield
-	end
+	-- BLOQUEIO VISUAL: só a metade do card que tem barra + número (a
+	-- potência do Fling) recebe o escudo. Toggle, Antifling e Skip Friends
+	-- ficam livres — os membros também podem usar o Fling.
+	local WF_powerShield = Instance.new("TextButton")
+	WF_powerShield.Name = "WFPowerShield"
+	WF_powerShield.Size = UDim2.new(0.5, -4, 1, 0)
+	WF_powerShield.Position = UDim2.new(0.5, -4, 0, 0)
+	WF_powerShield.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+	WF_powerShield.BackgroundTransparency = 0.55
+	WF_powerShield.Text = "🔒"
+	WF_powerShield.TextColor3 = Color3.fromRGB(255, 170, 60)
+	WF_powerShield.Font = Enum.Font.FredokaOne
+	WF_powerShield.TextSize = 16
+	WF_powerShield.AutoButtonColor = false
+	WF_powerShield.ZIndex = 10
+	WF_powerShield.Visible = false
+	WF_powerShield.MouseButton1Click:Connect(WF_showNotice)
+	WF_powerShield.Parent = WFComboCard
+	local WF_shields = { [WFComboCard] = WF_powerShield }
 
 	local function WF_updateLock()
 		local locked = not WF_hasPermission()
-		for card, shield in pairs(WF_shields) do
-			shield.Visible = locked
-			tween(card, {
-				BackgroundTransparency = locked and 0.5 or 0.1
-			}, 0.15)
-		end
+		WF_powerShield.Visible = locked
+		WFCombo.setValueLock(locked)
 	end
 	WF_updateLock()
 
-	-- Cargo carregado ou rebaixado? Atualiza o bloqueio e desliga
-	-- o WalkFling na hora se a permissão foi perdida.
+	-- Cargo carregado ou rebaixado? Atualiza o bloqueio e regrava a
+	-- potência padrão quando a permissão cai. O toggle do Fling continua
+	-- liberado.
 	local function WF_revokeIfNeeded()
 		WF_updateLock()
-		if not WF_hasPermission() and WF_walkfling then
-			WF_walkfling = false
-			WF_showNotice()
-			WFCombo.setState(false)
+		if not WF_hasPermission() then
+			WF_power = 10000
+			WFCombo.setValue(WF_power, true)
 		end
 	end
 	ScreenGui:GetAttributeChangedSignal("CHOSEN_Role"):Connect(WF_revokeIfNeeded)
