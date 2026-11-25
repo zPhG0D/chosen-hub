@@ -7316,18 +7316,26 @@ local okWalkFling, errWalkFling = pcall(function()
 		return WF_friendCache[p.UserId] == true
 	end
 
-	-- Amigo encostado? Se sim, o WalkFling NÃO amplifica a velocidade
-	-- naquele frame — era exatamente isso que arremessava o amigo.
-	local function WF_friendNear(hrp)
-		for _, p in ipairs(Players:GetPlayers()) do
-			if p ~= LocalPlayer and p.Character and WF_isFriend(p) then
-				local fhrp = p.Character:FindFirstChild("HumanoidRootPart")
-				if fhrp and (fhrp.Position - hrp.Position).Magnitude <= 8 then
-					return true
-				end
+	-- FÍSICA DO FLING (mesma base do NextFling original):
+	-- o HRP precisa estar COLIDINDO (CanCollide = true) e com densidade
+	-- altíssima; as outras partes do corpo ficam sem colisão para o
+	-- contato acontecer só pelo HRP. Reaplicado a cada frame porque o
+	-- Noclip e o Antifling (sistema COLL) devolvem CanCollide = false no
+	-- HRP — e sem colisão o fling não encosta em ninguém.
+	local function WF_applyPhysics(hrp)
+		if not hrp.CanCollide then hrp.CanCollide = true end
+		if hrp.Massless then hrp.Massless = false end
+		local props = hrp.CustomPhysicalProperties
+		if not props or props.Density < 1e6 then
+			local ok = pcall(function()
+				hrp.CustomPhysicalProperties = PhysicalProperties.new(math.huge, 0.3, 0.5)
+			end)
+			if not ok then
+				pcall(function()
+					hrp.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+				end)
 			end
 		end
-		return false
 	end
 
 	Players.PlayerAdded:Connect(function()
@@ -7377,9 +7385,24 @@ local okWalkFling, errWalkFling = pcall(function()
 
 	RunService.Stepped:Connect(function()
 		if not (WF_prepared and WF_walkfling) then return end
+		local char = LocalPlayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if hrp then WF_applyPhysics(hrp) end
 		for part in pairs(WF_saved) do
 			if part.Parent and part.Name ~= "HumanoidRootPart" then
 				part.CanCollide = false
+			end
+		end
+		-- Skip Friends como no NextFling original: as partes do amigo
+		-- ficam sem colisão (você atravessa). Amigo segurado pela mão
+		-- (solda do próprio jogo) continua sendo arremessado, como antes.
+		if WF_skipFriends then
+			for _, p in ipairs(Players:GetPlayers()) do
+				if p ~= LocalPlayer and p.Character and WF_isFriend(p) then
+					for _, d in ipairs(p.Character:GetDescendants()) do
+						if d:IsA("BasePart") then d.CanCollide = false end
+					end
+				end
 			end
 		end
 	end)
@@ -7387,49 +7410,55 @@ local okWalkFling, errWalkFling = pcall(function()
 	local function WF_start()
 		if WF_active then return end
 		WF_active = true
-		-- Enquanto o próprio fling está ativo, a "mão" do antifling na
-		-- colisão sai: sem colisão você não encosta em ninguém — e aí o
-		-- fling não funcionaria. (A limitação de velocidade continua
-		-- pausada, como antes.) O próprio fling assume a liberação de
-		-- colisão (WF_prepareSelf + handler do Stepped).
+		-- Enquanto o próprio fling está ativo, o Antifling não pode
+		-- segurar a colisão: sem colisão você não encosta em ninguém —
+		-- e aí o fling não funcionaria. Ao desligar o fling, o
+		-- Antifling (se estiver ligado) volta a segurar a colisão.
+		if WF_antiFling then COLL_set("antifling", false) end
+		WF_primeFriends()
 		local charWFA = LocalPlayer.Character
-		if charWFA and not WF_prepared then
+		if charWFA then
 			WF_prepareSelf()
 		end
-		WF_primeFriends()
 		task.spawn(function()
-			while WF_walkfling do
-				local char = LocalPlayer.Character
-				local hrp = char and char:FindFirstChild("HumanoidRootPart")
-				if hrp then
-					if not WF_prepared then WF_prepareSelf() end
-					if os.clock() >= WF_nextFriendScan then
-						WF_nextFriendScan = os.clock() + 5
-						WF_primeFriends()
-					end
-					RunService.Heartbeat:Wait()
-					if hrp.Parent then
-						local vel = hrp.AssemblyLinearVelocity
-						local skip = WF_skipFriends and WF_friendNear(hrp)
-						if not skip then
+			local ok, err = pcall(function()
+				while WF_walkfling do
+					local char = LocalPlayer.Character
+					local hrp = char and char:FindFirstChild("HumanoidRootPart")
+					if hrp then
+						if not WF_prepared then WF_prepareSelf() end
+						WF_applyPhysics(hrp)
+						if os.clock() >= WF_nextFriendScan then
+							WF_nextFriendScan = os.clock() + 5
+							WF_primeFriends()
+						end
+						RunService.Heartbeat:Wait()
+						if hrp.Parent then
+							-- Reinjeta a física logo antes do empurrão: o
+							-- Noclip/Antifling rodam no mesmo Stepped e podem
+							-- ter tirado a colisão do HRP no frame anterior.
+							WF_applyPhysics(hrp)
+							local vel = hrp.AssemblyLinearVelocity
 							hrp.AssemblyLinearVelocity = vel * 10000 + Vector3.new(0, WF_power, 0)
+							RunService.RenderStepped:Wait()
+							if hrp.Parent then hrp.AssemblyLinearVelocity = vel end
+							RunService.Stepped:Wait()
+							if hrp.Parent then hrp.AssemblyLinearVelocity = vel + Vector3.new(0, 0.1, 0) end
 						end
-						RunService.RenderStepped:Wait()
-						if hrp.Parent and not skip then
-							hrp.AssemblyLinearVelocity = vel
-						end
-						RunService.Stepped:Wait()
-						if hrp.Parent and not skip then
-							hrp.AssemblyLinearVelocity = vel + Vector3.new(0, 0.1, 0)
-						end
+					else
+						task.wait(0.1)
 					end
-				else
-					task.wait(0.1)
 				end
-			end
+			end)
+			-- Sempre destrava o estado, mesmo se algo der erro no meio
+			-- (antes, um erro deixava WF_active = true e o toggle
+			-- simplesmente não ligava mais o fling).
 			WF_active = false
 			WF_releaseSelf()
 			if WF_antiFling then COLL_set("antifling", true) end
+			if not ok then
+				warn("[WalkFling] loop interrompido: " .. tostring(err))
+			end
 		end)
 	end
 
