@@ -1950,21 +1950,78 @@ local function chosenSetTagRole(player, role)
     chosenBuildTagChars(tag)
 end
 
--- Consulta o cargo real de um jogador na API (assíncrono).
-local function chosenQueryTagRole(player, callback)
+-- Cache local das consultas de perfil por UserId.
+-- Jogadores sem cadastro ficam em cache por 3 minutos; cadastrados por
+-- 60 segundos. Requisições simultâneas para o mesmo ID compartilham
+-- uma única chamada HTTP (single-flight).
+local chosenProfileCache = {}
+local chosenProfileInFlight = {}
+local CHOSEN_PROFILE_CACHE_REGISTERED = 60
+local CHOSEN_PROFILE_CACHE_UNREGISTERED = 180
+
+local function chosenFetchPlayerProfile(player, callback)
+    local userId = tostring(player.UserId)
+    local now = os.clock()
+    local cached = chosenProfileCache[userId]
+
+    if cached and cached.expiresAt > now then
+        callback(cached.registered, cached.profile)
+        return
+    end
+
+    if chosenProfileInFlight[userId] then
+        table.insert(chosenProfileInFlight[userId], callback)
+        return
+    end
+
+    chosenProfileInFlight[userId] = { callback }
+
     task.spawn(function()
         local ok, data = chosenApiCall({
-            Url = CHOSEN_API_URL .. "/profile?user_id=" .. tostring(player.UserId),
+            Url = CHOSEN_API_URL .. "/profile?user_id=" .. userId,
             Method = "GET",
             Headers = {
                 ["Accept"] = "application/json"
             }
         })
 
-        if ok
+        local registered = ok
+            and data.registered ~= false
             and type(data.profile) == "table"
-            and data.profile.is_banned ~= true then
-            callback(tostring(data.profile.role or "Member"))
+        local profile = registered and data.profile or nil
+
+        -- Só cacheia resultados válidos. Falhas transitórias (timeout,
+        -- 5xx, resposta inválida) não ficam presas no cache.
+        if ok and (registered or data.registered == false) then
+            chosenProfileCache[userId] = {
+                registered = registered,
+                profile = profile,
+                expiresAt = now + (
+                    registered
+                    and CHOSEN_PROFILE_CACHE_REGISTERED
+                    or CHOSEN_PROFILE_CACHE_UNREGISTERED
+                )
+            }
+        end
+
+        local callbacks = chosenProfileInFlight[userId] or {}
+        chosenProfileInFlight[userId] = nil
+
+        for _, done in ipairs(callbacks) do
+            task.spawn(function()
+                pcall(done, registered, profile)
+            end)
+        end
+    end)
+end
+
+-- Consulta o cargo real de um jogador usando o cache compartilhado.
+local function chosenQueryTagRole(player, callback)
+    chosenFetchPlayerProfile(player, function(registered, profile)
+        if registered
+            and type(profile) == "table"
+            and profile.is_banned ~= true then
+            callback(tostring(profile.role or "Member"))
         end
     end)
 end
@@ -1998,40 +2055,31 @@ chosenApplyTempRole = function(userId, role)
 end
 
 local function chosenEnsureRoleTag(player)
-    -- Tag já existe (e não está pendente de nova consulta): nada a fazer.
-    if chosenRoleTags[player] and not chosenTagPending[player] then return end
-    chosenTagPending[player] = nil
+    if chosenRoleTags[player] then return end
 
-    task.spawn(function()
-        -- Proteção: outra consulta pode ter criado a tag em paralelo
-        if chosenRoleTags[player] and not chosenTagPending[player] then
+    local userId = tostring(player.UserId)
+    if chosenTagPending[player] then return end
+    chosenTagPending[player] = true
+
+    chosenFetchPlayerProfile(player, function(registered, profile)
+        if not player.Parent then
+            chosenTagPending[player] = nil
             return
         end
 
-        local ok, data = chosenApiCall({
-            Url = CHOSEN_API_URL .. "/profile?user_id=" .. tostring(player.UserId),
-            Method = "GET",
-            Headers = {
-                ["Accept"] = "application/json"
-            }
-        })
-
-        -- Sem registro ou banido: nenhuma tag ainda (reconsulta depois).
-        if not ok or type(data.profile) ~= "table" then
-            chosenTagPending[player] = true
-            return
-        end
-        if data.profile.is_banned == true then
+        if not registered or type(profile) ~= "table" then
+            -- Resultado negativo fica no cache por 3 minutos.
+            chosenTagPending[player] = nil
             return
         end
 
-        -- Cargo temporário da sessão sobrepõe o cargo real.
-        local role = chosenTempRoles[tostring(player.UserId)]
-            or tostring(data.profile.role or "Member")
+        if profile.is_banned == true or chosenRoleTags[player] then
+            chosenTagPending[player] = nil
+            return
+        end
 
-        -- Guarda anti-duplicação: outra consulta concorrente pode
-        -- ter criado a tag enquanto esta esperava a resposta.
-        if chosenRoleTags[player] then return end
+        local role = chosenTempRoles[userId]
+            or tostring(profile.role or "Member")
 
         local billboard = Instance.new("BillboardGui")
         billboard.Name = "ChosenRoleTag"
@@ -2039,27 +2087,23 @@ local function chosenEnsureRoleTag(player)
         billboard.StudsOffset = Vector3.new(0, 2.7, 0)
         billboard.AlwaysOnTop = true
         billboard.MaxDistance = 140
-        -- Visibilidade inicial já respeita presença + olho
         billboard.Enabled = chosenTagShouldShow(player)
 
         chosenRoleTags[player] = {
             role = role,
             billboard = billboard,
-            -- Referência do jogador (a manutenção usa para reanexar)
             player = player,
-            -- Fase própria de flutuação (cada tag sobe/desce fora de sync)
             phase = (player.UserId % 314) / 50
         }
         chosenBuildTagChars(chosenRoleTags[player])
 
-        -- Anexa na cabeça atual. O respawn/morph é tratado pelo loop
-        -- de manutenção (0.25s), sem criar uma conexão nova por
-        -- respawn — isso vazava conexões e pesava com o tempo.
         local char = player.Character or player.CharacterAdded:Wait()
         local head = char:WaitForChild("Head", 8)
-        if head then
+        if head and billboard.Parent == nil then
             billboard.Parent = head
         end
+
+        chosenTagPending[player] = nil
     end)
 end
 
