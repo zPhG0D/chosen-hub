@@ -1250,7 +1250,7 @@ local chosenToastBridge = nil
 do
 -- CHOSEN HUB API: perfil, cargo e presença
 -- Substitua apenas o domínio abaixo pelo domínio do seu projeto Supabase.
-local CHOSEN_API_URL = "https://mxbwgjqoupnkgdbbigvr.supabase.co/functions/v1/chosen-api" -- Troque SEU-PROJETO pelo ID do seu projeto Supabase.
+local CHOSEN_API_URL = "https://chosen-hub-api.phcraftgamer3.workers.dev" -- Troque SEU-PROJETO pelo ID do seu projeto Supabase.
 local CHOSEN_API_VERSION = "1.3.0"
 
 local ChosenRoleLabel = Instance.new("TextLabel")
